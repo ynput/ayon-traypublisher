@@ -108,7 +108,7 @@ DEFAULT_PUBLISH_PLUGINS = {
               "output": [
                 "-pix_fmt yuv420p",
                 "-crf 18",
-                "-intra"
+                "-g 1",
               ]
             }
         }
