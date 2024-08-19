@@ -351,11 +351,7 @@ or updating already created. Publishing will create OTIO file.
             product_type_presets (list): list of dict settings product presets
         """
 
-        tracks = [
-            track for track in otio_timeline.each_child(
-                descended_from_type=otio.schema.Track)
-            if track.kind == "Video"
-        ]
+        tracks = otio_timeline.video_tracks
 
         # media data for audio stream and reference solving
         media_data = self._get_media_source_metadata(media_path)
@@ -372,7 +368,7 @@ or updating already created. Publishing will create OTIO file.
             except AttributeError:
                 track_start_frame = 0
 
-            for otio_clip in track.each_child():
+            for otio_clip in track.find_clips():
                 if not self._validate_clip_for_processing(otio_clip):
                     continue
 
