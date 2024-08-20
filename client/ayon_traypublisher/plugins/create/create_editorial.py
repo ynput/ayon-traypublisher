@@ -351,7 +351,7 @@ or updating already created. Publishing will create OTIO file.
             product_type_presets (list): list of dict settings product presets
         """
 
-        tracks = otio_timeline.video_tracks
+        tracks = otio_timeline.video_tracks()
 
         # media data for audio stream and reference solving
         media_data = self._get_media_source_metadata(media_path)
