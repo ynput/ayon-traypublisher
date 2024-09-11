@@ -228,7 +228,7 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "vdb",
+        "product_type": "vdbcache",
         "identifier": "",
         "label": "VDB Volumes",
         "icon": "fa.cloud",
