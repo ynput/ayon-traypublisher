@@ -35,25 +35,55 @@ CLIP_ATTR_DEFS = [
             {"value": 24, "label": "24"},
             {"value": 25, "label": "25"},
             {"value": 29.97, "label": "29.97"},
-            {"value": 30, "label": "30"}
+            {"value": 30, "label": "30"},
         ],
-        label="FPS"
+        label="FPS",
     ),
+    NumberDef("workfile_start_frame", default=1001, label="Workfile start frame"),
+    NumberDef("handle_start", default=0, label="Handle start"),
+    NumberDef("handle_end", default=0, label="Handle end"),
     NumberDef(
-        "workfile_start_frame",
-        default=1001,
-        label="Workfile start frame"
-    ),
-    NumberDef(
-        "handle_start",
+        "frameStart",
         default=0,
-        label="Handle start"
+        label="Frame start",
+        disabled=True,
     ),
     NumberDef(
-        "handle_end",
+        "frameEnd",
         default=0,
-        label="Handle end"
-    )
+        label="Frame end",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipIn",
+        default=0,
+        label="Clip in",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipOut",
+        default=0,
+        label="Clip out",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipDuration",
+        default=0,
+        label="Clip duration",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceIn",
+        default=0,
+        label="Media source in",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceOut",
+        default=0,
+        label="Media source out",
+        disabled=True,
+    ),
 ]
 
 
@@ -79,7 +109,12 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
                 "add_review_family",
                 default=True,
                 label="Review"
-            )
+            ),
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
         ]
 
 
@@ -96,7 +131,8 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
         instance_attributes = [
             TextDef(
                 "folderPath",
-                label="Folder path"
+                label="Folder path",
+                disabled=True,
             )
         ]
         instance_attributes.extend(CLIP_ATTR_DEFS)
@@ -317,7 +353,6 @@ or updating already created. Publishing will create OTIO file.
             str: path string
         """
         return_path_list = []
-
 
         if isinstance(file_path_data, list):
             return_path_list = [
