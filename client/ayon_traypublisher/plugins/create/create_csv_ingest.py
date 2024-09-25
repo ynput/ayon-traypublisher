@@ -770,9 +770,16 @@ configuration in project settings.
                 ),
                 None
             )
+
             slate_exists: bool = any(
                 repre_item.slate_exists
                 for repre_item in repre_items
+            )
+
+            is_reviewable: bool = any(
+                True
+                for repre_item in repre_items
+                if "review" in repre_item.tags
             )
 
             families: List[str] = ["csv_ingest"]
@@ -780,6 +787,10 @@ configuration in project settings.
                 # adding slate to families mainly for loaders to be able
                 # to filter out slates
                 families.append("slate")
+
+            if is_reviewable:
+                # review family needs to be added for ExtractReview plugin
+                families.append("review")
 
             instance_data = {
                 "name": product_item.instance_name,
