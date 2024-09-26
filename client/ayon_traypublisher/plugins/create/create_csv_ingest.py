@@ -644,12 +644,12 @@ configuration in project settings.
         # convert ### string in file name to %03d
         # this is for correct frame range validation
         # example: file.###.exr -> file.%03d.exr
-        file_name = basename.split(".")[0]
+        file_head = basename.split(".")[0]
         if "#" in basename:
             padding = len(basename.split("#")) - 1
             seq_padding = f"%0{padding}d"
             basename = basename.replace("#" * padding, seq_padding)
-            file_name = basename.split(seq_padding)[0]
+            file_head = basename.split(seq_padding)[0]
             is_sequence = True
         if "%" in basename:
             pattern = re.compile(r"%\d+d|%d")
@@ -658,7 +658,7 @@ configuration in project settings.
                 raise CreatorError(
                     f"File sequence padding not found in '{basename}'."
                 )
-            file_name = basename.split("%")[0]
+            file_head = basename.split("%")[0]
             is_sequence = True
 
         # make absolute path to file
@@ -677,7 +677,7 @@ configuration in project settings.
             # get only filtered files form dirname
             files_from_dir = [
                 file for file in os.listdir(dirname)
-                if file_name in file
+                if file_head in file
             ]
             # collect all data from dirname
             cols, _ = clique.assemble(files_from_dir)
