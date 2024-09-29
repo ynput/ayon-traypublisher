@@ -451,13 +451,22 @@ configuration in project settings.
             product_item.folder_path
             for product_item in product_items_by_name.values()
         }
-        folder_ids_by_path: Dict[str, str] = {
+        folder_ids: Dict[str, str] = {
             folder_entity["path"]: folder_entity["id"]
             for folder_entity in ayon_api.get_folders(
                 project_name, folder_paths=folder_paths, fields={"id", "path"}
             )
         }
-        missing_paths: Set[str] = folder_paths - set(folder_ids_by_path.keys())
+        missing_paths: Set[str] = folder_paths - set(folder_ids.keys())
+        if missing_paths:
+            folder_ids_by_name: Dict[str, str] = {
+            folder_entity["path"]: folder_entity["id"]
+            for folder_entity in ayon_api.get_folders(
+                project_name, folder_names=missing_paths, fields={"id", "path"}
+            )
+            }
+            folder_ids.update(folder_ids_by_name)
+        missing_paths: Set[str] = folder_paths - set(folder_ids.keys())
         if missing_paths:
             ending = "" if len(missing_paths) == 1 else "s"
             joined_paths = "\n".join(sorted(missing_paths))
