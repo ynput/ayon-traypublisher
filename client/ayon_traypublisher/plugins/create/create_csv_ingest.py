@@ -460,10 +460,11 @@ configuration in project settings.
         missing_paths: Set[str] = folder_paths - set(folder_ids.keys())
         if missing_paths:
             folder_ids_by_name: Dict[str, str] = {
-            folder_entity["path"]: folder_entity["id"]
-            for folder_entity in ayon_api.get_folders(
-                project_name, folder_names=missing_paths, fields={"id", "path"}
-            )
+                folder_entity["path"]: folder_entity["id"]
+                for folder_entity in ayon_api.get_folders(
+                    project_name,
+                    folder_names=missing_paths, fields={"id", "path"}
+                )
             }
             folder_ids.update(folder_ids_by_name)
         missing_paths: Set[str] = folder_paths - set(folder_ids.keys())
