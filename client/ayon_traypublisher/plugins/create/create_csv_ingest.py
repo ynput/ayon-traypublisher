@@ -676,8 +676,9 @@ configuration in project settings.
         if is_sequence:
             # get only filtered files form dirname
             files_from_dir = [
-                file for file in os.listdir(dirname)
-                if file_head in file
+                filename
+                for filename in os.listdir(dirname)
+                if filename.startswith(file_head)
             ]
             # collect all data from dirname
             cols, _ = clique.assemble(files_from_dir)
