@@ -644,9 +644,21 @@ configuration in project settings.
         # convert ### string in file name to %03d
         # this is for correct frame range validation
         # example: file.###.exr -> file.%03d.exr
+        file_head = basename.split(".")[0]
         if "#" in basename:
             padding = len(basename.split("#")) - 1
-            basename = basename.replace("#" * padding, f"%0{padding}d")
+            seq_padding = f"%0{padding}d"
+            basename = basename.replace("#" * padding, seq_padding)
+            file_head = basename.split(seq_padding)[0]
+            is_sequence = True
+        elif "%" in basename:
+            pattern = re.compile(r"%\d+d|%d")
+            padding = pattern.findall(basename)
+            if not padding:
+                raise CreatorError(
+                    f"File sequence padding not found in '{basename}'."
+                )
+            file_head = basename.split("%")[0]
             is_sequence = True
 
         # make absolute path to file
@@ -662,8 +674,14 @@ configuration in project settings.
         frame_end: Union[int, None] = None
         files: Union[str, List[str]] = basename
         if is_sequence:
+            # get only filtered files form dirname
+            files_from_dir = [
+                filename
+                for filename in os.listdir(dirname)
+                if filename.startswith(file_head)
+            ]
             # collect all data from dirname
-            cols, _ = clique.assemble(list(os.listdir(dirname)))
+            cols, _ = clique.assemble(files_from_dir)
             if not cols:
                 raise CreatorError(
                     f"No collections found in directory '{dirname}'."
@@ -770,9 +788,16 @@ configuration in project settings.
                 ),
                 None
             )
+
             slate_exists: bool = any(
                 repre_item.slate_exists
                 for repre_item in repre_items
+            )
+
+            is_reviewable: bool = any(
+                True
+                for repre_item in repre_items
+                if "review" in repre_item.tags
             )
 
             families: List[str] = ["csv_ingest"]
@@ -780,6 +805,10 @@ configuration in project settings.
                 # adding slate to families mainly for loaders to be able
                 # to filter out slates
                 families.append("slate")
+
+            if is_reviewable:
+                # review family needs to be added for ExtractReview plugin
+                families.append("review")
 
             instance_data = {
                 "name": product_item.instance_name,
