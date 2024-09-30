@@ -651,7 +651,7 @@ configuration in project settings.
             basename = basename.replace("#" * padding, seq_padding)
             file_head = basename.split(seq_padding)[0]
             is_sequence = True
-        if "%" in basename:
+        elif "%" in basename:
             pattern = re.compile(r"%\d+d|%d")
             padding = pattern.findall(basename)
             if not padding:
