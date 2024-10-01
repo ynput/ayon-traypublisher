@@ -49,7 +49,11 @@ class CollectSequenceFrameData(
 
     def get_frame_data_from_repre_sequence(self, instance):
         repres = instance.data.get("representations")
-        folder_attributes = instance.data["folderEntity"]["attrib"]
+
+        entity: dict = (
+            instance.data.get("taskEntity") or instance.data["folderEntity"]
+        )
+        entity_attributes: dict = entity["attrib"]
 
         if repres:
             first_repre = repres[0]
@@ -78,5 +82,5 @@ class CollectSequenceFrameData(
                 "frameEnd": repres_frames[-1],
                 "handleStart": 0,
                 "handleEnd": 0,
-                "fps": folder_attributes["fps"]
+                "fps": entity_attributes["fps"]
             }

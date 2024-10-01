@@ -2,14 +2,14 @@ import pyblish.api
 
 
 class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
-    """Collect Frame Data From 'folderEntity' found in context.
+    """Collect Frame Data From `taskEntity` or `folderEntity` of instance.
 
-    Frame range data will only be collected if the keys
-    are not yet collected for the instance.
+    Frame range data will only be collected if the keys are not yet
+    collected for the instance.
     """
 
     order = pyblish.api.CollectorOrder + 0.491
-    label = "Collect Missing Frame Data From Folder"
+    label = "Collect Missing Frame Data From Folder/Task"
     families = [
         "plate",
         "pointcache",
@@ -38,14 +38,20 @@ class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
             return
 
         keys_set = []
-        folder_attributes = instance.data["folderEntity"]["attrib"]
+
+        folder_entity = instance.data["folderEntity"]
+        task_entity = instance.data.get("taskEntity")
+        context_attributes = (
+            task_entity["attrib"] if task_entity else folder_entity["attrib"]
+        )
+
         for key in missing_keys:
-            if key in folder_attributes:
-                instance.data[key] = folder_attributes[key]
+            if key in context_attributes:
+                instance.data[key] = context_attributes[key]
                 keys_set.append(key)
 
         if keys_set:
             self.log.debug(
                 f"Frame range data {keys_set} "
-                "has been collected from folder entity."
+                "has been collected from folder (or task) entity."
             )
