@@ -660,6 +660,8 @@ configuration in project settings.
                 )
             file_head = basename.split("%")[0]
             is_sequence = True
+        else:
+            is_sequence = False
 
         # make absolute path to file
         dirname: str = os.path.dirname(repre_item.filepath)
