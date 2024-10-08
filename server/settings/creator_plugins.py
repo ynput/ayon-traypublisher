@@ -182,7 +182,7 @@ DEFAULT_CREATORS = {
                     "type": "text",
                     "default": "",
                     "required_column": True,
-                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#-._\\\\/]*)$"
+                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
                 },
                 {
                     "name": "Folder Path",
@@ -231,7 +231,7 @@ DEFAULT_CREATORS = {
                     "type": "text",
                     "default": "",
                     "required_column": False,
-                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#-._\\\\/]*)$"
+                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
                 },
                 {
                     "name": "Frame Start",
