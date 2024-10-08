@@ -55,7 +55,7 @@ def _get_row_value_with_validation(
     # get column default value
     column_default = column_data["default"]
 
-    if column_type in ["number", "decimal"] and column_default == 0:
+    if column_type in ["number", "decimal"] and column_default in (0, '0'):
         column_default = None
 
     # check if column value is not empty string
@@ -779,7 +779,11 @@ configuration in project settings.
                 product_item.product_type,
                 product_item.variant
             )
-            label: str = f"{folder_path}_{product_name}_v{version:>03}"
+
+            if version is not None:
+                label: str = f"{folder_path}_{product_name}_v{version:>03}"
+            else:
+                label: str = f"{folder_path}_{product_name}_v[next]"
 
             repre_items: List[RepreItem] = product_item.repre_items
             first_repre_item: RepreItem = repre_items[0]
