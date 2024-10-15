@@ -1,6 +1,6 @@
 name = "traypublisher"
 title = "TrayPublisher"
-version = "0.2.7"
+version = "0.2.7+dev"
 
 client_dir = "ayon_traypublisher"
 
