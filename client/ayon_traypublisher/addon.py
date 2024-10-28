@@ -115,9 +115,10 @@ def ingestcsv(
     # Allow user override through AYON_USERNAME when
     # current connection is made through a service user.
     username = os.environ.get("AYON_USERNAME")
-    con = ayon_api.get_server_api_connection()
-    if username and con.is_service_user():
-        con.set_default_service_username(username)
+    if username:
+        con = ayon_api.get_server_api_connection()
+        if con.is_service_user():
+            con.set_default_service_username(username)
 
     # use Path to check if csv_filepath exists
     if not Path(filepath).exists():
