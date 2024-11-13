@@ -128,6 +128,30 @@ class RepresentationConfigModel(BaseSettingsModel):
         return value
 
 
+class FolderTypeRegexItem(BaseSettingsModel):
+    _layout = "expanded"
+    regex: str = SettingsField("", title="Folder Regex")
+    folder_type: str = SettingsField("", title="Folder Type")
+
+
+class FolderCreationConfigModel(BaseSettingsModel):
+    """Allow to create folder hierarchy when non-existing."""
+
+    enabled: bool = SettingsField(
+        title="Enabled folder creation",
+        default=False,
+    )
+
+    folder_type_regexes: list[FolderTypeRegexItem] = SettingsField(
+        default_factory=FolderTypeRegexItem,
+        description=(
+            "Using Regex expressions to create missing folders. \nThose can be used"
+            " to define which folder types are used for new folder creation"
+            " depending on their names."
+        )
+    )
+
+
 class IngestCSVPluginModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -147,6 +171,11 @@ class IngestCSVPluginModel(BaseSettingsModel):
         title="Representations config",
         default_factory=RepresentationConfigModel
     )
+
+    folder_creation_config: FolderCreationConfigModel = SettingsField(
+        title="Folder creation config",
+        default_factory=FolderCreationConfigModel
+    )    
 
 
 class TrayPublisherCreatePluginsModel(BaseSettingsModel):
@@ -336,6 +365,13 @@ DEFAULT_CREATORS = {
                     ]
                 }
             ]
-        }
+        },
+        "folder_creation_config": {
+            "enabled": False,
+            "folder_type_regexes": [
+                {"regex": "(sh.*)", "folder_type": "Shot"},
+                {"regex": "(seq.*)", "folder_type": "Sequence"}
+            ],
+        }        
     }
 }

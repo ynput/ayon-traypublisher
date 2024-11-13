@@ -251,6 +251,7 @@ configuration in project settings.
     # settings for this creator
     columns_config = {}
     representations_config = {}
+    folder_creation_config = {}
 
     def get_instance_attr_defs(self):
         return [
@@ -390,8 +391,7 @@ configuration in project settings.
 
         return filepath
 
-    @staticmethod
-    def _validate_parents(project_name: str, product_item: ProductItem) -> list:
+    def _validate_parents(self, project_name: str, product_item: ProductItem) -> list:
         """ Ensure parent exists for provided product_item.folder_path
 
         Args:
@@ -428,15 +428,26 @@ configuration in project settings.
         parent_data = []
         for path in parent_paths:
             folder_entity = folders_by_path.get(path)
-            if not folder_entity:
-                # TODO This should be some artist friendy error
-                #     raising 'CreatorError'
-                raise ValueError(f"Unknown parent folder {path}")
             name = path.rsplit("/", 1)[-1]
+
+            # Folder exists, retrieve data from existing.
+            if folder_entity:
+                folder_type = folder_entity["folderType"]
+
+            # Define folder type from settings.
+            else:
+                for folder_setting in self.folder_creation_config["folder_type_regexes"]:
+                    if re.match(folder_setting["regex"], name):
+                        folder_type = folder_setting["folder_type"]
+                        break
+                else:
+                    folder_type = "Folder"  # default
+
             parent_data.append({
-                "folder_type": folder_entity["folderType"],
+                "folder_type": folder_type,
                 "entity_name": name
             })
+
         return parent_data
 
 
@@ -526,6 +537,13 @@ configuration in project settings.
             task_entities_by_folder_id[folder_id].append(task_entity)
 
         missing_tasks: Set[str] = set()
+        if missing_paths and not self.folder_creation_config["enabled"]:
+            error_msg = (
+                "Folder creation is disabled but found missing folder(s): %r" %
+                ",".join(missing_paths)
+            )
+            raise CreatorError(error_msg)
+
         for product_item in product_items_by_name.values():
             folder_path = product_item.folder_path
 
@@ -908,14 +926,14 @@ configuration in project settings.
                     }
                 )
                 # TODO create new task from provided task name
-                if product_item.task_name:
-                    tasks = instance_data.setdefault("tasks", [])
-                    tasks.append(
-                        {
-                            "name": product_item.task_name,
-                            "type": "Generic"
-                        }
-                    )
+                #if product_item.task_name:
+                #    tasks = instance_data.setdefault("tasks", [])
+                #    tasks.append(
+                #        {
+                #            "name": product_item.task_name,
+                #            "type": "Generic"
+                #        }
+                #    )
 
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(
