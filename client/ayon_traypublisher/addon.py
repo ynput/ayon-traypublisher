@@ -1,6 +1,9 @@
 import os
 
 from pathlib import Path
+
+import ayon_api
+
 from ayon_core.lib import get_ayon_launcher_args
 from ayon_core.lib.execute import run_detached_process
 from ayon_core.addon import (
@@ -108,6 +111,14 @@ def ingestcsv(
     specific format. See documentation for more information.
     """
     from .csv_publish import csvpublish
+
+    # Allow user override through AYON_USERNAME when
+    # current connection is made through a service user.
+    username = os.environ.get("AYON_USERNAME")
+    if username:
+        con = ayon_api.get_server_api_connection()
+        if con.is_service_user():
+            con.set_default_service_username(username)
 
     # use Path to check if csv_filepath exists
     if not Path(filepath).exists():

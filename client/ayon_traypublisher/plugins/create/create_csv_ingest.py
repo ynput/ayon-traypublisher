@@ -55,7 +55,7 @@ def _get_row_value_with_validation(
     # get column default value
     column_default = column_data["default"]
 
-    if column_type in ["number", "decimal"] and column_default == 0:
+    if column_type in ["number", "decimal"] and column_default in (0, '0'):
         column_default = None
 
     # check if column value is not empty string
@@ -654,10 +654,25 @@ configuration in project settings.
         # convert ### string in file name to %03d
         # this is for correct frame range validation
         # example: file.###.exr -> file.%03d.exr
+        file_head = basename.split(".")[0]
         if "#" in basename:
             padding = len(basename.split("#")) - 1
-            basename = basename.replace("#" * padding, f"%0{padding}d")
+            seq_padding = f"%0{padding}d"
+            basename = basename.replace("#" * padding, seq_padding)
+            file_head = basename.split(seq_padding)[0]
             is_sequence = True
+        elif "%" in basename:
+            pattern = re.compile(r"%\d+d|%d")
+            padding = pattern.findall(basename)
+            if not padding:
+                raise CreatorError(
+                    f"File sequence padding not found in '{basename}'."
+                )
+            file_head = basename.split("%")[0]
+            is_sequence = True
+        else:
+            # in case it is still image
+            is_sequence = False
 
         # make absolute path to file
         dirname: str = os.path.dirname(repre_item.filepath)
@@ -672,8 +687,14 @@ configuration in project settings.
         frame_end: Union[int, None] = None
         files: Union[str, List[str]] = basename
         if is_sequence:
+            # get only filtered files form dirname
+            files_from_dir = [
+                filename
+                for filename in os.listdir(dirname)
+                if filename.startswith(file_head)
+            ]
             # collect all data from dirname
-            cols, _ = clique.assemble(list(os.listdir(dirname)))
+            cols, _ = clique.assemble(files_from_dir)
             if not cols:
                 raise CreatorError(
                     f"No collections found in directory '{dirname}'."
@@ -768,7 +789,11 @@ configuration in project settings.
                 product_item.product_type,
                 product_item.variant
             )
-            label: str = f"{folder_path}_{product_name}_v{version:>03}"
+
+            if version is not None:
+                label: str = f"{folder_path}_{product_name}_v{version:>03}"
+            else:
+                label: str = f"{folder_path}_{product_name}_v[next]"
 
             repre_items: List[RepreItem] = product_item.repre_items
             first_repre_item: RepreItem = repre_items[0]

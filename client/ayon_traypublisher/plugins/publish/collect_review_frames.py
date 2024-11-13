@@ -20,12 +20,16 @@ class CollectReviewInfo(pyblish.api.InstancePlugin):
     hosts = ["traypublisher"]
 
     def process(self, instance):
-        folder_entity = instance.data.get("folderEntity")
-        if instance.data.get("frameStart") is not None or not folder_entity:
+
+        entity = (
+            instance.data.get("taskEntity")
+            or instance.data.get("folderEntity")
+        )
+        if instance.data.get("frameStart") is not None or not entity:
             self.log.debug("Missing required data on instance")
             return
 
-        folder_attributes = folder_entity["attrib"]
+        context_attributes = entity["attrib"]
         # Store collected data for logging
         collected_data = {}
         for key in (
@@ -35,9 +39,9 @@ class CollectReviewInfo(pyblish.api.InstancePlugin):
             "handleStart",
             "handleEnd",
         ):
-            if key in instance.data or key not in folder_attributes:
+            if key in instance.data or key not in context_attributes:
                 continue
-            value = folder_attributes[key]
+            value = context_attributes[key]
             collected_data[key] = value
             instance.data[key] = value
         self.log.debug("Collected data: {}".format(str(collected_data)))
