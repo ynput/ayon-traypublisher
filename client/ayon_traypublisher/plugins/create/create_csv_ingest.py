@@ -404,37 +404,39 @@ configuration in project settings.
         Raise:
             ValueError: When provided folder_path parent do not exist.
         """
-        parent_folder_path, folder_name = product_item.folder_path.rsplit("/", 1)
-        if not parent_folder_path:
+        parent_folder_names = product_item.folder_path.lstrip("/").split("/")
+        # Rename name of folder itself
+        parent_folder_names.pop(-1)
+        if not parent_folder_names:
             return []
 
-        folder_data = ayon_api.get_folder_by_path(
-            project_name,
-            parent_folder_path,
-            fields=("folderType",)
-        )
+        parent_paths = []
+        parent_path = ""
+        for name in parent_folder_names:
+            path = f"{parent_path}/{name}"
+            parent_paths.append(path)
+            parent_path = path
 
-        if folder_data is None:
-            raise ValueError(f"Unknown parent folder {parent_folder_path}")
-
-        parent_data = []
-        inspected = []
-
-        for key in parent_folder_path.split("/"):
-            if not key:
-                continue
-
-            inspected.append(key)
-            folder_data = ayon_api.get_folder_by_path(
+        folders_by_path = {
+            folder["path"]: folder
+            for folder in ayon_api.get_folders(
                 project_name,
-                f"/{'/'.join(inspected)}",
-                fields=("folderType",)
+                folder_paths=parent_paths,
+                fields={"folderType", "path"}
             )
+        }
+        parent_data = []
+        for path in parent_paths:
+            folder_entity = folders_by_path.get(path)
+            if not folder_entity:
+                # TODO This should be some artist friendy error
+                #     raising 'CreatorError'
+                raise ValueError(f"Unknown parent folder {path}")
+            name = path.rsplit("/", 1)[-1]
             parent_data.append({
-                "folder_type": folder_data["folderType"],
-                "entity_name": key
+                "folder_type": folder_entity["folderType"],
+                "entity_name": name
             })
-
         return parent_data
 
 
@@ -896,7 +898,7 @@ configuration in project settings.
             }
 
             if product_item.has_promised_context:
-                hierarchy, _ = folder_path.rsplit("/",1)
+                hierarchy, _ = folder_path.rsplit("/", 1)
                 families.append("csv_ingest_shot")
                 instance_data.update(
                     {
@@ -906,11 +908,14 @@ configuration in project settings.
                     }
                 )
                 # TODO create new task from provided task name
-#                if product_item.task_name:
-#                    instance_data["tasks"] = {
-#                        "name": product_item.task_name,
-#                        "type": "Generic"
-#                    }
+                if product_item.task_name:
+                    tasks = instance_data.setdefault("tasks", [])
+                    tasks.append(
+                        {
+                            "name": product_item.task_name,
+                            "type": "Generic"
+                        }
+                    )
 
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(
