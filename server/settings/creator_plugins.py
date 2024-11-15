@@ -1,5 +1,9 @@
 from pydantic import validator
-from ayon_server.settings import BaseSettingsModel, SettingsField
+from ayon_server.settings import (
+    BaseSettingsModel,
+    SettingsField,
+    folder_types_enum
+)
 from ayon_server.settings.validators import ensure_unique_names
 from ayon_server.exceptions import BadRequestException
 
@@ -131,7 +135,13 @@ class RepresentationConfigModel(BaseSettingsModel):
 class FolderTypeRegexItem(BaseSettingsModel):
     _layout = "expanded"
     regex: str = SettingsField("", title="Folder Regex")
-    folder_type: str = SettingsField("", title="Folder Type")
+    folder_type: str = SettingsField(
+        "Folder",
+        title="Folder Type",
+        enum_resolver=folder_types_enum,
+        description=(
+            "Project's Anatomy folder type to create when regex matches."),
+    )
 
 
 class FolderCreationConfigModel(BaseSettingsModel):
@@ -175,7 +185,7 @@ class IngestCSVPluginModel(BaseSettingsModel):
     folder_creation_config: FolderCreationConfigModel = SettingsField(
         title="Folder creation config",
         default_factory=FolderCreationConfigModel
-    )    
+    )
 
 
 class TrayPublisherCreatePluginsModel(BaseSettingsModel):
@@ -372,6 +382,6 @@ DEFAULT_CREATORS = {
                 {"regex": "(sh.*)", "folder_type": "Shot"},
                 {"regex": "(seq.*)", "folder_type": "Sequence"}
             ],
-        }        
+        }
     }
 }
