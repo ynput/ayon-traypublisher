@@ -850,8 +850,8 @@ configuration in project settings.
             str. The task type computed from settings.
         """
         for task_setting in self.folder_creation_config["task_type_regexes"]:
-            if re.match(task_setting["regex"], name):
-                folder_type = task_setting["task_type"]
+            if re.match(task_setting["regex"], task_name):
+                task_type = task_setting["task_type"]
                 break
         else:
             task_type = self.folder_creation_config["task_create_type"]
