@@ -838,6 +838,24 @@ configuration in project settings.
                 explicit_output_name
             )
 
+    def _get_task_type_from_task_name(self, task_name: str):
+        """ Retrieve task type from task name.
+
+        Args:
+            task_name (str): The task name.
+
+        Returns:
+            str. The task type computed from settings.
+        """
+        for task_setting in self.folder_creation_config["task_type_regexes"]:
+            if re.match(task_setting["regex"], name):
+                folder_type = task_setting["task_type"]
+                break
+        else:
+            task_type = self.folder_creation_config["task_create_type"]
+
+        return task_type
+
     def _create_instances_from_csv_data(self, csv_dir: str, filename: str):
         """Create instances from csv data"""
         # from special function get all data from csv file and convert them
@@ -917,23 +935,24 @@ configuration in project settings.
 
             if product_item.has_promised_context:
                 hierarchy, _ = folder_path.rsplit("/", 1)
-                families.append("csv_ingest_shot")
+                families.append("shot")
                 instance_data.update(
                     {
                         "newHierarchyIntegration": True,
                         "hierarchy": hierarchy,
-                        "parents": product_item.parents
+                        "parents": product_item.parents,
+                        "families": families,
+                        "heroTrack": True,
                     }
                 )
-                # TODO create new task from provided task name
-                #if product_item.task_name:
-                #    tasks = instance_data.setdefault("tasks", [])
-                #    tasks.append(
-                #        {
-                #            "name": product_item.task_name,
-                #            "type": "Generic"
-                #        }
-                #    )
+                if product_item.task_name:
+                    task_type = self._get_task_type_from_task_name(
+                        product_item.task_name
+                    )
+                    tasks = instance_data.setdefault("tasks", {})
+                    tasks[product_item.task_name] = {
+                        "type": task_type
+                    }
 
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(

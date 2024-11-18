@@ -2,7 +2,8 @@ from pydantic import validator
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
-    folder_types_enum
+    folder_types_enum,
+    task_types_enum,
 )
 from ayon_server.settings.validators import ensure_unique_names
 from ayon_server.exceptions import BadRequestException
@@ -144,6 +145,18 @@ class FolderTypeRegexItem(BaseSettingsModel):
     )
 
 
+class TaskTypeRegexItem(BaseSettingsModel):
+    _layout = "expanded"
+    regex: str = SettingsField("", title="Task Regex")
+    task_type: str = SettingsField(
+        "",
+        title="Task Type",
+        enum_resolver=task_types_enum,
+        description=(
+            "New task type to create when regex matches."),
+    )
+
+
 class FolderCreationConfigModel(BaseSettingsModel):
     """Allow to create folder hierarchy when non-existing."""
 
@@ -159,6 +172,23 @@ class FolderCreationConfigModel(BaseSettingsModel):
             " to define which folder types are used for new folder creation"
             " depending on their names."
         )
+    )
+
+    task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
+        default_factory=TaskTypeRegexItem,
+        description=(
+            "Using Regex expressions to create missing tasks. \nThose can be used"
+            " to define which task types are used for new folder+task creation"
+            " depending on their names."
+        )
+    )
+
+    task_create_type: str = SettingsField(
+        "",
+        title="Default Task Type",
+        enum_resolver=task_types_enum,
+        description=(
+            "Default task type for new task(s) creation."),
     )
 
 
@@ -382,6 +412,8 @@ DEFAULT_CREATORS = {
                 {"regex": "(sh.*)", "folder_type": "Shot"},
                 {"regex": "(seq.*)", "folder_type": "Sequence"}
             ],
+            "task_type_regexes": [],
+            "task_create_type": "Generic",
         }
     }
 }
