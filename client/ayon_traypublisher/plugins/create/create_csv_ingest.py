@@ -429,6 +429,7 @@ configuration in project settings.
         for path in parent_paths:
             folder_entity = folders_by_path.get(path)
             name = path.rsplit("/", 1)[-1]
+            folder_type = None
 
             # Folder exists, retrieve data from existing.
             if folder_entity:
@@ -440,13 +441,14 @@ configuration in project settings.
                     if re.match(folder_setting["regex"], name):
                         folder_type = folder_setting["folder_type"]
                         break
-                else:
-                    folder_type = "Folder"  # default
 
-            parent_data.append({
-                "folder_type": folder_type,
-                "entity_name": name
-            })
+            item = {
+                "entity_name": name,
+            }
+            if folder_type:
+                item["folder_type"] = folder_type
+
+            parent_data.append(item)
 
         return parent_data
 
