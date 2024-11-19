@@ -174,6 +174,14 @@ class FolderCreationConfigModel(BaseSettingsModel):
         )
     )
 
+    folder_create_type: str = SettingsField(
+        "Folder",
+        title="Default Folder Type",
+        enum_resolver=folder_types_enum,
+        description=(
+            "Default folder type for new folder(s) creation."),
+    )
+
     task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
         default_factory=TaskTypeRegexItem,
         description=(
@@ -412,6 +420,7 @@ DEFAULT_CREATORS = {
                 {"regex": "(sh.*)", "folder_type": "Shot"},
                 {"regex": "(seq.*)", "folder_type": "Sequence"}
             ],
+            "folder_create_type": "Folder",
             "task_type_regexes": [],
             "task_create_type": "Generic",
         }

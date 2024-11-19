@@ -391,8 +391,25 @@ configuration in project settings.
 
         return filepath
 
-    def _validate_parents(self, project_name: str, product_item: ProductItem) -> list:
-        """ Ensure parent exists for provided product_item.folder_path
+    def _get_folder_type_from_regex_settings(self, folder_name: str) -> str:
+        """ Get the folder type that matches the regex settings.
+
+        Args:
+            folder_name (str): The folder name.
+
+        Returns:
+            str. The folder type to use.
+        """
+        for folder_setting in self.folder_creation_config["folder_type_regexes"]:
+            if re.match(folder_setting["regex"], folder_name):
+                folder_type = folder_setting["folder_type"]
+                return folder_type
+
+        return self.folder_creation_config["folder_create_type"]
+
+    def _compute_parents_data(self, project_name: str, product_item: ProductItem) -> list:
+        """ Compute parent data when new hierarchy has to be created during the
+            publishing process.
 
         Args:
             project_name (str): The project name.
@@ -429,7 +446,6 @@ configuration in project settings.
         for path in parent_paths:
             folder_entity = folders_by_path.get(path)
             name = path.rsplit("/", 1)[-1]
-            folder_type = None
 
             # Folder exists, retrieve data from existing.
             if folder_entity:
@@ -437,17 +453,12 @@ configuration in project settings.
 
             # Define folder type from settings.
             else:
-                for folder_setting in self.folder_creation_config["folder_type_regexes"]:
-                    if re.match(folder_setting["regex"], name):
-                        folder_type = folder_setting["folder_type"]
-                        break
+                folder_type = self._get_folder_type_from_regex_settings(name)
 
             item = {
                 "entity_name": name,
+                "folder_type": folder_type,
             }
-            if folder_type:
-                item["folder_type"] = folder_type
-
             parent_data.append(item)
 
         return parent_data
@@ -552,16 +563,10 @@ configuration in project settings.
             if folder_path in missing_paths:
                 product_item.has_promised_context = True
                 product_item.task_type = None
-                try:
-                    product_item.parents = self._validate_parents(
-                        project_name,
-                        product_item
-                    )
-                except ValueError:
-                    raise CreatorError(
-                        f"Parent context must exists for new shots: {folder_path}"
-                    )
-
+                product_item.parents = self._compute_parents_data(
+                    project_name,
+                    product_item
+                )
                 continue
 
             task_name = product_item.task_name
@@ -936,7 +941,7 @@ configuration in project settings.
             }
 
             if product_item.has_promised_context:
-                hierarchy, _ = folder_path.rsplit("/", 1)
+                hierarchy, folder_name = folder_path.rsplit("/", 1)
                 families.append("shot")
                 instance_data.update(
                     {
@@ -947,6 +952,10 @@ configuration in project settings.
                         "heroTrack": True,
                     }
                 )
+
+                folder_type = self._get_folder_type_from_regex_settings(folder_name)
+                instance_data["folder_type"] = folder_type
+
                 if product_item.task_name:
                     task_type = self._get_task_type_from_task_name(
                         product_item.task_name
