@@ -1,5 +1,10 @@
 from pydantic import validator
-from ayon_server.settings import BaseSettingsModel, SettingsField
+from ayon_server.settings import (
+    BaseSettingsModel,
+    SettingsField,
+    folder_types_enum,
+    task_types_enum,
+)
 from ayon_server.settings.validators import ensure_unique_names
 from ayon_server.exceptions import BadRequestException
 
@@ -128,6 +133,73 @@ class RepresentationConfigModel(BaseSettingsModel):
         return value
 
 
+class FolderTypeRegexItem(BaseSettingsModel):
+    _layout = "expanded"
+    regex: str = SettingsField("", title="Folder Regex")
+    folder_type: str = SettingsField(
+        "Folder",
+        title="Folder Type",
+        enum_resolver=folder_types_enum,
+        description=(
+            "Project's Anatomy folder type to create when regex matches."),
+    )
+
+
+class TaskTypeRegexItem(BaseSettingsModel):
+    _layout = "expanded"
+    regex: str = SettingsField("", title="Task Regex")
+    task_type: str = SettingsField(
+        "",
+        title="Task Type",
+        enum_resolver=task_types_enum,
+        description=(
+            "New task type to create when regex matches."),
+    )
+
+
+class FolderCreationConfigModel(BaseSettingsModel):
+    """Allow to create folder hierarchy when non-existing."""
+
+    enabled: bool = SettingsField(
+        title="Enabled folder creation",
+        default=False,
+    )
+
+    folder_type_regexes: list[FolderTypeRegexItem] = SettingsField(
+        default_factory=FolderTypeRegexItem,
+        description=(
+            "Using Regex expressions to create missing folders. \nThose can be used"
+            " to define which folder types are used for new folder creation"
+            " depending on their names."
+        )
+    )
+
+    folder_create_type: str = SettingsField(
+        "Folder",
+        title="Default Folder Type",
+        enum_resolver=folder_types_enum,
+        description=(
+            "Default folder type for new folder(s) creation."),
+    )
+
+    task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
+        default_factory=TaskTypeRegexItem,
+        description=(
+            "Using Regex expressions to create missing tasks. \nThose can be used"
+            " to define which task types are used for new folder+task creation"
+            " depending on their names."
+        )
+    )
+
+    task_create_type: str = SettingsField(
+        "",
+        title="Default Task Type",
+        enum_resolver=task_types_enum,
+        description=(
+            "Default task type for new task(s) creation."),
+    )
+
+
 class IngestCSVPluginModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -146,6 +218,11 @@ class IngestCSVPluginModel(BaseSettingsModel):
     representations_config: RepresentationConfigModel = SettingsField(
         title="Representations config",
         default_factory=RepresentationConfigModel
+    )
+
+    folder_creation_config: FolderCreationConfigModel = SettingsField(
+        title="Folder creation config",
+        default_factory=FolderCreationConfigModel
     )
 
 
@@ -336,6 +413,16 @@ DEFAULT_CREATORS = {
                     ]
                 }
             ]
+        },
+        "folder_creation_config": {
+            "enabled": False,
+            "folder_type_regexes": [
+                {"regex": "(sh.*)", "folder_type": "Shot"},
+                {"regex": "(seq.*)", "folder_type": "Sequence"}
+            ],
+            "folder_create_type": "Folder",
+            "task_type_regexes": [],
+            "task_create_type": "Generic",
         }
     }
 }
