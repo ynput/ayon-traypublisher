@@ -11,7 +11,7 @@ def initialize():
     project_name = os.environ["AYON_PROJECT_NAME"]
     project_settings = get_project_settings(project_name)
 
-    simple_creators = project_settings["traypublisher"]["simple_creators"]
+    simple_creators = project_settings["traypublisher"]["create"]["simple_creators"]
 
     global_variables = globals()
     for item in simple_creators:

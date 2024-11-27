@@ -8,6 +8,15 @@ from ayon_server.settings import (
 from ayon_server.settings.validators import ensure_unique_names
 from ayon_server.exceptions import BadRequestException
 
+from .simple_creators import (
+    SimpleCreatorPlugin,
+    DEFAULT_SIMPLE_CREATORS,
+)
+from .editorial_creators import (
+    TraypublisherEditorialCreatorPlugins,
+    DEFAULT_EDITORIAL_CREATORS,
+)
+
 
 class BatchMovieCreatorPlugin(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
@@ -229,13 +238,23 @@ class TrayPublisherCreatePluginsModel(BaseSettingsModel):
         title="Batch Movie Creator",
         default_factory=BatchMovieCreatorPlugin
     )
+    editorial_creators: TraypublisherEditorialCreatorPlugins = SettingsField(
+        title="Editorial Creators",
+        default_factory=TraypublisherEditorialCreatorPlugins,
+    )
     IngestCSV: IngestCSVPluginModel = SettingsField(
         title="Ingest CSV",
         default_factory=IngestCSVPluginModel
     )
+    simple_creators: list[SimpleCreatorPlugin] = SettingsField(
+        title="Simple Create Plugins",
+        default_factory=SimpleCreatorPlugin,
+    )
 
 
 DEFAULT_CREATORS = {
+    "simple_creators": DEFAULT_SIMPLE_CREATORS,
+    "editorial_creators": DEFAULT_EDITORIAL_CREATORS,
     "BatchMovieCreator": {
         "default_variants": [
             "Main"
