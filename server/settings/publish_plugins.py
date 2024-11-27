@@ -61,6 +61,10 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         default_factory=ValidatePluginModel,
         title="Collect Frame Data From Folder Entity",
     )
+    CollectSequenceFrameData: ValidatePluginModel = SettingsField(
+        default_factory=ValidatePluginModel,
+        title="Collect Original Sequence Frame Data",
+    )
     ValidateFrameRange: ValidateFrameRangeModel = SettingsField(
         title="Validate Frame Range",
         default_factory=ValidateFrameRangeModel,
@@ -80,6 +84,11 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 DEFAULT_PUBLISH_PLUGINS = {
     "CollectFrameDataFromAssetEntity": {
+        "enabled": True,
+        "optional": True,
+        "active": True
+    },
+    "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
         "active": True
