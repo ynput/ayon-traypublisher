@@ -1,13 +1,16 @@
+from pydantic import root_validator
+
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 
 class SimpleCreatorPlugin(BaseSettingsModel):
-    _layout = "expanded"
-    product_type: str = SettingsField("", title="Product type")
+
+    name: str = SettingsField(title="Name", disabled=True)
+    label: str = SettingsField("", title="Label")
     # TODO add placeholder
     identifier: str = SettingsField("", title="Identifier")
-    label: str = SettingsField("", title="Label")
     icon: str = SettingsField("", title="Icon")
+    product_type: str = SettingsField("", title="Product type")
     default_variants: list[str] = SettingsField(
         default_factory=list,
         title="Default Variants"
@@ -38,6 +41,11 @@ class SimpleCreatorPlugin(BaseSettingsModel):
         default_factory=list,
         title="Extensions"
     )
+
+    @root_validator(pre=True)
+    def use_label_as_name(cls, values):
+        values['name'] = values['label']
+        return values
 
 
 DEFAULT_SIMPLE_CREATORS = [
