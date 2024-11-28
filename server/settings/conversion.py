@@ -5,24 +5,16 @@ def _convert_simple_creators_0_2_9(overrides):
     if "simple_creators" not in overrides:
         return
     
-    if overrides.get("create") is None:
-        overrides.update({
-            "create": {}
-        })
-    
-    overrides["create"]["simple_creators"] = overrides.pop("simple_creators")
+    create_overrides = overrides.setdefault("create", {})
+    create_overrides["simple_creators"] = overrides.pop("simple_creators")
 
 
 def _convert_editorial_creators_0_2_9(overrides):
     if "editorial_creators" not in overrides:
         return
     
-    if overrides.get("create") is None:
-        overrides.update({
-            "create": {}
-        })
-    
-    overrides["create"]["editorial_creators"] = overrides.pop("editorial_creators")
+    create_overrides = overrides.setdefault("create", {})
+    create_overrides["editorial_creators"] = overrides.pop("editorial_creators")
 
 
 def convert_settings_overrides(
