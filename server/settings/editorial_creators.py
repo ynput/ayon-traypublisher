@@ -6,13 +6,13 @@ from ayon_server.settings import (
 
 
 class ClipNameTokenizerItem(BaseSettingsModel):
-    _layout = "expanded"
+    _layout = "compact"
     name: str = SettingsField("", title="Tokenizer name")
     regex: str = SettingsField("", title="Tokenizer regex")
 
 
 class ShotAddTasksItem(BaseSettingsModel):
-    _layout = "expanded"
+    _layout = "compact"
     name: str = SettingsField('', title="Key")
     task_type: str = SettingsField(
         title="Task type",
@@ -37,6 +37,7 @@ parent_type_enum = [
 
 
 class TokenToParentConvertorItem(BaseSettingsModel):
+    _layout = "compact"
     # TODO - was 'type' must be renamed in code to `parent_type`
     parent_type: str = SettingsField(
         "Project",
@@ -75,6 +76,7 @@ output_file_type = [
 
 
 class ProductTypePresetItem(BaseSettingsModel):
+    _layout="compact"
     product_type: str = SettingsField("", title="Product type")
     # TODO add placeholder '< Inherited >'
     variant: str = SettingsField("", title="Variant")
