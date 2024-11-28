@@ -234,21 +234,21 @@ class IngestCSVPluginModel(BaseSettingsModel):
 
 
 class TrayPublisherCreatePluginsModel(BaseSettingsModel):
-    BatchMovieCreator: BatchMovieCreatorPlugin = SettingsField(
-        title="Batch Movie Creator",
-        default_factory=BatchMovieCreatorPlugin
+    simple_creators: list[SimpleCreatorPlugin] = SettingsField(
+        title="Simple Create Plugins",
+        default_factory=SimpleCreatorPlugin,
     )
     editorial_creators: TraypublisherEditorialCreatorPlugins = SettingsField(
         title="Editorial Creators",
         default_factory=TraypublisherEditorialCreatorPlugins,
     )
+    BatchMovieCreator: BatchMovieCreatorPlugin = SettingsField(
+        title="Batch Movie Creator",
+        default_factory=BatchMovieCreatorPlugin
+    )
     IngestCSV: IngestCSVPluginModel = SettingsField(
         title="Ingest CSV",
         default_factory=IngestCSVPluginModel
-    )
-    simple_creators: list[SimpleCreatorPlugin] = SettingsField(
-        title="Simple Create Plugins",
-        default_factory=SimpleCreatorPlugin,
     )
 
 
