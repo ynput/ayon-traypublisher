@@ -181,13 +181,7 @@ class FolderCreationConfigModel(BaseSettingsModel):
         enum_resolver=folder_types_enum,
         description=(
             "Default folder type for new folder(s) creation."),
-    )
-    task_create_type: str = SettingsField(
-        "",
-        title="Default Task Type",
-        enum_resolver=task_types_enum,
-        description=(
-            "Default task type for new task(s) creation."),
+        section="Folder Settings"
     )
     folder_type_regexes: list[FolderTypeRegexItem] = SettingsField(
         default_factory=FolderTypeRegexItem,
@@ -196,6 +190,14 @@ class FolderCreationConfigModel(BaseSettingsModel):
             " to define which folder types are used for new folder creation"
             " depending on their names."
         )
+    )
+    task_create_type: str = SettingsField(
+        "",
+        title="Default Task Type",
+        enum_resolver=task_types_enum,
+        description=(
+            "Default task type for new task(s) creation."),
+        section="Task Settings"
     )
     task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
         default_factory=TaskTypeRegexItem,
