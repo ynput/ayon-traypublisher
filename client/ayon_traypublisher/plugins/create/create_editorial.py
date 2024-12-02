@@ -843,7 +843,7 @@ or updating already created. Publishing will create OTIO file.
                 ],
                 allow_sequences=False,
                 single_item=False,
-                label="Sequence file",
+                label="Edit list file",
             ),
             FileDef(
                 "media_filepaths_data",
