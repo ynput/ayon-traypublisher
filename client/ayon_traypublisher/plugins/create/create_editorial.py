@@ -200,7 +200,7 @@ or updating already created. Publishing will create OTIO file.
 
     def apply_settings(self, project_settings):
         editorial_creators = deepcopy(
-            project_settings["traypublisher"]["create"]["editorial_creators"]
+            project_settings["traypublisher"]["editorial_creators"]
         )
         creator_settings = editorial_creators.get(self.identifier)
 
