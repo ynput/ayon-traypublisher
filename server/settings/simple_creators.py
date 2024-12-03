@@ -2,7 +2,7 @@ from ayon_server.settings import BaseSettingsModel, SettingsField
 
 
 class SimpleCreatorPlugin(BaseSettingsModel):
-    _layout = "expanded"
+
     product_type: str = SettingsField("", title="Product type")
     # TODO add placeholder
     identifier: str = SettingsField("", title="Identifier")
