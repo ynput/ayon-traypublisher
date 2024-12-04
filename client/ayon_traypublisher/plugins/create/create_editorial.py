@@ -844,6 +844,11 @@ or updating already created. Publishing will create OTIO file.
                 allow_sequences=False,
                 single_item=False,
                 label="Edit list file",
+                tooltip=(
+                    "An Edit Decision List (EDL) is a list of edits that includes reel and timecode data.\n"
+                    "This information shows where each video clip can be found to create the final cut.\n"
+                    "EDL files can be generated using apps like Nuke Studio and Resolve."
+                )
             ),
             FileDef(
                 "media_filepaths_data",
