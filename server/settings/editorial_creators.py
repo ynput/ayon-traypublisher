@@ -3,6 +3,72 @@ from ayon_server.settings import (
     SettingsField,
     task_types_enum,
 )
+from ayon_server.exceptions import BadRequestException
+from pydantic import validator
+
+
+content_type_enum = [
+    {"label": "Single Image", "value": "image_single"},
+    {"label": "Sequence of images", "value": "image_sequence"},
+    {"label": "Video", "value": "video"},
+    {"label": "Audio", "value": "audio"},
+    {"label": "Geometry", "value": "geometry"},
+    {"label": "Workfile", "value": "workfile"},
+]
+
+
+output_file_type = [
+    {"value": ".mp4", "label": "MP4"},
+    {"value": ".mov", "label": "MOV"},
+    {"value": ".wav", "label": "WAV"},
+]
+
+class RepresentationItemModel(BaseSettingsModel):
+    """Allows to publish multiple video files in one go.
+
+    Name of matching asset is parsed from file names
+    ('asset.mov', 'asset_v001.mov', 'my_asset_to_publish.mov')
+    """
+
+    name: str = SettingsField(title="Name", default="")
+    content_type: str = SettingsField(
+        "video",
+        title="Content type",
+        enum_resolver=lambda: content_type_enum,
+    )
+    extensions: list[str] = SettingsField(
+        title="Filter by extensions",
+        default_factory=list,
+        description=(
+            "Only files with these extensions will be published. "
+            "following are accepted: .ext, ext, EXT, .EXT"
+        )
+    )
+    tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Tags",
+        description=(
+            "Tags that will be added to the created representation."
+            "\nAdd *review* tag to create review from the transcoded"
+            " representation instead of the original."
+        ),
+    )
+    custom_tags: list[str] = SettingsField(
+        title="Custom tags",
+        default_factory=list,
+        description=(
+            "Additional custom tags can be used for advanced filtering "
+            "in Extract Review output presets."
+        ),
+    )
+
+    @validator("extensions")
+    def validate_extension(cls, value):
+        for ext in value:
+            if not ext.startswith("."):
+                raise BadRequestException(
+                    f"Extension must start with '.': {ext}")
+        return value
 
 
 class ClipNameTokenizerItem(BaseSettingsModel):
@@ -68,13 +134,6 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     )
 
 
-output_file_type = [
-    {"value": ".mp4", "label": "MP4"},
-    {"value": ".mov", "label": "MOV"},
-    {"value": ".wav", "label": "WAV"}
-]
-
-
 class ProductTypePresetItem(BaseSettingsModel):
     _layout="compact"
     product_type: str = SettingsField("", title="Product type")
@@ -87,7 +146,21 @@ class ProductTypePresetItem(BaseSettingsModel):
     )
 
 
+class ProductTypeAdvancedPresetItem(BaseSettingsModel):
+    product_type: str = SettingsField("", title="Product type")
+    variant: str = SettingsField("", title="Variant")
+    representations: list[RepresentationItemModel] = SettingsField(
+        title="Representations", default_factory=list
+    )
+    content_type: str = SettingsField(
+        "video",
+        title="Content type",
+        enum_resolver=lambda: content_type_enum,
+    )
+
+
 class EditorialSimpleCreatorPlugin(BaseSettingsModel):
+    enabled: bool = True
     default_variants: list[str] = SettingsField(
         default_factory=list,
         title="Default Variants"
@@ -117,25 +190,56 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     )
 
 
+class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
+    enabled: bool = True
+    default_variants: list[str] = SettingsField(
+        default_factory=list, title="Default Variants"
+    )
+    clip_name_tokenizer: list[ClipNameTokenizerItem] = SettingsField(
+        default_factory=ClipNameTokenizerItem,
+        description=(
+            "Using Regex expression to create tokens. \nThose can be used"
+            ' later in "Shot rename" creator \nor "Shot hierarchy".'
+            '\n\nTokens should be decorated with "_" on each side'
+        ),
+    )
+    shot_rename: ShotRenameSubmodel = SettingsField(
+        title="Shot Rename", default_factory=ShotRenameSubmodel
+    )
+    shot_hierarchy: ShotHierarchySubmodel = SettingsField(
+        title="Shot Hierarchy", default_factory=ShotHierarchySubmodel
+    )
+    shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
+        title="Add tasks to shot", default_factory=ShotAddTasksItem
+    )
+    product_type_advanced_presets: list[ProductTypeAdvancedPresetItem] = SettingsField(
+        title="Product type presets",
+        default_factory=list
+    )
+
+
 class TraypublisherEditorialCreatorPlugins(BaseSettingsModel):
     editorial_simple: EditorialSimpleCreatorPlugin = SettingsField(
         title="Editorial simple creator",
         default_factory=EditorialSimpleCreatorPlugin,
     )
+    editorial_advanced: EditorialAdvancedCreatorPlugin = SettingsField(
+        title="Editorial advanced creator",
+        default_factory=EditorialAdvancedCreatorPlugin,
+    )
 
 
 DEFAULT_EDITORIAL_CREATORS = {
     "editorial_simple": {
-        "default_variants": [
-            "Main"
-        ],
+        "enabled": True,
+        "default_variants": ["Main"],
         "clip_name_tokenizer": [
             {"name": "_sequence_", "regex": "(sc\\d{3})"},
-            {"name": "_shot_", "regex": "(sh\\d{3})"}
+            {"name": "_shot_", "regex": "(sh\\d{3})"},
         ],
         "shot_rename": {
             "enabled": True,
-            "shot_rename_template": "{project[code]}_{_sequence_}_{_shot_}"
+            "shot_rename_template": "{project[code]}_{_sequence_}_{_shot_}",
         },
         "shot_hierarchy": {
             "enabled": True,
@@ -144,19 +248,15 @@ DEFAULT_EDITORIAL_CREATORS = {
                 {
                     "parent_type": "Project",
                     "name": "project",
-                    "value": "{project[name]}"
+                    "value": "{project[name]}",
                 },
-                {
-                    "parent_type": "Folder",
-                    "name": "folder",
-                    "value": "shots"
-                },
+                {"parent_type": "Folder", "name": "folder", "value": "shots"},
                 {
                     "parent_type": "Sequence",
                     "name": "sequence",
-                    "value": "{_sequence_}"
-                }
-            ]
+                    "value": "{_sequence_}",
+                },
+            ],
         },
         "shot_add_tasks": [],
         "product_type_presets": [
@@ -164,20 +264,67 @@ DEFAULT_EDITORIAL_CREATORS = {
                 "product_type": "review",
                 "variant": "Reference",
                 "review": True,
-                "output_file_type": ".mp4"
+                "output_file_type": ".mp4",
             },
             {
                 "product_type": "plate",
                 "variant": "",
                 "review": False,
-                "output_file_type": ".mov"
+                "output_file_type": ".mov",
             },
             {
                 "product_type": "audio",
                 "variant": "",
                 "review": False,
-                "output_file_type": ".wav"
-            }
-        ]
-    }
+                "output_file_type": ".wav",
+            },
+        ],
+    },
+    "editorial_advanced": {
+        "enabled": True,
+        "default_variants": ["Main"],
+        "clip_name_tokenizer": [
+            {"name": "_sequence_", "regex": "(\\d{4})(?=_\\d{4})"},
+            {"name": "_shot_", "regex": "(\\d{4})(?!_\\d{4})"},
+        ],
+        "shot_rename": {
+            "enabled": True,
+            "shot_rename_template": "{project[code]}_{_sequence_}_{_shot_}",
+        },
+        "shot_hierarchy": {
+            "enabled": True,
+            "parents_path": "{project}/{folder}/{sequence}",
+            "parents": [
+                {
+                    "parent_type": "Project",
+                    "name": "project",
+                    "value": "{project[name]}",
+                },
+                {"parent_type": "Folder", "name": "folder", "value": "shots"},
+                {
+                    "parent_type": "Sequence",
+                    "name": "sequence",
+                    "value": "{_sequence_}",
+                },
+            ],
+        },
+        "shot_add_tasks": [],
+        "product_type_advanced_presets": [
+            {
+                "product_type": "plate",
+                "variant": "Reference",
+                "representations": [
+                    {
+                        "name": "Reference",
+                        "extensions": [
+                            ".mov",
+                            ".mp4",
+                        ],
+                        "tags": ["review"],
+                        "custom_tags": []
+                    }
+                ]
+            },
+        ],
+    },
 }
