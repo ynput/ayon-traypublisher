@@ -195,7 +195,7 @@ or updating already created. Publishing will create OTIO file.
 
     def __init__(self, *args, **kwargs):
         self._shot_metadata_solver = ShotMetadataSolver(self.log)
-        super(EditorialSimpleCreator, self).__init__(*args, **kwargs)
+        super(EditorialAdvancedCreator, self).__init__(*args, **kwargs)
 
     def apply_settings(self, project_settings):
         editorial_creators = deepcopy(
@@ -211,9 +211,9 @@ or updating already created. Publishing will create OTIO file.
             creator_settings["shot_hierarchy"],
             creator_settings["shot_add_tasks"]
         )
-        self.product_type_presets = creator_settings["product_type_presets"]
-        default_variants = creator_settings.get("default_variants")
-        if default_variants:
+        self.product_type_presets = creator_settings[
+            "product_type_advanced_presets"]
+        if default_variants := creator_settings.get("default_variants"):
             self.default_variants = default_variants
 
     def create(self, product_name, instance_data, pre_create_data):

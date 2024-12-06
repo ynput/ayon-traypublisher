@@ -23,6 +23,7 @@ output_file_type = [
     {"value": ".wav", "label": "WAV"},
 ]
 
+
 class RepresentationItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go.
 
@@ -151,11 +152,6 @@ class ProductTypeAdvancedPresetItem(BaseSettingsModel):
     variant: str = SettingsField("", title="Variant")
     representations: list[RepresentationItemModel] = SettingsField(
         title="Representations", default_factory=list
-    )
-    content_type: str = SettingsField(
-        "video",
-        title="Content type",
-        enum_resolver=lambda: content_type_enum,
     )
 
 
