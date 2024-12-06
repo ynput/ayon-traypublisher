@@ -25,12 +25,11 @@ from ayon_core.lib import (
     UILabelDef
 )
 
-
-CLIP_ATTR_DEFS = [
+CREATOR_CLIP_ATTR_DEFS = [
     EnumDef(
         "fps",
         items=[
-            {"value": "from_selection", "label": "From selection"},
+            {"value": "from_selection", "label": "From selected context"},
             {"value": 23.997, "label": "23.976"},
             {"value": 24, "label": "24"},
             {"value": 25, "label": "25"},
@@ -39,9 +38,13 @@ CLIP_ATTR_DEFS = [
         ],
         label="FPS",
     ),
-    NumberDef("workfile_start_frame", default=1001, label="Workfile start frame"),
+    NumberDef(
+        "workfile_start_frame", default=1001, label="Workfile start frame"),
     NumberDef("handle_start", default=0, label="Handle start"),
     NumberDef("handle_end", default=0, label="Handle end"),
+]
+
+CLIP_ATTR_DEFS = [
     NumberDef(
         "frameStart",
         default=0,
@@ -135,6 +138,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
                 disabled=True,
             )
         ]
+        instance_attributes.extend(CREATOR_CLIP_ATTR_DEFS)
         instance_attributes.extend(CLIP_ATTR_DEFS)
         return instance_attributes
 
@@ -248,11 +252,11 @@ or updating already created. Publishing will create OTIO file.
 
         # get path of sequence
         sequence_path_data = pre_create_data["sequence_filepath_data"]
-        media_path_data = pre_create_data["media_filepaths_data"]
+        folder_path = pre_create_data["folder_path"]
 
         sequence_paths = self._get_path_from_file_data(
             sequence_path_data, multi=True)
-        media_path = self._get_path_from_file_data(media_path_data)
+        source_folder_path = self._get_path_from_file_data(folder_path)
 
         first_otio_timeline = None
         for seq_path in sequence_paths:
@@ -270,7 +274,7 @@ or updating already created. Publishing will create OTIO file.
             self._get_clip_instances(
                 folder_entity,
                 otio_timeline,
-                media_path,
+                source_folder_path,
                 clip_instance_properties,
                 allowed_product_type_presets,
                 os.path.basename(seq_path),
@@ -371,7 +375,7 @@ or updating already created. Publishing will create OTIO file.
         self,
         folder_entity,
         otio_timeline,
-        media_path,
+        source_folder_path,
         instance_data,
         product_type_presets,
         sequence_file_name,
@@ -382,13 +386,15 @@ or updating already created. Publishing will create OTIO file.
         Args:
             folder_entity (dict[str, Any]): Folder entity.
             otio_timeline (otio.Timeline): otio timeline object
-            media_path (str): media file path string
+            source_folder_path (str): Folder with media files
             instance_data (dict): clip instance data
             product_type_presets (list): list of dict settings product presets
         """
 
         tracks = otio_timeline.video_tracks()
 
+        # TODO: implement folder content walk
+        media_path = source_folder_path
         # media data for audio stream and reference solving
         media_data = self._get_media_source_metadata(media_path)
 
@@ -836,44 +842,50 @@ or updating already created. Publishing will create OTIO file.
             FileDef(
                 "sequence_filepath_data",
                 folders=False,
-                extensions=[
-                    ".edl",
-                    ".xml",
-                    ".aaf",
-                    ".fcpxml"
-                ],
+                extensions=[".edl", ".xml", ".aaf", ".fcpxml"],
                 allow_sequences=False,
                 single_item=False,
                 label="Sequence file",
             ),
             FileDef(
-                "media_filepaths_data",
-                folders=False,
-                extensions=[
-                    ".mov",
-                    ".mp4",
-                    ".wav"
-                ],
+                "folder_path",
+                folders=True,
+                single_item=True,
+                extensions=[],
                 allow_sequences=False,
-                single_item=False,
-                label="Media files",
+                label="Folder path",
             ),
             # TODO: perhaps better would be timecode and fps input
-            NumberDef(
-                "timeline_offset",
-                default=0,
-                label="Timeline offset"
-            ),
+            NumberDef("timeline_offset", default=0, label="Timeline offset"),
             UISeparatorDef(),
             UILabelDef("Clip instance attributes"),
-            UISeparatorDef()
+            UISeparatorDef(),
         ]
+
+        # transform all items in product type presets to join product
+        # type and product variant together as single camel case string
+        product_types = self.get_product_type_preset_names()
+
         # add variants swithers
         attr_defs.extend(
-            BoolDef(item["product_type"], label=item["product_type"])
-            for item in self.product_type_presets
+            BoolDef(item, label=item)
+            for item in product_types
         )
         attr_defs.append(UISeparatorDef())
 
-        attr_defs.extend(CLIP_ATTR_DEFS)
+        attr_defs.extend(CREATOR_CLIP_ATTR_DEFS)
         return attr_defs
+
+    def get_product_type_preset_names(self):
+        """Get product type presets names.
+        Returns:
+            list: list of product type presets names
+        """
+        output = []
+        for item in self.product_type_presets:
+            product = (
+                f"{item['product_type']}"
+                f"{(item['variant']).capitalize()}"
+            )
+            output.append(product)
+        return output
