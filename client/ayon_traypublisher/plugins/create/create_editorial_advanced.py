@@ -1,6 +1,7 @@
 import os
+import re
 from copy import deepcopy
-from pathlib import Path
+from typing import Any, Dict
 from pprint import pformat
 
 import ayon_api
@@ -263,17 +264,19 @@ or updating already created. Publishing will create OTIO file.
     def create(self, product_name, instance_data, pre_create_data):
         allowed_product_type_presets = self._get_allowed_product_type_presets(
             pre_create_data)
+        self.log.warning(
+            f"allowed_product_type_presets: {pformat(allowed_product_type_presets)}")
 
-        product_types = {
-            item["product_type"]
-            for item in self.product_type_presets
-        }
         clip_instance_properties = {
             k: v
             for k, v in pre_create_data.items()
             if k != "sequence_filepath_data"
-            if k not in product_types
+            if k != "folder_path_data"
+            if k not in self.get_product_presets_with_names()
         }
+        self.log.warning(
+            f"clip_instance_properties: {pformat(clip_instance_properties)}"
+        )
 
         folder_path = instance_data["folderPath"]
         folder_entity = ayon_api.get_folder_by_path(
@@ -428,15 +431,104 @@ or updating already created. Publishing will create OTIO file.
             otio_timeline (otio.Timeline): otio timeline object
             media_folder_path (str): Folder with media files
             instance_data (dict): clip instance data
-            product_type_presets (list): list of dict settings product presets
+            product_type_presets (list[dict]): list of dict settings
+                product presets
             sequence_file_name (str): sequence file name
         """
+        media_folder_path = media_folder_path.replace("\\", "/")
 
+        # Get all tracks from otio timeline
         tracks = otio_timeline.video_tracks()
 
-        # TODO: implement folder content walk
-        for path, dirs, files in os.walk(media_folder_path):
-            self.log.warning(pformat(list([path, dirs, files])))
+        # get all clipnames from otio timeline to list of strings
+        clip_names = [clip.name for clip in otio_timeline.find_clips()]
+
+        # Create set of clip names for O(1) lookup
+        clip_names_set = set(clip_names)
+        self.log.warning(f"Clip names: {clip_names}")
+
+        clip_folders = []
+        # Iterate over all media files in media folder
+        for root, folders, _files in os.walk(media_folder_path):
+            # NOTE: _files should not be needed at this point
+
+            # Use set intersection to find matching folder directly
+            matching_clip_dir = next(
+                (folder for folder in folders if folder in clip_names_set),
+                None
+            )
+
+            if not matching_clip_dir:
+                continue
+
+            clip_folders.append(matching_clip_dir.replace("\\", "/"))
+
+        self.log.warning(f"Clip folders: {clip_folders}")
+
+        if not clip_folders:
+            self.log.warning("No clip folder paths found")
+            return
+
+        clip_content: Dict[str, Dict[str, list[str]]] = {}
+        # list content of clip folder and search for product items
+        for clip_folder in clip_folders:
+            abs_clip_folder = os.path.join(
+                media_folder_path, clip_folder).replace("\\", "/")
+            clip_folder_data = clip_content[
+                clip_folder.replace(media_folder_path, "")] = {}
+
+            matched_product_data = {}
+            for root, folders, files in os.walk(abs_clip_folder):
+                # iterate all product names in enabled presets
+                for product_data in product_type_presets:
+                    product_name = product_data.get("name")
+                    if not product_name:
+                        continue
+
+                    product_data = matched_product_data.setdefault(
+                        product_name, {}
+                    )
+                    root = root.replace("\\", "/")
+                    cl_part_path = root.replace(abs_clip_folder, "")
+
+                    if cl_part_path == "":
+                        cl_part_path = "/"
+
+                    # Use set intersection to find matching folder directly
+                    if matching_prod_fldr := [
+                        folder
+                        for folder in folders
+                        if re.search(re.escape(product_name), folder)
+                    ]:
+                        for folder in matching_prod_fldr:
+                            partial_path = os.path.join(
+                                cl_part_path, folder
+                            ).replace("\\", "/")
+                            nested_files = list(
+                                os.listdir(os.path.join(root, folder)))
+                            self._include_files_for_processing(
+                                product_name,
+                                partial_path,
+                                nested_files,
+                                product_data,
+                                strict=False,
+                            )
+
+                    self._include_files_for_processing(
+                        product_name,
+                        cl_part_path,
+                        files,
+                        product_data,
+                    )
+
+                # No matching product data can be skipped
+                if not matched_product_data:
+                    continue
+
+                clip_folder_data.update(matched_product_data)
+
+        self.log.warning("Clip content:")
+        self.log.warning(pformat(clip_content))
 
         media_path = source_folder_path
         # media data for audio stream and reference solving
@@ -490,6 +582,20 @@ or updating already created. Publishing will create OTIO file.
                         deepcopy(base_instance_data),
                         parenting_data
                     )
+
+    def _include_files_for_processing(
+        self, product_name, partial_path, files, product_data, strict=True
+    ):
+        self.log.warning(f">> files: {files}")
+
+        if strict:
+            files = [
+                file for file in files
+                if re.search(re.escape(product_name), file)
+            ]
+        if files:
+            cl_prod_folder_list = product_data.setdefault(partial_path, [])
+            cl_prod_folder_list += files
 
     def _restore_otio_source_range(self, otio_clip):
         """Infusing source range.
@@ -837,9 +943,14 @@ or updating already created. Publishing will create OTIO file.
         return [
             {"product_type": "shot"},
             *[
-                product
-                for product in self.get_product_type_preset_names()
-                if pre_create_data[product]
+                # return dict with name of preset and add preset dict
+                {
+                    "name": product_name,
+                    **preset
+                }
+
+                for product_name, preset in self.get_product_presets_with_names().items()
+                if pre_create_data[product_name]
             ],
         ]
 
@@ -904,28 +1015,25 @@ or updating already created. Publishing will create OTIO file.
 
         # transform all items in product type presets to join product
         # type and product variant together as single camel case string
-        product_types = self.get_product_type_preset_names()
+        product_names = self.get_product_presets_with_names()
 
         # add variants swithers
-        attr_defs.extend(
-            BoolDef(item, label=item)
-            for item in product_types
-        )
+        attr_defs.extend(BoolDef(item, label=item) for item in product_names)
         attr_defs.append(UISeparatorDef())
 
         attr_defs.extend(CREATOR_CLIP_ATTR_DEFS)
         return attr_defs
 
-    def get_product_type_preset_names(self):
+    def get_product_presets_with_names(self):
         """Get product type presets names.
         Returns:
-            list: list of product type presets names
+            dict: dict with product names and preset items
         """
-        output = []
+        output = {}
         for item in self.product_type_presets:
-            product = (
+            product_name = (
                 f"{item['product_type']}"
                 f"{(item['variant']).capitalize()}"
             )
-            output.append(product)
+            output[product_name] = item
         return output
