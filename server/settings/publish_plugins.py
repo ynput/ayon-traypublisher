@@ -11,8 +11,7 @@ class ValidatePluginModel(BaseSettingsModel):
     active: bool = SettingsField(True, title="Active")
 
 
-class MiniValidatePluginModel(BaseSettingsModel):
-    
+class EnabledStateModel(BaseSettingsModel):
     enabled: bool = True
 
 
@@ -62,8 +61,8 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
-    CollectFrameDataFromAssetEntity: MiniValidatePluginModel = SettingsField(
-        default_factory=MiniValidatePluginModel,
+    CollectFrameDataFromAssetEntity: EnabledStateModel = SettingsField(
+        default_factory=EnabledStateModel,
         title="Collect Frame Data From Folder Entity",
     )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
