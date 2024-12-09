@@ -7,7 +7,18 @@ from ayon_server.exceptions import BadRequestException
 from pydantic import validator
 
 
+product_type_enum = [
+    {"label": "Image", "value": "image"},
+    {"label": "Plate", "value": "plate"},
+    {"label": "Render", "value": "render"},
+    {"label": "Audio", "value": "audio"},
+    {"label": "Model", "value": "model"},
+    {"label": "Camera", "value": "camera"},
+    {"label": "Workfile", "value": "workfile"},
+]
+
 content_type_enum = [
+    {"label": "Thumbnail", "value": "thumbnail"},
     {"label": "Single Image", "value": "image_single"},
     {"label": "Sequence of images", "value": "image_sequence"},
     {"label": "Video", "value": "video"},
@@ -24,11 +35,11 @@ output_file_type = [
 ]
 
 
-class RepresentationItemModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go.
+class RepresentationAdvancedItemModel(BaseSettingsModel):
+    """Representation advanced settings.
 
-    Name of matching asset is parsed from file names
-    ('asset.mov', 'asset_v001.mov', 'my_asset_to_publish.mov')
+    Configuration used for filtering rules so files in folder are converted to
+    publishable representations with correct data definitions.
     """
 
     name: str = SettingsField(title="Name", default="")
@@ -43,7 +54,16 @@ class RepresentationItemModel(BaseSettingsModel):
         description=(
             "Only files with these extensions will be published. "
             "following are accepted: .ext, ext, EXT, .EXT"
-        )
+        ),
+        section="Filtering options",
+    )
+    patterns: list[str] = SettingsField(
+        title="Filter by patterns",
+        default_factory=list,
+        description=(
+            "Regular expression patterns to filter files. "
+            "Search in filenames for matching files."
+        ),
     )
     tags: list[str] = SettingsField(
         default_factory=list,
@@ -53,6 +73,7 @@ class RepresentationItemModel(BaseSettingsModel):
             "\nAdd *review* tag to create review from the transcoded"
             " representation instead of the original."
         ),
+        section="Representation options",
     )
     custom_tags: list[str] = SettingsField(
         title="Custom tags",
@@ -62,14 +83,6 @@ class RepresentationItemModel(BaseSettingsModel):
             "in Extract Review output presets."
         ),
     )
-
-    @validator("extensions")
-    def validate_extension(cls, value):
-        for ext in value:
-            if not ext.startswith("."):
-                raise BadRequestException(
-                    f"Extension must start with '.': {ext}")
-        return value
 
 
 class ClipNameTokenizerItem(BaseSettingsModel):
@@ -136,7 +149,8 @@ class ShotHierarchySubmodel(BaseSettingsModel):
 
 
 class ProductTypePresetItem(BaseSettingsModel):
-    _layout="compact"
+    _layout = "compact"
+
     product_type: str = SettingsField("", title="Product type")
     # TODO add placeholder '< Inherited >'
     variant: str = SettingsField("", title="Variant")
@@ -148,9 +162,13 @@ class ProductTypePresetItem(BaseSettingsModel):
 
 
 class ProductTypeAdvancedPresetItem(BaseSettingsModel):
-    product_type: str = SettingsField("", title="Product type")
+    product_type: str = SettingsField(
+        "plate",
+        title="Product type",
+        enum_resolver=lambda: product_type_enum
+    )
     variant: str = SettingsField("", title="Variant")
-    representations: list[RepresentationItemModel] = SettingsField(
+    representations: list[RepresentationAdvancedItemModel] = SettingsField(
         title="Representations", default_factory=list
     )
 
@@ -208,10 +226,26 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
         title="Add tasks to shot", default_factory=ShotAddTasksItem
     )
-    product_type_advanced_presets: list[ProductTypeAdvancedPresetItem] = SettingsField(
-        title="Product type presets",
-        default_factory=list
+    product_type_advanced_presets: list[ProductTypeAdvancedPresetItem] = (
+        SettingsField(
+            title="Product type presets",
+            default_factory=list
+        )
     )
+
+    @validator("product_type_advanced_presets")
+    def validate_unique_product_names(cls, value):
+        product_names = []
+        for item in value:
+            product_name = item.product_type + item.variant
+            if product_name in product_names:
+                raise BadRequestException(
+                    "Duplicate product preset: \n"
+                    f" > Product type: {item.product_type} \n"
+                    f" > Variant: {item.variant}"
+                )
+            product_names.append(product_name)
+        return value
 
 
 class TraypublisherEditorialCreatorPlugins(BaseSettingsModel):
@@ -312,9 +346,13 @@ DEFAULT_EDITORIAL_CREATORS = {
                 "representations": [
                     {
                         "name": "Reference",
+                        "content_type": "video",
                         "extensions": [
-                            ".mov",
-                            ".mp4",
+                            "mov",
+                            "mp4",
+                        ],
+                        "patterns": [
+                            ".*",
                         ],
                         "tags": ["review"],
                         "custom_tags": []

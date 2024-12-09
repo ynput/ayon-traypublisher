@@ -1,5 +1,7 @@
 import os
 from copy import deepcopy
+from pathlib import Path
+from pprint import pformat
 
 import ayon_api
 import opentimelineio as otio
@@ -150,7 +152,26 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_plate"
     product_type = "plate"
-    label = "Editorial Plate"
+    label = "Plate product"
+
+
+class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
+    """Image product type class
+
+    Plate representation instance.
+    """
+    identifier = "editorial_image"
+    product_type = "image"
+    label = "Image product"
+
+
+class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
+    """Render product type class
+    Render representation instance.
+    """
+    identifier = "editorial_render"
+    product_type = "render"
+    label = "Render product"
 
 
 class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
@@ -160,17 +181,36 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_audio"
     product_type = "audio"
-    label = "Editorial Audio"
+    label = "Audio product"
 
 
-class EditorialReviewInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Review product type class
+class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
+    """Model product type class
 
-    Review representation instance.
+    Model representation instance.
     """
-    identifier = "editorial_review"
-    product_type = "review"
-    label = "Editorial Review"
+    identifier = "editorial_model"
+    product_type = "model"
+    label = "Model product"
+
+
+class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
+    """Camera product type class
+    Camera representation instance.
+    """
+    identifier = "editorial_camera"
+    product_type = "camera"
+    label = "Camera product"
+
+
+class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
+    """Plate product type class
+
+    Plate representation instance.
+    """
+    identifier = "editorial_workfile"
+    product_type = "workfile"
+    label = "Workfile product"
 
 
 class EditorialAdvancedCreator(TrayPublishCreator):
@@ -252,54 +292,57 @@ or updating already created. Publishing will create OTIO file.
 
         # get path of sequence
         sequence_path_data = pre_create_data["sequence_filepath_data"]
-        folder_path = pre_create_data["folder_path"]
-
         sequence_paths = self._get_path_from_file_data(
             sequence_path_data, multi=True)
-        source_folder_path = self._get_path_from_file_data(folder_path)
 
-        first_otio_timeline = None
+        folder_path_data = pre_create_data["folder_path_data"]
+        media_folder_paths = self._get_path_from_file_data(
+            folder_path_data, multi=True)
+
+        self.log.warning(media_folder_paths)
+
+        # get all sequences into otio_timelines
+        otio_timelines = []
         for seq_path in sequence_paths:
             # get otio timeline
             otio_timeline = self._create_otio_timeline(
                 seq_path, fps)
+            otio_timelines.append(otio_timeline)
 
-            # Create all clip instances
-            clip_instance_properties.update({
-                "fps": fps,
-                "variant": instance_data["variant"]
-            })
+        # Create all clip instances
+        clip_instance_properties.update({
+            "fps": fps,
+            "variant": instance_data["variant"]
+        })
 
-            # create clip instances
-            self._get_clip_instances(
-                folder_entity,
-                otio_timeline,
-                source_folder_path,
-                clip_instance_properties,
-                allowed_product_type_presets,
-                os.path.basename(seq_path),
-                first_otio_timeline,
-            )
+        for media_folder_path in media_folder_paths:
 
-            if not first_otio_timeline:
-                # assign otio timeline for multi file to layer
-                first_otio_timeline = otio_timeline
+            for otio_timeline in otio_timelines:
 
-        # create otio editorial instance
-        self._create_otio_instance(
-            product_name,
-            instance_data,
-            seq_path,
-            media_path,
-            first_otio_timeline
-        )
+                # create clip instances
+                self._get_clip_instances(
+                    folder_entity,
+                    otio_timeline,
+                    media_folder_path,
+                    clip_instance_properties,
+                    allowed_product_type_presets,
+                    os.path.basename(seq_path),
+                )
+
+                # create otio editorial instance
+                self._create_otio_instance(
+                    product_name,
+                    instance_data,
+                    seq_path,
+                    media_folder_path,
+                    otio_timeline
+                )
 
     def _create_otio_instance(
         self,
         product_name,
         data,
         sequence_path,
-        media_path,
         otio_timeline
     ):
         """Otio instance creating function
@@ -308,13 +351,11 @@ or updating already created. Publishing will create OTIO file.
             product_name (str): Product name.
             data (dict): instance data
             sequence_path (str): path to sequence file
-            media_path (str): path to media file
             otio_timeline (otio.Timeline): otio timeline object
         """
         # Pass precreate data to creator attributes
         data.update({
             "sequenceFilePath": sequence_path,
-            "editorialSourcePath": media_path,
             "otioTimeline": otio.adapters.write_to_string(otio_timeline)
         })
         new_instance = CreatedInstance(
@@ -375,25 +416,28 @@ or updating already created. Publishing will create OTIO file.
         self,
         folder_entity,
         otio_timeline,
-        source_folder_path,
+        media_folder_path,
         instance_data,
         product_type_presets,
         sequence_file_name,
-        first_otio_timeline=None
     ):
         """Helping function for creating clip instance
 
         Args:
             folder_entity (dict[str, Any]): Folder entity.
             otio_timeline (otio.Timeline): otio timeline object
-            source_folder_path (str): Folder with media files
+            media_folder_path (str): Folder with media files
             instance_data (dict): clip instance data
             product_type_presets (list): list of dict settings product presets
+            sequence_file_name (str): sequence file name
         """
 
         tracks = otio_timeline.video_tracks()
 
         # TODO: implement folder content walk
+        for path, dirs, files in os.walk(media_folder_path):
+            self.log.warning(pformat(list([path, dirs, files])))
+
         media_path = source_folder_path
         # media data for audio stream and reference solving
         media_data = self._get_media_source_metadata(media_path)
@@ -446,10 +490,6 @@ or updating already created. Publishing will create OTIO file.
                         deepcopy(base_instance_data),
                         parenting_data
                     )
-
-            # add track to first otioTimeline if it is in input args
-            if first_otio_timeline:
-                first_otio_timeline.tracks.append(deepcopy(track))
 
     def _restore_otio_source_range(self, otio_clip):
         """Infusing source range.
@@ -797,10 +837,10 @@ or updating already created. Publishing will create OTIO file.
         return [
             {"product_type": "shot"},
             *[
-                preset
-                for preset in self.product_type_presets
-                if pre_create_data[preset["product_type"]]
-            ]
+                product
+                for product in self.get_product_type_preset_names()
+                if pre_create_data[product]
+            ],
         ]
 
     def _validate_clip_for_processing(self, otio_clip):
@@ -848,9 +888,9 @@ or updating already created. Publishing will create OTIO file.
                 label="Sequence file",
             ),
             FileDef(
-                "folder_path",
+                "folder_path_data",
                 folders=True,
-                single_item=True,
+                single_item=False,
                 extensions=[],
                 allow_sequences=False,
                 label="Folder path",

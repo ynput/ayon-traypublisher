@@ -16,7 +16,12 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
         if creator_identifier not in [
             "editorial_plate",
             "editorial_audio",
-            "editorial_review"
+            "editorial_review",
+            "editorial_model",
+            "editorial_camera",
+            "editorial_render",
+            "editorial_image",
+            "editorial_workfile",
         ]:
             return
 
