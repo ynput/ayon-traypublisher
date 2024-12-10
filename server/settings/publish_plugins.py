@@ -11,10 +11,6 @@ class ValidatePluginModel(BaseSettingsModel):
     active: bool = SettingsField(True, title="Active")
 
 
-class EnabledStateModel(BaseSettingsModel):
-    enabled: bool = True
-
-
 class ValidateFrameRangeModel(ValidatePluginModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -61,10 +57,6 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
-    CollectFrameDataFromAssetEntity: EnabledStateModel = SettingsField(
-        default_factory=EnabledStateModel,
-        title="Collect Frame Data From Folder Entity",
-    )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect Original Sequence Frame Data",
@@ -87,9 +79,6 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
-    "CollectFrameDataFromAssetEntity": {
-        "enabled": True,
-    },
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
