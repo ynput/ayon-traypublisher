@@ -72,7 +72,9 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     The `Folder path template` supports tokens defined in the `folder path template tokens` setting.
 
     - Each token in the `Folder path template` represents a folder in the hierarchy.
-    - Each token can leverage tokens defined in the `Clip Name Tokenizer`.
+    - Each token's value supports both the available 
+    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
+    and tokens defined in the `Clip Name Tokenizer`.
     """
     enabled: bool = True
     parents_path: str = SettingsField(
