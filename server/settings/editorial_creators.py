@@ -115,9 +115,9 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
         default_factory=ClipNameTokenizerItem,
         description="""Clip Name Tokenizer Info.
 
-                    Use Regex expression to create tokens.
-                    Those can be used  later in `Shot rename` creator or `Shot hierarchy`.
-                    Tokens should be enclosed by `_` on each side.
+                    Use regex expressions to create tokens.
+                    These tokens will be used later in the `Shot rename` creator or `Shot hierarchy`.
+                    Each token must be enclosed by underscores (`_`).
                     """
     )    
     shot_rename: ShotRenameSubmodel = SettingsField(
