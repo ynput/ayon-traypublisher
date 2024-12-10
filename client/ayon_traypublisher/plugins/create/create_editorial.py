@@ -869,7 +869,7 @@ or updating already created. Publishing will create OTIO file.
                 label="Timeline offset"
             ),
             UISeparatorDef(),
-            UILabelDef("Clip instance attributes"),
+            UILabelDef("Add products for each discovered shot"),
             UISeparatorDef()
         ]
         # add variants swithers
