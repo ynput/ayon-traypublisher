@@ -1,7 +1,10 @@
 import pyblish.api
 
+from ayon_core.pipeline import OptionalPyblishPluginMixin
 
-class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
+
+class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin,
+                                      OptionalPyblishPluginMixin):
     """Collect Frame Data From `taskEntity` or `folderEntity` of instance.
 
     Frame range data will only be collected if the keys are not yet
@@ -18,8 +21,12 @@ class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
         "render",
     ]
     hosts = ["traypublisher"]
+    optional = True
 
     def process(self, instance):
+        if not self.is_active(instance.data):
+            return
+        
         missing_keys = []
         for key in (
             "fps",
