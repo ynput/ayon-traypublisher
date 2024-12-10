@@ -1,5 +1,6 @@
 import os
 import re
+import clique
 from copy import deepcopy
 from typing import Any, Dict
 from pprint import pformat
@@ -318,6 +319,7 @@ or updating already created. Publishing will create OTIO file.
             "variant": instance_data["variant"]
         })
 
+        ignore_clip_no_content = pre_create_data["ignore_clip_no_content"]
         for media_folder_path in media_folder_paths:
 
             for otio_timeline in otio_timelines:
@@ -330,6 +332,7 @@ or updating already created. Publishing will create OTIO file.
                     clip_instance_properties,
                     allowed_product_type_presets,
                     os.path.basename(seq_path),
+                    ignore_clip_no_content,
                 )
 
                 # create otio editorial instance
@@ -423,6 +426,7 @@ or updating already created. Publishing will create OTIO file.
         instance_data,
         product_type_presets,
         sequence_file_name,
+        ignore_clip_no_content,
     ):
         """Helping function for creating clip instance
 
@@ -434,6 +438,7 @@ or updating already created. Publishing will create OTIO file.
             product_type_presets (list[dict]): list of dict settings
                 product presets
             sequence_file_name (str): sequence file name
+            ignore_clip_no_content (bool): ignore clips with no content
         """
         media_folder_path = media_folder_path.replace("\\", "/")
 
@@ -474,65 +479,77 @@ or updating already created. Publishing will create OTIO file.
         for clip_folder in clip_folders:
             abs_clip_folder = os.path.join(
                 media_folder_path, clip_folder).replace("\\", "/")
-            clip_folder_data = clip_content[
-                clip_folder.replace(media_folder_path, "")] = {}
 
-            matched_product_data = {}
+            matched_product_items = []
             for root, folders, files in os.walk(abs_clip_folder):
                 # iterate all product names in enabled presets
-                for product_data in product_type_presets:
-                    product_name = product_data.get("name")
-                    if not product_name:
-                        continue
+                for pres_product_data in product_type_presets:
+                    product_name = pres_product_data["product_name"]
 
-                    product_data = matched_product_data.setdefault(
-                        product_name, {}
-                    )
+                    product_data_base = {
+                        "preset_name": product_name,
+                        "clip_dir_subpath": "",
+                        "product_name": product_name,
+                        "files": [],
+                    }
                     root = root.replace("\\", "/")
                     cl_part_path = root.replace(abs_clip_folder, "")
 
-                    if cl_part_path == "":
-                        cl_part_path = "/"
+                    for folder in folders:
+                        product_data = deepcopy(product_data_base)
+                        # need to include more since variants might occure
+                        pattern_search = re.compile(
+                            f"({re.escape(product_name)}[a-zA-Z0-9_]+)"
+                        )
+                        match = pattern_search.search(folder)
+                        if not match:
+                            continue
 
-                    # Use set intersection to find matching folder directly
-                    if matching_prod_fldr := [
-                        folder
-                        for folder in folders
-                        if re.search(re.escape(product_name), folder)
-                    ]:
-                        for folder in matching_prod_fldr:
-                            partial_path = os.path.join(
-                                cl_part_path, folder
-                            ).replace("\\", "/")
-                            nested_files = list(
+                        # form partial path without starting slash
+                        partial_path = os.path.join(
+                            cl_part_path.lstrip("/"), folder
+                        ).replace("\\", "/")
+
+                        # update product data it will be deepcopied later
+                        # later in files processor
+                        product_data.update(
+                            {
+                                "product_name": match[0],
+                                "clip_dir_subpath": partial_path,
+                            }
+                        )
+                        nested_files = list(
                                 os.listdir(os.path.join(root, folder)))
-                            self._include_files_for_processing(
-                                product_name,
-                                partial_path,
-                                nested_files,
-                                product_data,
-                                strict=False,
-                            )
+                        self._include_files_for_processing(
+                            product_name,
+                            nested_files,
+                            product_data,
+                            matched_product_items,
+                            strict=False,
+                        )
 
+                    product_data_base["clip_dir_subpath"] = "/"
                     self._include_files_for_processing(
                         product_name,
-                        cl_part_path,
                         files,
-                        product_data,
+                        product_data_base,
+                        matched_product_items,
                     )
 
                 # No matching product data can be skipped
-                if not matched_product_data:
+                if not matched_product_items:
                     continue
 
-                clip_folder_data.update(matched_product_data)
+                clip_content[clip_folder.replace(media_folder_path, "")] = (
+                    matched_product_items
+                )
 
         self.log.warning("Clip content:")
         self.log.warning(pformat(clip_content))
 
-        media_path = source_folder_path
+        # TODO: perhaps remove if no need for media source
         # media data for audio stream and reference solving
-        media_data = self._get_media_source_metadata(media_path)
+        # media_data = self._get_media_source_metadata(media_path)
 
         for track in tracks:
             # set track name
@@ -550,8 +567,15 @@ or updating already created. Publishing will create OTIO file.
                 if not self._validate_clip_for_processing(otio_clip):
                     continue
 
-                # get available frames info to clip data
-                self._create_otio_reference(otio_clip, media_path, media_data)
+                clip_related_content = clip_content.get(otio_clip.name)
+
+                if ignore_clip_no_content and not clip_related_content:
+                    continue
+
+                # TODO: perhaps remove if no need for media source
+                # # get available frames info to clip data
+                # self._create_otio_reference(
+                #   otio_clip, media_path, media_data)
 
                 # convert timeline range to source range
                 self._restore_otio_source_range(otio_clip)
@@ -568,34 +592,110 @@ or updating already created. Publishing will create OTIO file.
                     "instance_id": None
                 }
 
-                for product_type_preset in product_type_presets:
-                    # exclude audio product type if no audio stream
-                    if (
-                        product_type_preset["product_type"] == "audio"
-                        and not media_data.get("audio")
-                    ):
-                        continue
+                for pres_product_data in product_type_presets:
 
                     self._make_product_instance(
                         otio_clip,
-                        product_type_preset,
+                        pres_product_data,
                         deepcopy(base_instance_data),
-                        parenting_data
+                        parenting_data,
+                        clip_related_content,
                     )
 
     def _include_files_for_processing(
-        self, product_name, partial_path, files, product_data, strict=True
+        self,
+        product_name,
+        files,
+        product_data_base,
+        collecting_items,
+        strict=True,
     ):
-        self.log.warning(f">> files: {files}")
+        """Supporting function for getting clip content.
 
-        if strict:
-            files = [
+        Args:
+            product_name (str): product name
+            partial_path (str): clip folder path
+            files (list): list of files in clip folder to collect
+            product_data_base (dict): product data
+            collecting_items (list): list for collecting product data items
+            strict (Optional[bool]): strict mode for filtering files
+        """
+        # compile regex pattern for matching product name
+        coll_pattern_search = re.compile(
+            f"({re.escape(product_name)}[a-zA-Z0-9_]+)")
+        rem_pattern_search = re.compile(
+            f"({re.escape(product_name)}[a-zA-Z0-9_.]+)")
+
+        collections, reminders = clique.assemble(files)
+        if not collections:
+            # No sequences detected and we can't retrieve
+            # frame range
+            self.log.debug(
+                "No sequences detected in the representation data."
+                " Skipping collecting frame range data."
+            )
+            return
+
+        # iterate all collections and search for pattern in file name head
+        for collection in collections:
+            # check if collection is not empty
+            if not collection:
+                continue
+            # check if pattern in name head is present
+            head = collection.format("{head}")
+            tail = collection.format("{tail}")
+            match = coll_pattern_search.search(head)
+
+            # if pattern is not present in file name head
+            if strict and not match:
+                continue
+
+            # add collected files to list
+            files_ = [
                 file for file in files
-                if re.search(re.escape(product_name), file)
+                if file.startswith(head)
+                if file.endswith(tail)
             ]
-        if files:
-            cl_prod_folder_list = product_data.setdefault(partial_path, [])
-            cl_prod_folder_list += files
+
+            product_data = deepcopy(product_data_base)
+            product_data["files"] = files_
+
+            if strict:
+                product_data["product_name"] = match[0]
+
+            collecting_items.append(product_data)
+
+        for reminder in reminders:
+            # check if pattern in name head is present
+            head, tail = os.path.splitext(reminder)
+            match = rem_pattern_search.search(head)
+
+            # if pattern is not present in file name head
+            if strict and not match:
+                continue
+
+            # add collected files to list
+            files_ = [
+                file for file in files
+                if file.startswith(head)
+                if file.endswith(tail)
+                if "thumb" not in file
+            ]
+
+            product_data = deepcopy(product_data_base)
+            product_data["files"] = files_
+
+            if strict:
+                # we do not need to include dot pattern match
+                # this is just for name.thumbnail.jpg match
+                matched_pattern = match[0]
+                if "." in matched_pattern:
+                    match = coll_pattern_search.search(head)
+                    matched_pattern = match[0]
+
+                product_data["product_name"] = matched_pattern
+
+            collecting_items.append(product_data)
 
     def _restore_otio_source_range(self, otio_clip):
         """Infusing source range.
@@ -700,22 +800,27 @@ or updating already created. Publishing will create OTIO file.
     def _make_product_instance(
         self,
         otio_clip,
-        product_type_preset,
+        product_preset,
         instance_data,
-        parenting_data
+        parenting_data,
+        clip_content_items,
     ):
         """Making product instance from input preset
 
         Args:
             otio_clip (otio.Clip): otio clip object
-            product_type_preset (dict): single product type preset
+            product_preset (dict): single product type preset
             instance_data (dict): instance data
             parenting_data (dict): shot instance parent data
+            clip_content_items (list[dict]): clip content data
 
         Returns:
             CreatedInstance: creator instance object
         """
-        product_type = product_type_preset["product_type"]
+        product_type = product_preset["product_type"]
+        product_name = product_preset["product_name"]
+
+        # TODO: rewamp this to somewhere else and differently
         label = self._make_product_naming(
             product_type_preset,
             instance_data
@@ -941,15 +1046,15 @@ or updating already created. Publishing will create OTIO file.
             list: lit of dict with preset items
         """
         return [
-            {"product_type": "shot"},
+            {
+                "product_type": "shot",
+                "variant": "main",
+                "product_name": "shotMain",
+            },
             *[
                 # return dict with name of preset and add preset dict
-                {
-                    "name": product_name,
-                    **preset
-                }
-
-                for product_name, preset in self.get_product_presets_with_names().items()
+                {"product_name": product_name, **preset}
+                for product_name, preset in self.get_product_presets_with_names().items()  # noqa
                 if pre_create_data[product_name]
             ],
         ]
@@ -1010,6 +1115,12 @@ or updating already created. Publishing will create OTIO file.
             NumberDef("timeline_offset", default=0, label="Timeline offset"),
             UISeparatorDef(),
             UILabelDef("Clip instance attributes"),
+            BoolDef(
+                "ignore_clip_no_content",
+                label="Ignore clips with no content",
+                default=True
+            ),
+            UILabelDef("Products Search"),
             UISeparatorDef(),
         ]
 
