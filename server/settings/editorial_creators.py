@@ -67,8 +67,8 @@ class TokenToParentConvertorItem(BaseSettingsModel):
 class ShotHierarchySubmodel(BaseSettingsModel):
     """Shot Hierarchy Info
 
-    Shot Hierarchy defines the folder path where the shot will be added. 
-    It uses the `Folder path template` to compute this path. 
+    Shot Hierarchy defines the folder path where each shot will be added.
+    It uses the `Folder path template` to compute each path. 
     The `Folder path template` supports tokens defined in the `folder path template tokens` setting.
 
     - Each token in the `Folder path template` represents a folder in the hierarchy.
