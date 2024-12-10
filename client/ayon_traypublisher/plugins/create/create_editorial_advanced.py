@@ -307,10 +307,9 @@ or updating already created. Publishing will create OTIO file.
 
         # get all sequences into otio_timelines
         otio_timelines = []
-        for seq_path in sequence_paths:
+        for sequence_path in sequence_paths:
             # get otio timeline
-            otio_timeline = self._create_otio_timeline(
-                seq_path, fps)
+            otio_timeline = self._create_otio_timeline(sequence_path, fps)
             otio_timelines.append(otio_timeline)
 
         # Create all clip instances
@@ -331,25 +330,17 @@ or updating already created. Publishing will create OTIO file.
                     media_folder_path,
                     clip_instance_properties,
                     allowed_product_type_presets,
-                    os.path.basename(seq_path),
+                    os.path.basename(sequence_path),
                     ignore_clip_no_content,
                 )
 
                 # create otio editorial instance
                 self._create_otio_instance(
-                    product_name,
-                    instance_data,
-                    seq_path,
-                    media_folder_path,
-                    otio_timeline
+                    product_name, instance_data, sequence_path, otio_timeline
                 )
 
     def _create_otio_instance(
-        self,
-        product_name,
-        data,
-        sequence_path,
-        otio_timeline
+        self, product_name, instance_data, sequence_path, otio_timeline
     ):
         """Otio instance creating function
 
@@ -360,12 +351,14 @@ or updating already created. Publishing will create OTIO file.
             otio_timeline (otio.Timeline): otio timeline object
         """
         # Pass precreate data to creator attributes
-        data.update({
-            "sequenceFilePath": sequence_path,
-            "otioTimeline": otio.adapters.write_to_string(otio_timeline)
-        })
+        instance_data.update(
+            {
+                "sequenceFilePath": sequence_path,
+                "otioTimeline": otio.adapters.write_to_string(otio_timeline),
+            }
+        )
         new_instance = CreatedInstance(
-            self.product_type, product_name, data, self
+            self.product_type, product_name, instance_data, self
         )
         self._store_new_instance(new_instance)
 
@@ -454,19 +447,13 @@ or updating already created. Publishing will create OTIO file.
 
         clip_folders = []
         # Iterate over all media files in media folder
-        for root, folders, _files in os.walk(media_folder_path):
-            # NOTE: _files should not be needed at this point
-
+        for root, folders, _ in os.walk(media_folder_path):
             # Use set intersection to find matching folder directly
-            matching_clip_dir = next(
-                (folder for folder in folders if folder in clip_names_set),
-                None
+            clip_folders.extend(
+                folder.replace("\\", "/")
+                for folder in folders
+                if folder in clip_names_set
             )
-
-            if not matching_clip_dir:
-                continue
-
-            clip_folders.append(matching_clip_dir.replace("\\", "/"))
 
         self.log.warning(f"Clip folders: {clip_folders}")
 
@@ -569,8 +556,21 @@ or updating already created. Publishing will create OTIO file.
 
                 clip_related_content = clip_content.get(otio_clip.name)
 
-                if ignore_clip_no_content and not clip_related_content:
-                    continue
+                if ignore_clip_no_content:
+                    if not clip_related_content:
+                        continue
+
+                    if     not any(
+                        item
+                        for preset in product_type_presets
+                        for item in clip_related_content
+                        if preset["product_name"] in item["product_name"]
+                    ):
+                        self.log.warning(
+                            f"Clip {otio_clip.name} has no related content."
+                            " Skipping clip."
+                        )
+                        continue
 
                 # TODO: perhaps remove if no need for media source
                 # # get available frames info to clip data
@@ -592,16 +592,19 @@ or updating already created. Publishing will create OTIO file.
                     "instance_id": None
                 }
 
-                for pres_product_data in product_type_presets:
+                self._make_shot_product_instance(
+                    otio_clip,
+                    deepcopy(base_instance_data),
+                    parenting_data,
+                )
 
+                for pres_product_data in product_type_presets:
                     self._make_product_instance(
-                        otio_clip,
                         pres_product_data,
                         deepcopy(base_instance_data),
                         parenting_data,
                         clip_related_content,
                     )
-
     def _include_files_for_processing(
         self,
         product_name,
@@ -799,57 +802,57 @@ or updating already created. Publishing will create OTIO file.
 
     def _make_product_instance(
         self,
-        otio_clip,
         product_preset,
-        instance_data,
+        base_instance_data,
         parenting_data,
         clip_content_items,
     ):
         """Making product instance from input preset
 
         Args:
-            otio_clip (otio.Clip): otio clip object
             product_preset (dict): single product type preset
-            instance_data (dict): instance data
+            base_instance_data (dict): instance data
             parenting_data (dict): shot instance parent data
             clip_content_items (list[dict]): clip content data
 
         Returns:
             CreatedInstance: creator instance object
         """
-        product_type = product_preset["product_type"]
-        product_name = product_preset["product_name"]
+        pres_product_type = product_preset["product_type"]
+        pres_product_name = product_preset["product_name"]
+        pres_representations = product_preset["representations"]
 
-        # TODO: rewamp this to somewhere else and differently
-        label = self._make_product_naming(
-            product_type_preset,
-            instance_data
+        # check if product is reviewable
+        reivewable = any(
+            "review" in rep.get("tags", []) for rep in pres_representations
         )
-        instance_data["label"] = label
 
-        # add file extension filter only if it is not shot product type
-        if product_type == "shot":
-            instance_data["otioClip"] = (
-                otio.adapters.write_to_string(otio_clip))
-            c_instance = self.create_context.creators[
-                "editorial_shot"].create(
-                    instance_data)
-            parenting_data.update({
-                "instance_label": label,
-                "instance_id": c_instance.data["instance_id"]
-            })
-        else:
+        for item in clip_content_items:
+            # make sure preset name is alligned with clip content
+            if pres_product_name not in item["preset_name"]:
+                continue
+
+            # get basic instance product data
+            product_name = item["product_name"]
+            instance_data = deepcopy(base_instance_data)
+            self._set_product_data_to_instance(
+                instance_data,
+                pres_product_type,
+                product_name=product_name,
+            )
+
             # add review family if defined
-            instance_data.update({
-                "outputFileType": product_type_preset["output_file_type"],
-                "parent_instance_id": parenting_data["instance_id"],
-                "creator_attributes": {
-                    "parent_instance": parenting_data["instance_label"],
-                    "add_review_family": product_type_preset.get("review")
+            instance_data.update(
+                {
+                    "parent_instance_id": parenting_data["instance_id"],
+                    "creator_attributes": {
+                        "parent_instance": parenting_data["instance_label"],
+                        "add_review_family": reivewable,
+                    },
                 }
-            })
+            )
 
-            creator_identifier = f"editorial_{product_type}"
+            creator_identifier = f"editorial_{pres_product_type}"
             editorial_clip_creator = self.create_context.creators[
                 creator_identifier]
             c_instance = editorial_clip_creator.create(
@@ -857,39 +860,80 @@ or updating already created. Publishing will create OTIO file.
 
         return c_instance
 
-    def _make_product_naming(self, product_type_preset, instance_data):
+    def _make_shot_product_instance(
+        self,
+        otio_clip,
+        base_instance_data,
+        parenting_data,
+    ):
+        """Making shot product instance from input preset
+
+        Args:
+            otio_clip (otio.Clip): otio clip object
+            base_instance_data (dict): instance data
+            parenting_data (dict): shot instance parent data
+
+        Returns:
+            CreatedInstance: creator instance object
+        """
+        instance_data = deepcopy(base_instance_data)
+        label = self._set_product_data_to_instance(
+            instance_data,
+            "shot",
+            product_name="shotMain",
+        )
+        instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
+        c_instance = self.create_context.creators["editorial_shot"].create(
+            instance_data
+        )
+        parenting_data.update(
+            {
+                "instance_label": label,
+                "instance_id": c_instance.data["instance_id"]
+            }
+        )
+
+        return c_instance
+
+    def _set_product_data_to_instance(
+        self,
+        instance_data,
+        product_type,
+        variant=None,
+        product_name=None,
+    ):
         """Product name maker
 
         Args:
-            product_type_preset (dict): single preset item
             instance_data (dict): instance data
+            product_type (str): product type
+            variant (Optional[str]): product variant
+                default is "main"
+            product_name (Optional[str]): product name
 
         Returns:
             str: label string
         """
+        if not variant:
+            if product_name:
+                variant = product_name.split(product_type)[-1].lower()
+            else:
+                variant = "main"
+
         folder_path = instance_data["creator_attributes"]["folderPath"]
 
-        variant_name = instance_data["variant"]
-        product_type = product_type_preset["product_type"]
-
-        # get variant name from preset or from inheritance
-        _variant_name = product_type_preset.get("variant") or variant_name
-
         # product name
-        product_name = "{}{}".format(
-            product_type, _variant_name.capitalize()
-        )
-        label = "{} {}".format(
-            folder_path,
-            product_name
-        )
+        product_name = product_name or f"{product_type}{variant.capitalize()}"
+        label = f"{folder_path} {product_name}"
 
-        instance_data.update({
-            "label": label,
-            "variant": _variant_name,
-            "productType": product_type,
-            "productName": product_name,
-        })
+        instance_data.update(
+            {
+                "label": label,
+                "variant": variant,
+                "productType": product_type,
+                "productName": product_name,
+            }
+        )
 
         return label
 
@@ -1046,17 +1090,10 @@ or updating already created. Publishing will create OTIO file.
             list: lit of dict with preset items
         """
         return [
-            {
-                "product_type": "shot",
-                "variant": "main",
-                "product_name": "shotMain",
-            },
-            *[
-                # return dict with name of preset and add preset dict
-                {"product_name": product_name, **preset}
-                for product_name, preset in self.get_product_presets_with_names().items()  # noqa
-                if pre_create_data[product_name]
-            ],
+            # return dict with name of preset and add preset dict
+            {"product_name": product_name, **preset}
+            for product_name, preset in self.get_product_presets_with_names().items()  # noqa
+            if pre_create_data[product_name]
         ]
 
     def _validate_clip_for_processing(self, otio_clip):
