@@ -7,13 +7,13 @@ from ayon_server.settings import (
 
 class ClipNameTokenizerItem(BaseSettingsModel):
     _layout = "compact"
-    name: str = SettingsField("", title="Tokenizer name")
-    regex: str = SettingsField("", title="Tokenizer regex")
+    name: str = SettingsField("", title="Token name")
+    regex: str = SettingsField("", title="Token regex")
 
 
 class ShotAddTasksItem(BaseSettingsModel):
     _layout = "compact"
-    name: str = SettingsField('', title="Key")
+    name: str = SettingsField('', title="Task Name")
     task_type: str = SettingsField(
         title="Task type",
         enum_resolver=task_types_enum
@@ -21,6 +21,14 @@ class ShotAddTasksItem(BaseSettingsModel):
 
 
 class ShotRenameSubmodel(BaseSettingsModel):
+    """Shot Rename Info
+
+    When enabled, any discovered shots will be renamed based on the `shot rename template`.
+
+    The template supports both the available 
+    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
+    and tokens defined in the `Clip Name Tokenizer`.
+    """
     enabled: bool = True
     shot_rename_template: str = SettingsField(
         "",
@@ -56,15 +64,23 @@ class TokenToParentConvertorItem(BaseSettingsModel):
 
 
 class ShotHierarchySubmodel(BaseSettingsModel):
+    """Shot Hierarchy Info
+
+    Shot Hierarchy defines the folder path where the shot will be added. 
+    It uses the `Folder path template` to compute this path. 
+    The `Folder path template` supports tokens defined in the `folder path template tokens` setting.
+
+    - Each token in the `Folder path template` represents a folder in the hierarchy.
+    - Each token can leverage tokens defined in the `Clip Name Tokenizer`.
+    """
     enabled: bool = True
     parents_path: str = SettingsField(
         "",
-        title="Parents path template",
-        description="Using keys from \"Token to parent convertor\" or tokens directly"  # noqa
+        title="Folder path template"
     )
     parents: list[TokenToParentConvertorItem] = SettingsField(
         default_factory=TokenToParentConvertorItem,
-        title="Token to parent convertor"
+        title="Folder path template tokens"
     )
 
 
@@ -94,12 +110,13 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     )
     clip_name_tokenizer: list[ClipNameTokenizerItem] = SettingsField(
         default_factory=ClipNameTokenizerItem,
-        description=(
-            "Using Regex expression to create tokens. \nThose can be used"
-            " later in \"Shot rename\" creator \nor \"Shot hierarchy\"."
-            "\n\nTokens should be decorated with \"_\" on each side"
-        )
-    )
+        description="""Clip Name Tokenizer Info.
+
+                    Use Regex expression to create tokens.
+                    Those can be used  later in `Shot rename` creator or `Shot hierarchy`.
+                    Tokens should be enclosed by `_` on each side.
+                    """
+    )    
     shot_rename: ShotRenameSubmodel = SettingsField(
         title="Shot Rename",
         default_factory=ShotRenameSubmodel
@@ -110,7 +127,8 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     )
     shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
         title="Add tasks to shot",
-        default_factory=ShotAddTasksItem
+        default_factory=ShotAddTasksItem,
+        description="The following list of tasks will be added to each created shot."
     )
     product_type_presets: list[ProductTypePresetItem] = SettingsField(
         default_factory=list
