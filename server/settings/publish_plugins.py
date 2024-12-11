@@ -95,10 +95,9 @@ DEFAULT_PUBLISH_PLUGINS = {
         "active": True
     },
     "ExtractEditorialPckgConversion": {
-        "optional": False,
-        "conversion_enabled": True,
+        "conversion_enabled": False,
         "output": {
-            "ext": "",
+            "ext": "mp4",
             "ffmpeg_args": {
               "video_filters": [],
               "audio_filters": [],
