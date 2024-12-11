@@ -844,24 +844,28 @@ or updating already created. Publishing will create OTIO file.
                 # check if representation filtering from repre preset
                 # is matching
                 extensions_filter = repre_preset.get("extensions", [])
+                # making sure all extensions are with dot
+                extensions_filter = [
+                    ext if ext.startswith(".") else f".{ext}"
+                    for ext in extensions_filter
+                ]
+
                 patterns_filter = repre_preset.get("patterns", [])
 
-                self.log.warning(f">> Extensions filter: {pformat(extensions_filter)}")
-                self.log.warning(f">> Patterns filter: {pformat(patterns_filter)}")
                 # filter out files by extensions and patterns
                 matching_files = []
                 for file in item["files"]:
+                    # filter by extension and lower case extension and file
                     filter_by_ext = [
-                        file for ext in extensions_filter
-                        if file.endswith(ext)
+                        file
+                        for ext in extensions_filter
+                        if str(file).lower().endswith(ext.lower())
                     ]
-                    self.log.warning(f">> Filter by ext: {pformat(filter_by_ext)}")
                     filter_by_pattern = [
                         file
                         for pattern in patterns_filter
                         if re.match(pattern, file)
                     ]
-                    self.log.warning(f">> Filter by pattern: {pformat(filter_by_pattern)}")
                     if filter_by_ext and filter_by_pattern:
                         matching_files.append(file)
 
