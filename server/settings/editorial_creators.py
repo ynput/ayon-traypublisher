@@ -13,7 +13,7 @@ class ClipNameTokenizerItem(BaseSettingsModel):
 
 class ShotAddTasksItem(BaseSettingsModel):
     _layout = "compact"
-    name: str = SettingsField('', title="Task Name")
+    name: str = SettingsField('', title="Task name")
     task_type: str = SettingsField(
         title="Task type",
         enum_resolver=task_types_enum
@@ -27,7 +27,7 @@ class ShotRenameSubmodel(BaseSettingsModel):
 
     The template supports both the available 
     [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
-    and tokens defined in the `Clip Name Tokenizer`.
+    and tokens defined under `Clip Name Tokenizer`.
     """
     enabled: bool = True
     shot_rename_template: str = SettingsField(
@@ -50,7 +50,7 @@ class TokenToParentConvertorItem(BaseSettingsModel):
     name: str = SettingsField(
         "",
         title="Token name",
-        description="Unique name used in `Parent path template`"
+        description="Unique name used in `Folder path template tokens`"
     )
     value: str = SettingsField(
         "",
@@ -74,7 +74,7 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     - Each token in the `Folder path template` represents a folder in the hierarchy.
     - Each token's value supports both the available 
     [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
-    and tokens defined in the `Clip Name Tokenizer`.
+    and tokens defined under `Clip Name Tokenizer`.
     """
     enabled: bool = True
     parents_path: str = SettingsField(
