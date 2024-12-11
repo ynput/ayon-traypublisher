@@ -93,6 +93,8 @@ CLIP_ATTR_DEFS = [
     ),
 ]
 
+COL_VARIANTS_PATTERN = "?[a-zA-Z0-9_]+"
+REM_VARIANTS_PATTERN = "?[a-zA-Z0-9_.]+"
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
@@ -486,7 +488,7 @@ or updating already created. Publishing will create OTIO file.
                         product_data = deepcopy(product_data_base)
                         # need to include more since variants might occure
                         pattern_search = re.compile(
-                            f"({re.escape(product_name)}[a-zA-Z0-9_]+)"
+                            f"({re.escape(product_name)}{COL_VARIANTS_PATTERN})"
                         )
                         match = pattern_search.search(folder)
                         if not match:
@@ -525,6 +527,10 @@ or updating already created. Publishing will create OTIO file.
 
                 # No matching product data can be skipped
                 if not matched_product_items:
+                    self.log.warning(
+                        f"No matching product data found in {root}."
+                        " Skipping folder."
+                    )
                     continue
 
                 clip_content[clip_folder.replace(media_folder_path, "")] = (
@@ -560,7 +566,7 @@ or updating already created. Publishing will create OTIO file.
                     if not clip_related_content:
                         continue
 
-                    if     not any(
+                    if not any(
                         item
                         for preset in product_type_presets
                         for item in clip_related_content
@@ -605,6 +611,7 @@ or updating already created. Publishing will create OTIO file.
                         parenting_data,
                         clip_related_content,
                     )
+
     def _include_files_for_processing(
         self,
         product_name,
@@ -624,10 +631,10 @@ or updating already created. Publishing will create OTIO file.
             strict (Optional[bool]): strict mode for filtering files
         """
         # compile regex pattern for matching product name
-        coll_pattern_search = re.compile(
-            f"({re.escape(product_name)}[a-zA-Z0-9_]+)")
+        col_pattern_search = re.compile(
+            f"({re.escape(product_name)}{COL_VARIANTS_PATTERN})")
         rem_pattern_search = re.compile(
-            f"({re.escape(product_name)}[a-zA-Z0-9_.]+)")
+            f"({re.escape(product_name)}{REM_VARIANTS_PATTERN})")
 
         collections, reminders = clique.assemble(files)
         if not collections:
@@ -647,7 +654,7 @@ or updating already created. Publishing will create OTIO file.
             # check if pattern in name head is present
             head = collection.format("{head}")
             tail = collection.format("{tail}")
-            match = coll_pattern_search.search(head)
+            match = col_pattern_search.search(head)
 
             # if pattern is not present in file name head
             if strict and not match:
@@ -655,9 +662,11 @@ or updating already created. Publishing will create OTIO file.
 
             # add collected files to list
             files_ = [
-                file for file in files
+                file
+                for file in files
                 if file.startswith(head)
                 if file.endswith(tail)
+                if "thumb" not in file
             ]
 
             product_data = deepcopy(product_data_base)
@@ -682,7 +691,6 @@ or updating already created. Publishing will create OTIO file.
                 file for file in files
                 if file.startswith(head)
                 if file.endswith(tail)
-                if "thumb" not in file
             ]
 
             product_data = deepcopy(product_data_base)
@@ -693,7 +701,7 @@ or updating already created. Publishing will create OTIO file.
                 # this is just for name.thumbnail.jpg match
                 matched_pattern = match[0]
                 if "." in matched_pattern:
-                    match = coll_pattern_search.search(head)
+                    match = col_pattern_search.search(head)
                     matched_pattern = match[0]
 
                 product_data["product_name"] = matched_pattern
@@ -827,38 +835,67 @@ or updating already created. Publishing will create OTIO file.
             "review" in rep.get("tags", []) for rep in pres_representations
         )
 
-        for item in clip_content_items:
-            # make sure preset name is alligned with clip content
-            if pres_product_name not in item["preset_name"]:
-                continue
+        for repre_preset in pres_representations:
+            for item in clip_content_items:
+                # make sure preset name is alligned with clip content
+                if pres_product_name not in item["preset_name"]:
+                    continue
 
-            # get basic instance product data
-            product_name = item["product_name"]
-            instance_data = deepcopy(base_instance_data)
-            self._set_product_data_to_instance(
-                instance_data,
-                pres_product_type,
-                product_name=product_name,
-            )
+                # check if representation filtering from repre preset
+                # is matching
+                extensions_filter = repre_preset.get("extensions", [])
+                patterns_filter = repre_preset.get("patterns", [])
 
-            # add review family if defined
-            instance_data.update(
-                {
-                    "parent_instance_id": parenting_data["instance_id"],
-                    "creator_attributes": {
-                        "parent_instance": parenting_data["instance_label"],
-                        "add_review_family": reivewable,
-                    },
-                }
-            )
+                self.log.warning(f">> Extensions filter: {pformat(extensions_filter)}")
+                self.log.warning(f">> Patterns filter: {pformat(patterns_filter)}")
+                # filter out files by extensions and patterns
+                matching_files = []
+                for file in item["files"]:
+                    filter_by_ext = [
+                        file for ext in extensions_filter
+                        if file.endswith(ext)
+                    ]
+                    self.log.warning(f">> Filter by ext: {pformat(filter_by_ext)}")
+                    filter_by_pattern = [
+                        file
+                        for pattern in patterns_filter
+                        if re.match(pattern, file)
+                    ]
+                    self.log.warning(f">> Filter by pattern: {pformat(filter_by_pattern)}")
+                    if filter_by_ext and filter_by_pattern:
+                        matching_files.append(file)
 
-            creator_identifier = f"editorial_{pres_product_type}"
-            editorial_clip_creator = self.create_context.creators[
-                creator_identifier]
-            c_instance = editorial_clip_creator.create(
-                instance_data)
+                self.log.warning(f">> Matching files: {pformat(matching_files)}")
 
-        return c_instance
+                if not matching_files:
+                    continue
+
+                # get basic instance product data
+                product_name = item["product_name"]
+                instance_data = deepcopy(base_instance_data)
+                self._set_product_data_to_instance(
+                    instance_data,
+                    pres_product_type,
+                    product_name=product_name,
+                )
+
+                # add review family if defined
+                instance_data.update(
+                    {
+                        "parent_instance_id": parenting_data["instance_id"],
+                        "creator_attributes": {
+                            "parent_instance": parenting_data["instance_label"],
+                            "add_review_family": reivewable,
+                        },
+                    }
+                )
+
+                creator_identifier = f"editorial_{pres_product_type}"
+                editorial_clip_creator = self.create_context.creators[
+                    creator_identifier]
+                # create instance in creator context
+                editorial_clip_creator.create(
+                    instance_data)
 
     def _make_shot_product_instance(
         self,
