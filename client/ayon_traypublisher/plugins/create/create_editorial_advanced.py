@@ -16,6 +16,10 @@ from ayon_traypublisher.api.editorial import (
     ShotMetadataSolver
 )
 from ayon_core.pipeline import CreatedInstance
+from ayon_core.lib.transcoding import (
+    VIDEO_EXTENSIONS,
+    IMAGE_EXTENSIONS,
+)
 from ayon_core.lib import (
     get_ffprobe_data,
     convert_ffprobe_fps_value,
@@ -93,6 +97,23 @@ CLIP_ATTR_DEFS = [
     ),
 ]
 
+CONTENT_TYPE_MAPPING = {
+    "other": [
+        "audio",
+        "geometry",
+        "workfile",
+    ],
+    "single": [
+        "video",
+        "image_single",
+    ],
+    "collection": [
+        "image_sequence",
+    ],
+    "thumbnail": [
+        "thumbnail",
+    ]
+}
 COL_VARIANTS_PATTERN = "?[a-zA-Z0-9_]+"
 REM_VARIANTS_PATTERN = "?[a-zA-Z0-9_.]+"
 VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
@@ -605,12 +626,16 @@ or updating already created. Publishing will create OTIO file.
                     parenting_data,
                 )
 
+                abs_clip_folder = os.path.join(
+                    media_folder_path, otio_clip.name).replace("\\", "/")
+
                 for pres_product_data in product_type_presets:
                     self._make_product_instance(
                         pres_product_data,
                         deepcopy(base_instance_data),
                         parenting_data,
                         clip_related_content,
+                        abs_clip_folder,
                     )
 
     def _include_files_for_processing(
@@ -669,13 +694,13 @@ or updating already created. Publishing will create OTIO file.
                 if file.endswith(tail)
                 if "thumb" not in file
             ]
-
+            extension = os.path.splitext(files_[0])[1]
             product_data = deepcopy(product_data_base)
             product_data["files"] = files_
-            product_data["type"] = "collection"
+            product_data["type"] = "collection" if extension in IMAGE_EXTENSIONS else "other"
 
             if strict and match:
-                product_data["product_name"] = match.group(0)
+                product_data["product_name"] = match.group(1)
 
             collecting_items.append(product_data)
 
@@ -694,19 +719,33 @@ or updating already created. Publishing will create OTIO file.
                 if file.startswith(head)
                 if file.endswith(tail)
             ]
+            extension = os.path.splitext(files_[0])[1]
+            content_type = "other"
+            if (
+                extension in VIDEO_EXTENSIONS
+                or extension in IMAGE_EXTENSIONS
+            ):
+                content_type = "single"
+
+            # check if file is thumbnail
+            if "thumb" in reminder:
+                content_type = "thumbnail"
 
             product_data = deepcopy(product_data_base)
             product_data["files"] = files_
-            product_data["type"] = "single"
+            product_data["type"] = content_type
 
             if strict and match:
-                # we do not need to include dot pattern match
-                # this is just for name.thumbnail.jpg match
-                matched_pattern = match.group(0)
+                # Extract matched pattern and handle special cases with dots
+                # like name.thumbnail.jpg matches
+                matched_pattern = match.group(1)
+                self.log.warning(f"1. Matched pattern: {matched_pattern}")
                 if "." in matched_pattern:
-                    match = col_pattern_search.search(head)
-                    if match:
-                        matched_pattern = match.group(0)
+                    # Try to match without the dot pattern
+                    alt_match = col_pattern_search.search(head)
+                    if alt_match:
+                        matched_pattern = alt_match.group(1)
+                        self.log.warning(f"2. Matched pattern: {head} > {matched_pattern}")
 
                 product_data["product_name"] = matched_pattern
 
@@ -818,25 +857,28 @@ or updating already created. Publishing will create OTIO file.
         base_instance_data,
         parenting_data,
         clip_content_items,
+        media_folder_path,
     ):
+        """Creating product instances
+
+        Args:
+            product_preset (dict): product preset data
+            base_instance_data (dict): base instance data
+            parenting_data (dict): parenting data
+            clip_content_items (list[dict]): list of clip content items
+            media_folder_path (str): media folder path
+        """
         pres_product_type = product_preset["product_type"]
         pres_product_name = product_preset["product_name"]
         pres_versioning = product_preset["versioning_type"]
         pres_representations = product_preset["representations"]
-
-        # get version from files with use of pattern
-        # and versioning type
-        version = None
-        if pres_versioning == "from_file":
-            version = self._extract_version_from_files(clip_content_items)
-        elif pres_versioning == "locked":
-            version = product_preset["locked"]
 
         # Dictionary to group files by product name
         grouped_representations = {}
 
         # First pass: group matching files by product name and representation
         for item in clip_content_items:
+            item_type = item["type"]
             if pres_product_name not in item["preset_name"]:
                 continue
 
@@ -851,7 +893,7 @@ or updating already created. Publishing will create OTIO file.
                 preset_repre_name = repre_preset["name"]
                 # TODO: use the content type for filtering items
                 #   currently it is matching thumbnail to sequence and thumbnail..
-                repre_content_type = repre_preset["content_type"]
+                pres_repr_content_type = repre_preset["content_type"]
 
                 # Prepare filters
                 extensions_filter = [
@@ -873,23 +915,46 @@ or updating already created. Publishing will create OTIO file.
                         re.match(pattern, file)
                         for pattern in patterns_filter
                     )
+                    # Validate content type matches item type mapping
+                    matches_content_type = (
+                        pres_repr_content_type in CONTENT_TYPE_MAPPING[item_type]
+                    )
+                    self.log.warning(
+                        f"File: {file} - ext: {matches_ext} - pattern: {matches_pattern} - content_type: {matches_content_type}"
+                    )
+                    self.log.warning(
+                        f">>>> Item type: {item_type} - Pres repr content type: {pres_repr_content_type}"
+                    )
 
-                    if matches_ext and matches_pattern:
+                    if matches_ext and matches_pattern and matches_content_type:
                         matching_files.append(file)
 
                 if matching_files:
+                    abs_dir_path = os.path.join(
+                        media_folder_path, item["clip_dir_subpath"]
+                    ).replace("\\", "/")
                     grouped_representations[product_name]["representations"].append({
                         "name": preset_repre_name,
                         "files": matching_files,
-                        "content_type": repre_content_type,
+                        "content_type": pres_repr_content_type,
                         # for reviewable checking in next step
                         "repre_preset_name": preset_repre_name,
+                        "dir_path": abs_dir_path,
                     })
 
         # Second pass: create instances for each group
         for product_name, group_data in grouped_representations.items():
             if not group_data["representations"]:
                 continue
+
+            # get version from files with use of pattern
+            # and versioning type
+            version = None
+            if pres_versioning == "from_file":
+                version = self._extract_version_from_files(
+                    group_data["representations"])
+            elif pres_versioning == "locked":
+                version = product_preset["locked"]
 
             # check if product is reviewable
             reviewable = any(
@@ -927,20 +992,20 @@ or updating already created. Publishing will create OTIO file.
 
             self.log.warning(f"Created instance: {pformat(instance_data)}")
 
-    def _extract_version_from_files(self, clip_content_items):
+    def _extract_version_from_files(self, representations):
         """Extract version information from files
 
-        Files are searched in in clip content items input data.
+        Files are searched in in trimmed file repesentation data.
 
         Args:
-            clip_content_items (list[dict]): list of clip content data
+            representations (list[dict]): list of representation data
 
         Returns:
             str: Highest version found in files, or None if no version found
         """
         all_found_versions = []
-        for item in clip_content_items:
-            for file in item["files"]:
+        for repre in representations:
+            for file in repre["files"]:
                 match = re.match(VERSION_IN_FILE_PATTERN, file)
                 if match:
                     all_found_versions.append(int(match.group(1)))
