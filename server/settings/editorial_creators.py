@@ -168,6 +168,26 @@ class ProductTypeAdvancedPresetItem(BaseSettingsModel):
         enum_resolver=lambda: product_type_enum
     )
     variant: str = SettingsField("", title="Variant")
+    versioning_type: str = SettingsField(
+        "incremental",
+        title="Versioning type",
+        enum_resolver=lambda: [
+            {"value": "incremental", "label": "Incremental"},
+            {"value": "from_file", "label": "From files"},
+            {"value": "locked", "label": "Locked"},
+        ],
+        description=(
+            "Incremental - will increment version number by 1"
+            "\From file - will use version from the file name if any found"
+            "\Locked - will use locked version number"
+        ),
+        conditionalEnum=True,
+    )
+    locked: int = SettingsField(
+        1,
+        title="Locked version",
+        description="Version number to be used for locked versioning",
+    )
     representations: list[RepresentationAdvancedItemModel] = SettingsField(
         title="Representations", default_factory=list
     )

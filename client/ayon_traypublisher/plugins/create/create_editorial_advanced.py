@@ -95,6 +95,7 @@ CLIP_ATTR_DEFS = [
 
 COL_VARIANTS_PATTERN = "?[a-zA-Z0-9_]+"
 REM_VARIANTS_PATTERN = "?[a-zA-Z0-9_.]+"
+VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
@@ -488,7 +489,7 @@ or updating already created. Publishing will create OTIO file.
                         product_data = deepcopy(product_data_base)
                         # need to include more since variants might occure
                         pattern_search = re.compile(
-                            f"({re.escape(product_name)}{COL_VARIANTS_PATTERN})"
+                            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN}).*"
                         )
                         match = pattern_search.search(folder)
                         if not match:
@@ -503,7 +504,7 @@ or updating already created. Publishing will create OTIO file.
                         # later in files processor
                         product_data.update(
                             {
-                                "product_name": match[0],
+                                "product_name": match.group(0),
                                 "clip_dir_subpath": partial_path,
                             }
                         )
@@ -632,9 +633,9 @@ or updating already created. Publishing will create OTIO file.
         """
         # compile regex pattern for matching product name
         col_pattern_search = re.compile(
-            f"({re.escape(product_name)}{COL_VARIANTS_PATTERN})")
+            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN}).*")
         rem_pattern_search = re.compile(
-            f"({re.escape(product_name)}{REM_VARIANTS_PATTERN})")
+            f".*({re.escape(product_name)}{REM_VARIANTS_PATTERN}).*")
 
         collections, reminders = clique.assemble(files)
         if not collections:
@@ -671,9 +672,10 @@ or updating already created. Publishing will create OTIO file.
 
             product_data = deepcopy(product_data_base)
             product_data["files"] = files_
+            product_data["type"] = "collection"
 
-            if strict:
-                product_data["product_name"] = match[0]
+            if strict and match:
+                product_data["product_name"] = match.group(0)
 
             collecting_items.append(product_data)
 
@@ -695,14 +697,16 @@ or updating already created. Publishing will create OTIO file.
 
             product_data = deepcopy(product_data_base)
             product_data["files"] = files_
+            product_data["type"] = "single"
 
-            if strict:
+            if strict and match:
                 # we do not need to include dot pattern match
                 # this is just for name.thumbnail.jpg match
-                matched_pattern = match[0]
+                matched_pattern = match.group(0)
                 if "." in matched_pattern:
                     match = col_pattern_search.search(head)
-                    matched_pattern = match[0]
+                    if match:
+                        matched_pattern = match.group(0)
 
                 product_data["product_name"] = matched_pattern
 
@@ -815,91 +819,137 @@ or updating already created. Publishing will create OTIO file.
         parenting_data,
         clip_content_items,
     ):
-        """Making product instance from input preset
-
-        Args:
-            product_preset (dict): single product type preset
-            base_instance_data (dict): instance data
-            parenting_data (dict): shot instance parent data
-            clip_content_items (list[dict]): clip content data
-
-        Returns:
-            CreatedInstance: creator instance object
-        """
         pres_product_type = product_preset["product_type"]
         pres_product_name = product_preset["product_name"]
+        pres_versioning = product_preset["versioning_type"]
         pres_representations = product_preset["representations"]
 
-        # check if product is reviewable
-        reivewable = any(
-            "review" in rep.get("tags", []) for rep in pres_representations
-        )
+        # get version from files with use of pattern
+        # and versioning type
+        version = None
+        if pres_versioning == "from_file":
+            version = self._extract_version_from_files(clip_content_items)
+        elif pres_versioning == "locked":
+            version = product_preset["locked"]
 
-        for repre_preset in pres_representations:
-            for item in clip_content_items:
-                # make sure preset name is alligned with clip content
-                if pres_product_name not in item["preset_name"]:
-                    continue
+        # Dictionary to group files by product name
+        grouped_representations = {}
 
-                # check if representation filtering from repre preset
-                # is matching
-                extensions_filter = repre_preset.get("extensions", [])
-                # making sure all extensions are with dot
+        # First pass: group matching files by product name and representation
+        for item in clip_content_items:
+            if pres_product_name not in item["preset_name"]:
+                continue
+
+            product_name = item["product_name"]
+            if product_name not in grouped_representations:
+                grouped_representations[product_name] = {
+                    "representations": []
+                }
+
+            # Check each representation preset against the item
+            for repre_preset in pres_representations:
+                preset_repre_name = repre_preset["name"]
+                # TODO: use the content type for filtering items
+                #   currently it is matching thumbnail to sequence and thumbnail..
+                repre_content_type = repre_preset["content_type"]
+
+                # Prepare filters
                 extensions_filter = [
                     ext if ext.startswith(".") else f".{ext}"
-                    for ext in extensions_filter
+                    for ext in repre_preset.get("extensions", [])
                 ]
-
                 patterns_filter = repre_preset.get("patterns", [])
 
-                # filter out files by extensions and patterns
+                # Filter matching files
                 matching_files = []
                 for file in item["files"]:
-                    # filter by extension and lower case extension and file
-                    filter_by_ext = [
-                        file
+                    # Filter by extension
+                    matches_ext = any(
+                        str(file).lower().endswith(ext.lower())
                         for ext in extensions_filter
-                        if str(file).lower().endswith(ext.lower())
-                    ]
-                    filter_by_pattern = [
-                        file
+                    )
+                    # Filter by pattern
+                    matches_pattern = any(
+                        re.match(pattern, file)
                         for pattern in patterns_filter
-                        if re.match(pattern, file)
-                    ]
-                    if filter_by_ext and filter_by_pattern:
+                    )
+
+                    if matches_ext and matches_pattern:
                         matching_files.append(file)
 
-                self.log.warning(f">> Matching files: {pformat(matching_files)}")
+                if matching_files:
+                    grouped_representations[product_name]["representations"].append({
+                        "name": preset_repre_name,
+                        "files": matching_files,
+                        "content_type": repre_content_type,
+                        # for reviewable checking in next step
+                        "repre_preset_name": preset_repre_name,
+                    })
 
-                if not matching_files:
-                    continue
+        # Second pass: create instances for each group
+        for product_name, group_data in grouped_representations.items():
+            if not group_data["representations"]:
+                continue
 
-                # get basic instance product data
-                product_name = item["product_name"]
-                instance_data = deepcopy(base_instance_data)
-                self._set_product_data_to_instance(
-                    instance_data,
-                    pres_product_type,
-                    product_name=product_name,
-                )
+            # check if product is reviewable
+            reviewable = any(
+                "review" in pres_rep["tags"]
+                for rep_data in group_data["representations"]
+                for pres_rep in pres_representations
+                if pres_rep["name"] == rep_data["repre_preset_name"]
+            )
 
-                # add review family if defined
-                instance_data.update(
-                    {
-                        "parent_instance_id": parenting_data["instance_id"],
-                        "creator_attributes": {
-                            "parent_instance": parenting_data["instance_label"],
-                            "add_review_family": reivewable,
-                        },
-                    }
-                )
+            # Get basic instance product data
+            instance_data = deepcopy(base_instance_data)
+            self._set_product_data_to_instance(
+                instance_data,
+                pres_product_type,
+                product_name=product_name,
+            )
 
-                creator_identifier = f"editorial_{pres_product_type}"
-                editorial_clip_creator = self.create_context.creators[
-                    creator_identifier]
-                # create instance in creator context
-                editorial_clip_creator.create(
-                    instance_data)
+            # Add review family and other data
+            instance_data.update({
+                "parent_instance_id": parenting_data["instance_id"],
+                "creator_attributes": {
+                    "parent_instance": parenting_data["instance_label"],
+                    "add_review_family": reviewable,
+                },
+                "version": version,
+                "representations": group_data["representations"]
+            })
+
+            creator_identifier = f"editorial_{pres_product_type}"
+            editorial_clip_creator = self.create_context.creators[
+                creator_identifier]
+
+            # Create instance in creator context
+            editorial_clip_creator.create(instance_data)
+
+            self.log.warning(f"Created instance: {pformat(instance_data)}")
+
+    def _extract_version_from_files(self, clip_content_items):
+        """Extract version information from files
+
+        Files are searched in in clip content items input data.
+
+        Args:
+            clip_content_items (list[dict]): list of clip content data
+
+        Returns:
+            str: Highest version found in files, or None if no version found
+        """
+        all_found_versions = []
+        for item in clip_content_items:
+            for file in item["files"]:
+                match = re.match(VERSION_IN_FILE_PATTERN, file)
+                if match:
+                    all_found_versions.append(int(match.group(1)))
+
+        all_found_versions = set(all_found_versions)
+        if all_found_versions:
+            return max(all_found_versions)
+
+        return None
 
     def _make_shot_product_instance(
         self,
