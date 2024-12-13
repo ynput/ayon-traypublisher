@@ -57,10 +57,6 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
-    CollectFrameDataFromAssetEntity: ValidatePluginModel = SettingsField(
-        default_factory=ValidatePluginModel,
-        title="Collect Frame Data From Folder Entity",
-    )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect Original Sequence Frame Data",
@@ -83,11 +79,6 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
-    "CollectFrameDataFromAssetEntity": {
-        "enabled": True,
-        "optional": True,
-        "active": True
-    },
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
@@ -104,10 +95,9 @@ DEFAULT_PUBLISH_PLUGINS = {
         "active": True
     },
     "ExtractEditorialPckgConversion": {
-        "optional": False,
-        "conversion_enabled": True,
+        "conversion_enabled": False,
         "output": {
-            "ext": "",
+            "ext": "mp4",
             "ffmpeg_args": {
               "video_filters": [],
               "audio_filters": [],
