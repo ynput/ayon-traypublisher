@@ -105,8 +105,8 @@ class ShotRenameSubmodel(BaseSettingsModel):
 
     When enabled, any discovered shots will be renamed based on the `shot rename template`.
 
-    The template supports both the available 
-    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
+    The template supports both the available
+    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys)
     and tokens defined under `Clip Name Tokenizer`.
     """
     enabled: bool = True
@@ -148,12 +148,12 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     """Shot Hierarchy Info
 
     Shot Hierarchy defines the folder path where each shot will be added.
-    It uses the `Folder path template` to compute each path. 
+    It uses the `Folder path template` to compute each path.
     The `Folder path template` supports tokens defined in the `folder path template tokens` setting.
 
     - Each token in the `Folder path template` represents a folder in the hierarchy.
-    - Each token's value supports both the available 
-    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys) 
+    - Each token's value supports both the available
+    [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys)
     and tokens defined under `Clip Name Tokenizer`.
     """
     enabled: bool = True
@@ -181,6 +181,7 @@ class ProductTypePresetItem(BaseSettingsModel):
 
 
 class ProductTypeAdvancedPresetItem(BaseSettingsModel):
+    default_enabled: bool = True
     product_type: str = SettingsField(
         "plate",
         title="Product type",
@@ -226,7 +227,7 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
                     These tokens will be used later in the `Shot rename` creator or `Shot hierarchy`.
                     Each token must be enclosed by underscores (`_`).
                     """
-    )    
+    )
     shot_rename: ShotRenameSubmodel = SettingsField(
         title="Shot Rename",
         default_factory=ShotRenameSubmodel
@@ -382,6 +383,7 @@ DEFAULT_EDITORIAL_CREATORS = {
         "shot_add_tasks": [],
         "product_type_advanced_presets": [
             {
+                "default_enabled": True,
                 "product_type": "plate",
                 "variant": "Reference",
                 "representations": [

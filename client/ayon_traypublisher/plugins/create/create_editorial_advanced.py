@@ -115,7 +115,7 @@ CONTENT_TYPE_MAPPING = {
         "thumbnail",
     ]
 }
-VARIANTS_PATTERN = r"(?:_[^_v\.]+)?"
+VARIANTS_PATTERN = r"(?:_[^_v\.]+|\d+)?"
 VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
@@ -705,10 +705,12 @@ or updating already created. Publishing will create OTIO file.
             ]
             extension = os.path.splitext(files_[0])[1]
             suffix = differences[files_[0]]
-            # remove product name from suffix
-            self.log.warning(f"match[1]: {match[1]}")
-            self.log.warning(f"match[0]: {match[0]}")
-            suffix = suffix.replace(match[1] or match[0], "")
+
+            if match:
+                # remove product name from suffix
+                self.log.warning(f"match[1]: {match[1]}")
+                self.log.warning(f"match[0]: {match[0]}")
+                suffix = suffix.replace(match[1] or match[0], "")
 
             content_type = "other"
             if (
@@ -1251,7 +1253,14 @@ or updating already created. Publishing will create OTIO file.
         product_names = self.get_product_presets_with_names()
 
         # add variants swithers
-        attr_defs.extend(BoolDef(item, label=item) for item in product_names)
+        attr_defs.extend(
+            BoolDef(
+                name,
+                label=name,
+                default=preset["default_enabled"],
+            )
+            for name, preset in product_names.items()
+        )
         attr_defs.append(UISeparatorDef())
 
         attr_defs.extend(CREATOR_CLIP_ATTR_DEFS)
