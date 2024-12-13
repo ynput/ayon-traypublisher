@@ -50,7 +50,12 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
         if repres := instance.data.pop("prep_representations", None):
             representations = []
             for repre in repres:
+                tags = repre.get("tags", [])
+                custom_tags = repre.get("custom_tags", [])
                 content_type = repre["content_type"]
+
+                if content_type == "thumbnail":
+                    tags.append("thumbnail")
 
                 # single file type should be a string
                 new_repre_files = files = repre["files"]
@@ -63,6 +68,8 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
                     "name": repre["name"],
                     "files": new_repre_files,
                     "stagingDir": repre["dir_path"],
+                    "tags": tags,
+                    "custom_tags": custom_tags,
                 }
 
                 # add optional keys

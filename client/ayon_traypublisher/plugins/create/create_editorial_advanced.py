@@ -39,7 +39,7 @@ CREATOR_CLIP_ATTR_DEFS = [
         "fps",
         items=[
             {"value": "from_selection", "label": "From selected context"},
-            {"value": 23.997, "label": "23.976"},
+            {"value": 23.976, "label": "23.976"},
             {"value": 24, "label": "24"},
             {"value": 25, "label": "25"},
             {"value": 29.97, "label": "29.97"},
@@ -883,6 +883,8 @@ or updating already created. Publishing will create OTIO file.
             for repre_preset in pres_representations:
                 preset_repre_name = repre_preset["name"]
                 pres_repr_content_type = repre_preset["content_type"]
+                pres_repr_tags = repre_preset.get("tags", [])
+                pres_repr_custom_tags = repre_preset.get("custom_tags", [])
 
                 # Prepare filters
                 extensions_filter = [
@@ -900,10 +902,15 @@ or updating already created. Publishing will create OTIO file.
                         for ext in extensions_filter
                     )
                     # Filter by pattern
-                    matches_pattern = any(
-                        re.match(pattern, file)
-                        for pattern in patterns_filter
-                    )
+                    if patterns_filter:
+                        matches_pattern = any(
+                            re.match(pattern, file)
+                            for pattern in patterns_filter
+                        )
+                    else:
+                        # If no pattern is set, all files match
+                        matches_pattern = True
+
                     # Validate content type matches item type mapping
                     matches_content_type = (
                         pres_repr_content_type in CONTENT_TYPE_MAPPING[item_type]  # noqa
@@ -911,7 +918,8 @@ or updating already created. Publishing will create OTIO file.
 
                     if (
                         matches_ext
-                        and matches_pattern and matches_content_type
+                        and matches_pattern
+                        and matches_content_type
                     ):
                         matching_files.append(file)
 
@@ -935,6 +943,8 @@ or updating already created. Publishing will create OTIO file.
                         # for reviewable checking in next step
                         "repre_preset_name": preset_repre_name,
                         "dir_path": abs_dir_path,
+                        "tags": pres_repr_tags,
+                        "custom_tags": pres_repr_custom_tags,
                     }
                     # Add optional output name suffix
                     suffix = item["suffix"]
