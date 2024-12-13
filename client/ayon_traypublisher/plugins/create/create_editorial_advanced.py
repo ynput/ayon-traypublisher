@@ -115,8 +115,7 @@ CONTENT_TYPE_MAPPING = {
         "thumbnail",
     ]
 }
-COL_VARIANTS_PATTERN = "?[a-zA-Z0-9_]+"
-REM_VARIANTS_PATTERN = "?[a-zA-Z0-9_.]+"
+VARIANTS_PATTERN = r"(?:_[^_v\.]+)?"
 VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
@@ -155,7 +154,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
 
     The shot metadata instance carrier.
     """
-    identifier = "editorial_shot"
+    identifier = "editorial_shot_advanced"
     product_type = "shot"
     label = "Editorial Shot"
 
@@ -177,7 +176,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
 
     Plate representation instance.
     """
-    identifier = "editorial_plate"
+    identifier = "editorial_plate_advanced"
     product_type = "plate"
     label = "Plate product"
 
@@ -187,7 +186,7 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
 
     Plate representation instance.
     """
-    identifier = "editorial_image"
+    identifier = "editorial_image_advanced"
     product_type = "image"
     label = "Image product"
 
@@ -196,7 +195,7 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
     """Render product type class
     Render representation instance.
     """
-    identifier = "editorial_render"
+    identifier = "editorial_render_advanced"
     product_type = "render"
     label = "Render product"
 
@@ -206,7 +205,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
 
     Audio representation instance.
     """
-    identifier = "editorial_audio"
+    identifier = "editorial_audio_advanced"
     product_type = "audio"
     label = "Audio product"
 
@@ -216,7 +215,7 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
 
     Model representation instance.
     """
-    identifier = "editorial_model"
+    identifier = "editorial_model_advanced"
     product_type = "model"
     label = "Model product"
 
@@ -225,17 +224,17 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     """Camera product type class
     Camera representation instance.
     """
-    identifier = "editorial_camera"
+    identifier = "editorial_camera_advanced"
     product_type = "camera"
     label = "Camera product"
 
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Plate product type class
+    """Workfile product type class
 
-    Plate representation instance.
+    Workfile representation instance.
     """
-    identifier = "editorial_workfile"
+    identifier = "editorial_workfile_advanced"
     product_type = "workfile"
     label = "Workfile product"
 
@@ -502,7 +501,7 @@ or updating already created. Publishing will create OTIO file.
                         product_data = deepcopy(product_data_base)
                         # need to include more since variants might occure
                         pattern_search = re.compile(
-                            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN}).*"
+                            f".*({re.escape(product_name)}{VARIANTS_PATTERN}).*"
                         )
                         match = pattern_search.search(folder)
                         if not match:
@@ -550,6 +549,8 @@ or updating already created. Publishing will create OTIO file.
                 clip_content[clip_folder.replace(media_folder_path, "")] = (
                     matched_product_items
                 )
+
+        self.log.warning(f">>>>>>> clip_content: \n{pformat(clip_content)}")
 
         for track in tracks:
             # set track name
@@ -637,25 +638,18 @@ or updating already created. Publishing will create OTIO file.
             strict (Optional[bool]): strict mode for filtering files
         """
         # compile regex pattern for matching product name
-        col_pattern_search = re.compile(
-            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN})(?=_v).*"
+        pattern_search = re.compile(
+            f".*({re.escape(product_name)}{VARIANTS_PATTERN})"
         )
-        rem_pattern_search = re.compile(
-            f".*({re.escape(product_name)}{REM_VARIANTS_PATTERN})(?=_v).*"
-        )
+        self.log.warning(f">>> pattern_search: {pattern_search}")
 
         # find intersection between files and sequences
         differences = find_string_differences(files)
+        self.log.warning(f">>> files: {pformat(files)}")
 
         collections, reminders = clique.assemble(files)
-        if not collections:
-            # No sequences detected and we can't retrieve
-            # frame range
-            self.log.debug(
-                "No sequences detected in the representation data."
-                " Skipping collecting frame range data."
-            )
-            return
+        self.log.warning(
+            f">>> reminders: {pformat([rem for rem in reminders])}")
 
         # iterate all collections and search for pattern in file name head
         for collection in collections:
@@ -665,7 +659,7 @@ or updating already created. Publishing will create OTIO file.
             # check if pattern in name head is present
             head = collection.format("{head}")
             tail = collection.format("{tail}")
-            match = col_pattern_search.search(head)
+            match = pattern_search.search(head)
 
             # if pattern is not present in file name head
             if strict and not match:
@@ -694,9 +688,10 @@ or updating already created. Publishing will create OTIO file.
             collecting_items.append(product_data)
 
         for reminder in reminders:
+            self.log.warning(f"reminder: {reminder}")
             # check if pattern in name head is present
             head, tail = os.path.splitext(reminder)
-            match = rem_pattern_search.search(head)
+            match = pattern_search.search(head)
 
             # if pattern is not present in file name head
             if strict and not match:
@@ -710,6 +705,11 @@ or updating already created. Publishing will create OTIO file.
             ]
             extension = os.path.splitext(files_[0])[1]
             suffix = differences[files_[0]]
+            # remove product name from suffix
+            self.log.warning(f"match[1]: {match[1]}")
+            self.log.warning(f"match[0]: {match[0]}")
+            suffix = suffix.replace(match[1] or match[0], "")
+
             content_type = "other"
             if (
                 extension in VIDEO_EXTENSIONS
@@ -731,14 +731,11 @@ or updating already created. Publishing will create OTIO file.
             if strict and match:
                 # Extract matched pattern and handle special cases with dots
                 # like name.thumbnail.jpg matches
-                matched_pattern = match.group(1)
-                if "." in matched_pattern:
-                    # Try to match without the dot pattern
-                    alt_match = col_pattern_search.search(head)
-                    if alt_match:
-                        matched_pattern = alt_match.group(1)
+                matched_pattern = match[1]
 
                 product_data["product_name"] = matched_pattern
+
+            self.log.warning(f"product_data: {pformat(product_data)}")
 
             collecting_items.append(product_data)
 
@@ -752,95 +749,6 @@ or updating already created. Publishing will create OTIO file.
             otio_clip (otio.Clip): otio clip object
         """
         otio_clip.source_range = otio_clip.range_in_parent()
-
-    def _create_otio_reference(
-        self,
-        otio_clip,
-        media_path,
-        media_data
-    ):
-        """Creating otio reference at otio clip.
-
-        Args:
-            otio_clip (otio.Clip): otio clip object
-            media_path (str): media file path string
-            media_data (dict): media metadata
-        """
-        start_frame = media_data["start_frame"]
-        frame_duration = media_data["duration"]
-        fps = media_data["fps"]
-
-        available_range = otio.opentime.TimeRange(
-            start_time=otio.opentime.RationalTime(
-                start_frame, fps),
-            duration=otio.opentime.RationalTime(
-                frame_duration, fps)
-        )
-        # in case old OTIO or video file create `ExternalReference`
-        media_reference = otio.schema.ExternalReference(
-            target_url=media_path,
-            available_range=available_range
-        )
-        otio_clip.media_reference = media_reference
-
-    def _get_media_source_metadata(self, path):
-        """Get all available metadata from file
-
-        Args:
-            path (str): media file path string
-
-        Raises:
-            AssertionError: ffprobe couldn't read metadata
-
-        Returns:
-            dict: media file metadata
-        """
-        return_data = {}
-
-        try:
-            media_data = get_ffprobe_data(
-                path, self.log
-            )
-
-            # get video stream data
-            video_streams = []
-            audio_streams = []
-            for stream in media_data["streams"]:
-                codec_type = stream.get("codec_type")
-                if codec_type == "audio":
-                    audio_streams.append(stream)
-
-                elif codec_type == "video":
-                    video_streams.append(stream)
-
-            if not video_streams:
-                raise ValueError(
-                    "Could not find video stream in source file."
-                )
-
-            video_stream = video_streams[0]
-            return_data = {
-                "video": True,
-                "start_frame": 0,
-                "duration": int(video_stream["nb_frames"]),
-                "fps": float(
-                    convert_ffprobe_fps_value(
-                        video_stream["r_frame_rate"]
-                    )
-                )
-            }
-
-            # get audio  streams data
-            if audio_streams:
-                return_data["audio"] = True
-
-        except Exception as exc:
-            raise AssertionError((
-                "FFprobe couldn't read information about input file: "
-                f"\"{path}\". Error message: {exc}"
-            ))
-
-        return return_data
 
     def _make_product_instance(
         self,
@@ -1003,7 +911,7 @@ or updating already created. Publishing will create OTIO file.
                 "prep_representations": representations,
             })
 
-            creator_identifier = f"editorial_{pres_product_type}"
+            creator_identifier = f"editorial_{pres_product_type}_advanced"
             editorial_clip_creator = self.create_context.creators[
                 creator_identifier]
 
