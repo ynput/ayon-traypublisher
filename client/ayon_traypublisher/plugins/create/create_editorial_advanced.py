@@ -2,7 +2,8 @@ import os
 import re
 import clique
 from copy import deepcopy
-from typing import Any, Dict
+from typing import List, Tuple, Dict
+from itertools import zip_longest
 from pprint import pformat
 
 import ayon_api
@@ -289,8 +290,6 @@ or updating already created. Publishing will create OTIO file.
     def create(self, product_name, instance_data, pre_create_data):
         allowed_product_type_presets = self._get_allowed_product_type_presets(
             pre_create_data)
-        self.log.warning(
-            f"allowed_product_type_presets: {pformat(allowed_product_type_presets)}")
 
         clip_instance_properties = {
             k: v
@@ -299,9 +298,6 @@ or updating already created. Publishing will create OTIO file.
             if k != "folder_path_data"
             if k not in self.get_product_presets_with_names()
         }
-        self.log.warning(
-            f"clip_instance_properties: {pformat(clip_instance_properties)}"
-        )
 
         folder_path = instance_data["folderPath"]
         folder_entity = ayon_api.get_folder_by_path(
@@ -327,14 +323,13 @@ or updating already created. Publishing will create OTIO file.
         media_folder_paths = self._get_path_from_file_data(
             folder_path_data, multi=True)
 
-        self.log.warning(media_folder_paths)
-
         # get all sequences into otio_timelines
         otio_timelines = []
         for sequence_path in sequence_paths:
+            sequence_name = os.path.basename(sequence_path)
             # get otio timeline
             otio_timeline = self._create_otio_timeline(sequence_path, fps)
-            otio_timelines.append(otio_timeline)
+            otio_timelines.append((sequence_name, sequence_path, otio_timeline))
 
         # Create all clip instances
         clip_instance_properties.update({
@@ -345,7 +340,7 @@ or updating already created. Publishing will create OTIO file.
         ignore_clip_no_content = pre_create_data["ignore_clip_no_content"]
         for media_folder_path in media_folder_paths:
 
-            for otio_timeline in otio_timelines:
+            for (sequence_name, sequence_path, otio_timeline) in otio_timelines:
 
                 # create clip instances
                 self._get_clip_instances(
@@ -354,7 +349,7 @@ or updating already created. Publishing will create OTIO file.
                     media_folder_path,
                     clip_instance_properties,
                     allowed_product_type_presets,
-                    os.path.basename(sequence_path),
+                    sequence_name,
                     ignore_clip_no_content,
                 )
 
@@ -467,7 +462,6 @@ or updating already created. Publishing will create OTIO file.
 
         # Create set of clip names for O(1) lookup
         clip_names_set = set(clip_names)
-        self.log.warning(f"Clip names: {clip_names}")
 
         clip_folders = []
         # Iterate over all media files in media folder
@@ -478,8 +472,6 @@ or updating already created. Publishing will create OTIO file.
                 for folder in folders
                 if folder in clip_names_set
             )
-
-        self.log.warning(f"Clip folders: {clip_folders}")
 
         if not clip_folders:
             self.log.warning("No clip folder paths found")
@@ -559,13 +551,6 @@ or updating already created. Publishing will create OTIO file.
                     matched_product_items
                 )
 
-        self.log.warning("Clip content:")
-        self.log.warning(pformat(clip_content))
-
-        # TODO: perhaps remove if no need for media source
-        # media data for audio stream and reference solving
-        # media_data = self._get_media_source_metadata(media_path)
-
         for track in tracks:
             # set track name
             track.name = f"{sequence_file_name} - {otio_timeline.name}"
@@ -599,11 +584,6 @@ or updating already created. Publishing will create OTIO file.
                             " Skipping clip."
                         )
                         continue
-
-                # TODO: perhaps remove if no need for media source
-                # # get available frames info to clip data
-                # self._create_otio_reference(
-                #   otio_clip, media_path, media_data)
 
                 # convert timeline range to source range
                 self._restore_otio_source_range(otio_clip)
@@ -658,9 +638,14 @@ or updating already created. Publishing will create OTIO file.
         """
         # compile regex pattern for matching product name
         col_pattern_search = re.compile(
-            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN}).*")
+            f".*({re.escape(product_name)}{COL_VARIANTS_PATTERN})(?=_v).*"
+        )
         rem_pattern_search = re.compile(
-            f".*({re.escape(product_name)}{REM_VARIANTS_PATTERN}).*")
+            f".*({re.escape(product_name)}{REM_VARIANTS_PATTERN})(?=_v).*"
+        )
+
+        # find intersection between files and sequences
+        differences = find_string_differences(files)
 
         collections, reminders = clique.assemble(files)
         if not collections:
@@ -696,8 +681,12 @@ or updating already created. Publishing will create OTIO file.
             ]
             extension = os.path.splitext(files_[0])[1]
             product_data = deepcopy(product_data_base)
-            product_data["files"] = files_
-            product_data["type"] = "collection" if extension in IMAGE_EXTENSIONS else "other"
+            suffix = differences[head + tail]
+            product_data.update({
+                "type": "collection" if extension in IMAGE_EXTENSIONS else "other",
+                "suffix": suffix,
+                "files": files_,
+            })
 
             if strict and match:
                 product_data["product_name"] = match.group(1)
@@ -720,6 +709,7 @@ or updating already created. Publishing will create OTIO file.
                 if file.endswith(tail)
             ]
             extension = os.path.splitext(files_[0])[1]
+            suffix = differences[files_[0]]
             content_type = "other"
             if (
                 extension in VIDEO_EXTENSIONS
@@ -732,20 +722,21 @@ or updating already created. Publishing will create OTIO file.
                 content_type = "thumbnail"
 
             product_data = deepcopy(product_data_base)
-            product_data["files"] = files_
-            product_data["type"] = content_type
+            product_data.update({
+                "type": content_type,
+                "suffix": suffix,
+                "files": files_,
+            })
 
             if strict and match:
                 # Extract matched pattern and handle special cases with dots
                 # like name.thumbnail.jpg matches
                 matched_pattern = match.group(1)
-                self.log.warning(f"1. Matched pattern: {matched_pattern}")
                 if "." in matched_pattern:
                     # Try to match without the dot pattern
                     alt_match = col_pattern_search.search(head)
                     if alt_match:
                         matched_pattern = alt_match.group(1)
-                        self.log.warning(f"2. Matched pattern: {head} > {matched_pattern}")
 
                 product_data["product_name"] = matched_pattern
 
@@ -891,8 +882,6 @@ or updating already created. Publishing will create OTIO file.
             # Check each representation preset against the item
             for repre_preset in pres_representations:
                 preset_repre_name = repre_preset["name"]
-                # TODO: use the content type for filtering items
-                #   currently it is matching thumbnail to sequence and thumbnail..
                 pres_repr_content_type = repre_preset["content_type"]
 
                 # Prepare filters
@@ -917,49 +906,70 @@ or updating already created. Publishing will create OTIO file.
                     )
                     # Validate content type matches item type mapping
                     matches_content_type = (
-                        pres_repr_content_type in CONTENT_TYPE_MAPPING[item_type]
-                    )
-                    self.log.warning(
-                        f"File: {file} - ext: {matches_ext} - pattern: {matches_pattern} - content_type: {matches_content_type}"
-                    )
-                    self.log.warning(
-                        f">>>> Item type: {item_type} - Pres repr content type: {pres_repr_content_type}"
+                        pres_repr_content_type in CONTENT_TYPE_MAPPING[item_type]  # noqa
                     )
 
-                    if matches_ext and matches_pattern and matches_content_type:
+                    if (
+                        matches_ext
+                        and matches_pattern and matches_content_type
+                    ):
                         matching_files.append(file)
 
                 if matching_files:
                     abs_dir_path = os.path.join(
                         media_folder_path, item["clip_dir_subpath"]
                     ).replace("\\", "/")
-                    grouped_representations[product_name]["representations"].append({
+
+                    if item["clip_dir_subpath"] == "/":
+                        abs_dir_path = media_folder_path
+
+                    # get extension from first file
+                    repre_ext = os.path.splitext(
+                        matching_files[0])[1].lstrip(".")
+
+                    repre_data = {
+                        "ext": repre_ext,
                         "name": preset_repre_name,
                         "files": matching_files,
                         "content_type": pres_repr_content_type,
                         # for reviewable checking in next step
                         "repre_preset_name": preset_repre_name,
                         "dir_path": abs_dir_path,
-                    })
+                    }
+                    # Add optional output name suffix
+                    suffix = item["suffix"]
+                    if suffix and not "thumb" in suffix:
+                        repre_data["outputName"] = suffix
+                        repre_data["name"] += f"_{suffix}"
+
+                    grouped_representations[product_name][
+                        "representations"].append(repre_data)
 
         # Second pass: create instances for each group
         for product_name, group_data in grouped_representations.items():
             if not group_data["representations"]:
                 continue
 
+            representations = group_data["representations"]
+            # skip case where only thumbnail is present
+            if (
+                len(representations) == 1
+                and representations[0]["content_type"] == "thumbnail"
+            ):
+                continue
+
             # get version from files with use of pattern
             # and versioning type
             version = None
             if pres_versioning == "from_file":
-                version = self._extract_version_from_files(
-                    group_data["representations"])
+                version = self._extract_version_from_files(representations)
             elif pres_versioning == "locked":
                 version = product_preset["locked"]
 
             # check if product is reviewable
             reviewable = any(
                 "review" in pres_rep["tags"]
-                for rep_data in group_data["representations"]
+                for rep_data in representations
                 for pres_rep in pres_representations
                 if pres_rep["name"] == rep_data["repre_preset_name"]
             )
@@ -980,7 +990,7 @@ or updating already created. Publishing will create OTIO file.
                     "add_review_family": reviewable,
                 },
                 "version": version,
-                "representations": group_data["representations"]
+                "prep_representations": representations,
             })
 
             creator_identifier = f"editorial_{pres_product_type}"
@@ -990,6 +1000,7 @@ or updating already created. Publishing will create OTIO file.
             # Create instance in creator context
             editorial_clip_creator.create(instance_data)
 
+            self.log.warning(f"representations: {pformat(representations)}")
             self.log.warning(f"Created instance: {pformat(instance_data)}")
 
     def _extract_version_from_files(self, representations):
@@ -1048,7 +1059,7 @@ or updating already created. Publishing will create OTIO file.
                 "instance_id": c_instance.data["instance_id"]
             }
         )
-
+        self.log.warning(f"Created instance: {pformat(instance_data)}")
         return c_instance
 
     def _set_product_data_to_instance(
@@ -1341,3 +1352,71 @@ or updating already created. Publishing will create OTIO file.
             )
             output[product_name] = item
         return output
+
+def find_string_differences(files: List[str]) -> Dict[str, str]:
+    """
+    Find common parts and differences between all strings in a list.
+    Returns dictionary with original strings as keys and unique parts as values.
+    The unique parts will:
+    - not include file extensions
+    - be stripped of whitespace
+    - be stripped of dots and underscores from both ends
+    - stripped of sequence numbers and padding
+    """
+    if not files:
+        return {}
+
+    # convert first all files to collections and reminders
+    files_collected = []
+    collections, reminders = clique.assemble(files)
+    for collection in collections:
+        head = collection.format("{head}")
+        tail = collection.format("{tail}")
+        files_collected.append(head + tail)
+    for reminder in reminders:
+        files_collected.append(reminder)
+
+    # Remove extensions and convert to list for processing
+    processed_files = [os.path.splitext(f)[0] for f in files_collected]
+
+    # Find common prefix using zip_longest to compare all characters at once
+    prefix = ""
+    for chars in zip_longest(*processed_files):
+        if len(set(chars) - {None}) != 1:  # If there's more than one unique character
+            break
+        prefix += chars[0]
+
+    # Find common suffix by reversing strings
+    reversed_files = [f[::-1] for f in processed_files]
+    suffix = ""
+    for chars in zip_longest(*reversed_files):
+        if len(set(chars) - {None}) != 1:
+            break
+        suffix = chars[0] + suffix
+
+    # Create result dictionary
+    prefix_len = len(prefix)
+    suffix_len = len(suffix)
+    result = {}
+
+    for original, processed in zip(files_collected, processed_files):
+        # Extract the difference
+        diff = (
+            processed[prefix_len:-suffix_len] if suffix
+            else processed[prefix_len:]
+        )
+        # Clean up the difference
+        # remove version pattern from the diff
+        version_pattern = re.compile(r".*(v\d{2,4}).*")
+        if match := re.match(version_pattern, diff):
+            # version string included v##
+            version_str = match[1]
+            diff = diff.replace(version_str, "")
+
+        diff = diff.strip()  # Remove whitespace
+        diff = diff.strip('._')  # Remove dots and underscores
+
+
+        result[original] = diff
+
+    return result
