@@ -1,37 +1,31 @@
 import os
 import re
-import clique
 from copy import deepcopy
-from typing import List, Tuple, Dict
 from itertools import zip_longest
 from pprint import pformat
+from typing import Dict, List
 
 import ayon_api
+import clique
 import opentimelineio as otio
-
-from ayon_traypublisher.api.plugin import (
-    TrayPublishCreator,
-    HiddenTrayPublishCreator
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    FileDef,
+    NumberDef,
+    TextDef,
+    UILabelDef,
+    UISeparatorDef,
 )
-from ayon_traypublisher.api.editorial import (
-    ShotMetadataSolver
+from ayon_core.lib.transcoding import (
+    IMAGE_EXTENSIONS,
+    VIDEO_EXTENSIONS,
 )
 from ayon_core.pipeline import CreatedInstance
-from ayon_core.lib.transcoding import (
-    VIDEO_EXTENSIONS,
-    IMAGE_EXTENSIONS,
-)
-from ayon_core.lib import (
-    get_ffprobe_data,
-    convert_ffprobe_fps_value,
-
-    FileDef,
-    TextDef,
-    NumberDef,
-    EnumDef,
-    BoolDef,
-    UISeparatorDef,
-    UILabelDef
+from ayon_traypublisher.api.editorial import ShotMetadataSolver
+from ayon_traypublisher.api.plugin import (
+    HiddenTrayPublishCreator,
+    TrayPublishCreator,
 )
 
 CREATOR_CLIP_ATTR_DEFS = [
@@ -549,8 +543,6 @@ or updating already created. Publishing will create OTIO file.
                 clip_content[clip_folder.replace(media_folder_path, "")] = (
                     matched_product_items
                 )
-
-        self.log.warning(f">>>>>>> clip_content: \n{pformat(clip_content)}")
 
         for track in tracks:
             # set track name
