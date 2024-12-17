@@ -850,7 +850,7 @@ or updating already created. Publishing will create OTIO file.
                     }
                     # Add optional output name suffix
                     suffix = item["suffix"]
-                    if suffix and not "thumb" in suffix:
+                    if suffix and "thumb" not in suffix:
                         repre_data["outputName"] = suffix
                         repre_data["name"] += f"_{suffix}"
 
