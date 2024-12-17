@@ -179,7 +179,7 @@ class EditorialSimpleCreator(TrayPublishCreator):
     Args:
         TrayPublishCreator (Creator): Tray publisher plugin class
     """
-
+    enabled = True
     label = "Editorial Simple"
     product_type = "editorial"
     identifier = "editorial_simple"
@@ -203,6 +203,8 @@ or updating already created. Publishing will create OTIO file.
             project_settings["traypublisher"]["editorial_creators"]
         )
         creator_settings = editorial_creators.get(self.identifier)
+
+        self.enabled = creator_settings.get("enabled", True)
 
         self._shot_metadata_solver.update_data(
             creator_settings["clip_name_tokenizer"],

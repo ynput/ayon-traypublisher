@@ -27,8 +27,11 @@ class CollectEditorialInstance(pyblish.api.InstancePlugin):
             otio_timeline_string)
 
         instance.context.data["otioTimeline"] = otio_timeline
-        instance.context.data["editorialSourcePath"] = (
-            instance.data["editorialSourcePath"])
+
+        # Just for trimming from media in simple editorial workflow
+        if editorial_source_path := instance.data.get("editorialSourcePath"):
+            instance.context.data["editorialSourcePath"] = \
+                editorial_source_path
 
         self.log.info(fpath)
 
