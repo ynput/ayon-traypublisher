@@ -191,6 +191,7 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
         source_filepaths.extend(filepaths)
         # First try to find out representation with same filepaths
         #   so it's not needed to create new representation just for review
+        use_source_as_review = False
         review_representation = None
         # Review path (only for logging)
         review_path = None
@@ -199,6 +200,7 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
             if _filepaths == filepaths:
                 review_representation = representation
                 review_path = repre_path
+                use_source_as_review = True
                 break
 
         if review_representation is None:
@@ -219,7 +221,8 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
 
         # Adding "review" to representation name since it can clash with main
         # representation if they share the same extension.
-        review_representation["outputName"] = "review"
+        if not use_source_as_review:
+            review_representation["outputName"] = "review"
 
         self.log.debug("Representation {} was marked for review. {}".format(
             review_representation["name"], review_path
