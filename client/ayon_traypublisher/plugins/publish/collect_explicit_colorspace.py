@@ -2,12 +2,14 @@ import pyblish.api
 from ayon_core.lib import EnumDef
 from ayon_core.pipeline import colorspace
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.publish import KnownPublishError
+from ayon_core.pipeline.publish import PublishError
 
 
-class CollectColorspace(pyblish.api.InstancePlugin,
-                        publish.AYONPyblishPluginMixin,
-                        publish.ColormanagedPyblishPluginMixin):
+class CollectColorspace(
+    pyblish.api.InstancePlugin,
+    publish.AYONPyblishPluginMixin,
+    publish.ColormanagedPyblishPluginMixin
+):
     """Collect explicit user defined representation colorspaces"""
 
     label = "Choose representation colorspace"
@@ -52,18 +54,19 @@ class CollectColorspace(pyblish.api.InstancePlugin,
 
         Returns:
             str: colorspace name
+
         """
-        if colorspace_data["type"] == "colorspaces":
+        type_name = colorspace_data["type"]
+        if type_name == "colorspaces":
             return colorspace_data["name"]
 
-        if colorspace_data["type"] == "roles":
+        if type_name == "roles":
             return colorspace_data["colorspace"]
 
-        raise KnownPublishError(
-            (
-                "Collecting of colorspace failed. used config is missing "
-                "colorspace type: '{}' . Please contact your pipeline TD."
-            ).format(colorspace_data['type'])
+        raise PublishError(
+            "Collecting of colorspace failed. used config is missing"
+            f" colorspace type: '{type_name}'."
+            f" Please contact your pipeline TD."
         )
 
     @classmethod
