@@ -55,15 +55,16 @@ class CollectColorspace(pyblish.api.InstancePlugin,
         """
         if colorspace_data["type"] == "colorspaces":
             return colorspace_data["name"]
-        elif colorspace_data["type"] == "roles":
+
+        if colorspace_data["type"] == "roles":
             return colorspace_data["colorspace"]
-        else:
-            raise KnownPublishError(
-                (
-                    "Collecting of colorspace failed. used config is missing "
-                    "colorspace type: '{}' . Please contact your pipeline TD."
-                ).format(colorspace_data['type'])
-            )
+
+        raise KnownPublishError(
+            (
+                "Collecting of colorspace failed. used config is missing "
+                "colorspace type: '{}' . Please contact your pipeline TD."
+            ).format(colorspace_data['type'])
+        )
 
     @classmethod
     def apply_settings(cls, project_settings):
