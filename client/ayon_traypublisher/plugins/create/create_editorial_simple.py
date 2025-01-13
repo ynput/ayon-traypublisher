@@ -204,7 +204,7 @@ or updating already created. Publishing will create OTIO file.
         )
         creator_settings = editorial_creators.get(self.identifier)
 
-        self.enabled = creator_settings.get("enabled", True)
+        self.enabled = creator_settings["enabled"]
 
         self._shot_metadata_solver.update_data(
             creator_settings["clip_name_tokenizer"],
