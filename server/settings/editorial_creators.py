@@ -7,32 +7,35 @@ from ayon_server.exceptions import BadRequestException
 from pydantic import validator
 
 
-product_type_enum = [
-    {"label": "Image", "value": "image"},
-    {"label": "Plate", "value": "plate"},
-    {"label": "Render", "value": "render"},
-    {"label": "Audio", "value": "audio"},
-    {"label": "Model", "value": "model"},
-    {"label": "Camera", "value": "camera"},
-    {"label": "Workfile", "value": "workfile"},
-]
+def get_product_type_enum():
+    return [
+        {"label": "Image", "value": "image"},
+        {"label": "Plate", "value": "plate"},
+        {"label": "Render", "value": "render"},
+        {"label": "Audio", "value": "audio"},
+        {"label": "Model", "value": "model"},
+        {"label": "Camera", "value": "camera"},
+        {"label": "Workfile", "value": "workfile"},
+    ]
 
-content_type_enum = [
-    {"label": "Thumbnail", "value": "thumbnail"},
-    {"label": "Single Image", "value": "image_single"},
-    {"label": "Sequence of images", "value": "image_sequence"},
-    {"label": "Video", "value": "video"},
-    {"label": "Audio", "value": "audio"},
-    {"label": "Geometry", "value": "geometry"},
-    {"label": "Workfile", "value": "workfile"},
-]
+def get_content_type_enum():
+    return [
+        {"label": "Thumbnail", "value": "thumbnail"},
+        {"label": "Single Image", "value": "image_single"},
+        {"label": "Sequence of images", "value": "image_sequence"},
+        {"label": "Video", "value": "video"},
+        {"label": "Audio", "value": "audio"},
+        {"label": "Geometry", "value": "geometry"},
+        {"label": "Workfile", "value": "workfile"},
+    ]
 
 
-output_file_type = [
-    {"value": ".mp4", "label": "MP4"},
-    {"value": ".mov", "label": "MOV"},
-    {"value": ".wav", "label": "WAV"},
-]
+def get_output_file_type_enum():
+   return [
+        {"value": ".mp4", "label": "MP4"},
+        {"value": ".mov", "label": "MOV"},
+        {"value": ".wav", "label": "WAV"},
+    ]
 
 
 class RepresentationAdvancedItemModel(BaseSettingsModel):
@@ -46,7 +49,7 @@ class RepresentationAdvancedItemModel(BaseSettingsModel):
     content_type: str = SettingsField(
         "video",
         title="Content type",
-        enum_resolver=lambda: content_type_enum,
+        enum_resolver=get_content_type_enum,
     )
     extensions: list[str] = SettingsField(
         title="Filter by extensions",
@@ -176,7 +179,7 @@ class ProductTypePresetItem(BaseSettingsModel):
     review: bool = SettingsField(True, title="Review")
     output_file_type: str = SettingsField(
         ".mp4",
-        enum_resolver=lambda: output_file_type
+        enum_resolver=get_output_file_type_enum
     )
 
 
@@ -185,7 +188,7 @@ class ProductTypeAdvancedPresetItem(BaseSettingsModel):
     product_type: str = SettingsField(
         "plate",
         title="Product type",
-        enum_resolver=lambda: product_type_enum
+        enum_resolver=get_product_type_enum
     )
     variant: str = SettingsField("", title="Variant")
     versioning_type: str = SettingsField(
