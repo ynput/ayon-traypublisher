@@ -64,9 +64,9 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
                 tags.append("thumbnail")
 
             # single file type should be a string
-            new_repre_files = files = repre["files"]
-            if content_type != "image_sequence":
-                new_repre_files = files[0]
+            new_repre_files = repre["files"]
+            if len(new_repre_files) == 1:
+                new_repre_files = new_repre_files[0]
 
             # create new representation data
             new_repre_data = {
