@@ -49,37 +49,41 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
                 instance.context.data["editorialSourcePath"])
             instance.data["families"].append("trimming")
 
-        if repres := instance.data.pop("prep_representations", None):
-            representations = []
-            for repre in repres:
-                tags = repre.get("tags", [])
-                custom_tags = repre.get("custom_tags", [])
-                content_type = repre["content_type"]
+        repres = instance.data.pop("prep_representations", None)
 
-                if content_type == "thumbnail":
-                    tags.append("thumbnail")
+        if not repres:
+            return
 
-                # single file type should be a string
-                new_repre_files = files = repre["files"]
-                if content_type != "image_sequence":
-                    new_repre_files = files[0]
+        representations = []
+        for repre in repres:
+            tags = repre.get("tags", [])
+            custom_tags = repre.get("custom_tags", [])
+            content_type = repre["content_type"]
 
-                # create new representation data
-                new_repre_data = {
-                    "ext": repre["ext"],
-                    "name": repre["name"],
-                    "files": new_repre_files,
-                    "stagingDir": repre["dir_path"],
-                    "tags": tags,
-                    "custom_tags": custom_tags,
-                }
+            if content_type == "thumbnail":
+                tags.append("thumbnail")
 
-                # add optional keys
-                if "outputName" in repre.keys():
-                    new_repre_data["outputName"] = repre["outputName"]
+            # single file type should be a string
+            new_repre_files = files = repre["files"]
+            if content_type != "image_sequence":
+                new_repre_files = files[0]
 
-                representations.append(new_repre_data)
+            # create new representation data
+            new_repre_data = {
+                "ext": repre["ext"],
+                "name": repre["name"],
+                "files": new_repre_files,
+                "stagingDir": repre["dir_path"],
+                "tags": tags,
+                "custom_tags": custom_tags,
+            }
 
-            instance.data["representations"] = representations
+            # add optional keys
+            if "outputName" in repre.keys():
+                new_repre_data["outputName"] = repre["outputName"]
+
+            representations.append(new_repre_data)
+
+        instance.data["representations"] = representations
 
         self.log.debug(pformat(instance.data))
