@@ -1,10 +1,11 @@
+from pydantic import validator
+
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     task_types_enum,
 )
 from ayon_server.exceptions import BadRequestException
-from pydantic import validator
 
 
 def get_product_type_enum():
