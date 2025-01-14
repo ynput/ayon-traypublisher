@@ -202,8 +202,8 @@ class ProductTypeAdvancedPresetItem(BaseSettingsModel):
         ],
         description=(
             "Incremental - will increment version number by 1"
-            "\From file - will use version from the file name if any found"
-            "\Locked - will use locked version number"
+            "From file - will use version from the file name if any found"
+            "Locked - will use locked version number"
         ),
         conditionalEnum=True,
     )
