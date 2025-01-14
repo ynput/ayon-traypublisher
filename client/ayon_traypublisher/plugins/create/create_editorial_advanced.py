@@ -630,8 +630,8 @@ or updating already created. Publishing will create OTIO file.
             f".*({re.escape(product_name)}{VARIANTS_PATTERN})"
         )
         # find intersection between files and sequences
-        differences = find_string_differences(files)
-        collections, reminders = clique.assemble(files)
+        differences = find_string_differences(filenames)
+        collections, reminders = clique.assemble(filenames)
         # iterate all collections and search for pattern in file name head
         for collection in collections:
             # check if collection is not empty
@@ -647,20 +647,20 @@ or updating already created. Publishing will create OTIO file.
                 continue
 
             # add collected files to list
-            files_ = [
+            filtered_filenames = [
                 file
-                for file in files
+                for file in filenames
                 if file.startswith(head)
                 if file.endswith(tail)
                 if "thumb" not in file
             ]
-            extension = os.path.splitext(files_[0])[1]
+            extension = os.path.splitext(filtered_filenames[0])[1]
             product_data = deepcopy(product_data_base)
             suffix = differences[head + tail]
             product_data.update({
                 "type": "collection" if extension in IMAGE_EXTENSIONS else "other",
                 "suffix": suffix,
-                "files": files_,
+                "files": filtered_filenames,
             })
 
             if strict and match:
@@ -678,13 +678,13 @@ or updating already created. Publishing will create OTIO file.
                 continue
 
             # add collected files to list
-            files_ = [
-                file for file in files
+            filtered_filenames = [
+                file for file in filenames
                 if file.startswith(head)
                 if file.endswith(tail)
             ]
-            extension = os.path.splitext(files_[0])[1]
-            suffix = differences[files_[0]]
+            extension = os.path.splitext(filtered_filenames[0])[1]
+            suffix = differences[filtered_filenames[0]]
 
             if match:
                 # remove product name from suffix
@@ -705,7 +705,7 @@ or updating already created. Publishing will create OTIO file.
             product_data.update({
                 "type": content_type,
                 "suffix": suffix,
-                "files": files_,
+                "files": filtered_filenames,
             })
 
             if strict and match:
