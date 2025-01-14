@@ -782,32 +782,27 @@ or updating already created. Publishing will create OTIO file.
                 # Filter matching files
                 matching_files = []
                 for file in item["files"]:
+                    # Validate content type matches item type mapping
+                    if (
+                        pres_repr_content_type not in CONTENT_TYPE_MAPPING[item_type]  # noqa
+                    ):
+                        continue
+
                     # Filter by extension
-                    matches_ext = any(
+                    if not any(
                         str(file).lower().endswith(ext)
                         for ext in extensions_filter
-                    )
-                    # Filter by pattern
-                    if patterns_filter:
-                        matches_pattern = any(
-                            re.match(pattern, file)
-                            for pattern in patterns_filter
-                        )
-                    else:
-                        # If no pattern is set, all files match
-                        matches_pattern = True
-
-                    # Validate content type matches item type mapping
-                    matches_content_type = (
-                        pres_repr_content_type in CONTENT_TYPE_MAPPING[item_type]  # noqa
-                    )
-
-                    if (
-                        matches_ext
-                        and matches_pattern
-                        and matches_content_type
                     ):
-                        matching_files.append(file)
+                        continue
+
+                    # Filter by pattern
+                    if patterns_filter and not any(
+                        re.match(pattern, file)
+                        for pattern in patterns_filter
+                    ):
+                        continue
+
+                    matching_files.append(file)
 
                 if matching_files:
                     abs_dir_path = os.path.join(
