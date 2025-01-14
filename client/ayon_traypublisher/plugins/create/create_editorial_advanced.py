@@ -842,10 +842,10 @@ or updating already created. Publishing will create OTIO file.
 
         # Second pass: create instances for each group
         for product_name, group_data in grouped_representations.items():
-            if not group_data["representations"]:
+            representations = group_data["representations"]
+            if not representations:
                 continue
 
-            representations = group_data["representations"]
             # skip case where only thumbnail is present
             if (
                 len(representations) == 1
@@ -862,12 +862,15 @@ or updating already created. Publishing will create OTIO file.
                 version = product_preset["locked"]
 
             # check if product is reviewable
-            reviewable = any(
-                "review" in pres_rep["tags"]
-                for rep_data in representations
-                for pres_rep in pres_representations
-                if pres_rep["name"] == rep_data["repre_preset_name"]
-            )
+            reviewable = False
+            for rep_data in representations:
+                for pres_rep in pres_representations:
+                    if pres_rep["name"] == rep_data["repre_preset_name"]:
+                        if "review" in pres_rep["tags"]:
+                            reviewable = True
+                            break
+                if reviewable:
+                    break
 
             # Get basic instance product data
             instance_data = deepcopy(base_instance_data)
