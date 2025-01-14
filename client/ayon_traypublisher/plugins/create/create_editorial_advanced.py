@@ -1056,7 +1056,6 @@ or updating already created. Publishing will create OTIO file.
 
         # create creator attributes
         creator_attributes = {
-
             "workfile_start_frame": workfile_start_frame,
             "fps": fps,
             "handle_start": int(handle_start),
@@ -1071,8 +1070,6 @@ or updating already created. Publishing will create OTIO file.
             "variant": variant_name,
             "task": None,
             "newHierarchyIntegration": True,
-            # Backwards compatible (Deprecated since 24/06/06)
-            "newAssetPublishing": True,
             "trackStartFrame": track_start_frame,
             "timelineOffset": timeline_offset,
 
@@ -1148,7 +1145,7 @@ or updating already created. Publishing will create OTIO file.
             pre_create_data (dict): precreate attributes inputs
 
         Returns:
-            list: lit of dict with preset items
+            list: Filtered list of extended preset items.
         """
         return [
             # return dict with name of preset and add preset dict
@@ -1211,7 +1208,7 @@ or updating already created. Publishing will create OTIO file.
             ),
             # TODO: perhaps better would be timecode and fps input
             NumberDef("timeline_offset", default=0, label="Timeline offset"),
-            UISeparatorDef(),
+            UISeparatorDef("one"),
             UILabelDef("Clip instance attributes"),
             BoolDef(
                 "ignore_clip_no_content",
@@ -1219,7 +1216,7 @@ or updating already created. Publishing will create OTIO file.
                 default=True
             ),
             UILabelDef("Products Search"),
-            UISeparatorDef(),
+            UISeparatorDef("two"),
         ]
 
         # transform all items in product type presets to join product
@@ -1235,7 +1232,7 @@ or updating already created. Publishing will create OTIO file.
             )
             for name, preset in product_names.items()
         )
-        attr_defs.append(UISeparatorDef())
+        attr_defs.append(UISeparatorDef("three"))
 
         attr_defs.extend(CREATOR_CLIP_ATTR_DEFS)
         return attr_defs
@@ -1253,6 +1250,7 @@ or updating already created. Publishing will create OTIO file.
             )
             output[product_name] = item
         return output
+
 
 def find_string_differences(files: List[str]) -> Dict[str, str]:
     """
@@ -1314,9 +1312,8 @@ def find_string_differences(files: List[str]) -> Dict[str, str]:
             version_str = match[1]
             diff = diff.replace(version_str, "")
 
-        diff = diff.strip()  # Remove whitespace
-        diff = diff.strip('._')  # Remove dots and underscores
-
+        # Remove whitespace, dots and underscores
+        diff = diff.strip().strip("._")
 
         result[original] = diff
 
