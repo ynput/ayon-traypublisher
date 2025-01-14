@@ -804,37 +804,41 @@ or updating already created. Publishing will create OTIO file.
 
                     matching_files.append(file)
 
-                if matching_files:
-                    abs_dir_path = os.path.join(
-                        media_folder_path, item["clip_dir_subpath"]
-                    ).replace("\\", "/")
+                if not matching_files:
+                    continue
 
-                    if item["clip_dir_subpath"] == "/":
-                        abs_dir_path = media_folder_path
+                abs_dir_path = os.path.join(
+                    media_folder_path, item["clip_dir_subpath"]
+                ).replace("\\", "/")
 
-                    # get extension from first file
-                    repre_ext = os.path.splitext(
-                        matching_files[0])[1].lstrip(".")
+                if item["clip_dir_subpath"] == "/":
+                    abs_dir_path = media_folder_path
 
-                    repre_data = {
-                        "ext": repre_ext,
-                        "name": preset_repre_name,
-                        "files": matching_files,
-                        "content_type": pres_repr_content_type,
-                        # for reviewable checking in next step
-                        "repre_preset_name": preset_repre_name,
-                        "dir_path": abs_dir_path,
-                        "tags": pres_repr_tags,
-                        "custom_tags": pres_repr_custom_tags,
-                    }
-                    # Add optional output name suffix
-                    suffix = item["suffix"]
-                    if suffix and "thumb" not in suffix:
-                        repre_data["outputName"] = suffix
-                        repre_data["name"] += f"_{suffix}"
+                # get extension from first file
+                repre_ext = os.path.splitext(
+                    matching_files[0])[1].lstrip(".").lower()
 
-                    grouped_representations[product_name][
-                        "representations"].append(repre_data)
+                if len(matching_files) == 1:
+                    matching_files = matching_files[0]
+
+                repre_data = {
+                    "ext": repre_ext,
+                    "name": preset_repre_name,
+                    "files": matching_files,
+                    "content_type": pres_repr_content_type,
+                    # for reviewable checking in next step
+                    "repre_preset_name": preset_repre_name,
+                    "dir_path": abs_dir_path,
+                    "tags": pres_repr_tags,
+                    "custom_tags": pres_repr_custom_tags,
+                }
+                # Add optional output name suffix
+                suffix = item["suffix"]
+                if suffix and "thumb" not in suffix:
+                    repre_data["outputName"] = suffix
+                    repre_data["name"] += f"_{suffix}"
+                grouped_representations[product_name][
+                    "representations"].append(repre_data)
 
         # Second pass: create instances for each group
         for product_name, group_data in grouped_representations.items():
