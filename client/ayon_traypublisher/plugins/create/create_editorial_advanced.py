@@ -21,7 +21,7 @@ from ayon_core.lib.transcoding import (
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
 )
-from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline import CreatedInstance, CreatorError
 from ayon_traypublisher.api.editorial import ShotMetadataSolver
 from ayon_traypublisher.api.plugin import (
     HiddenTrayPublishCreator,
@@ -297,24 +297,24 @@ or updating already created. Publishing will create OTIO file.
             self.project_name, folder_path
         )
 
-        if pre_create_data["fps"] == "from_selection":
+        if folder_entity and pre_create_data["fps"] == "from_selection":
             # get 'fps' from folder attributes
             fps = folder_entity["attrib"]["fps"]
         else:
             fps = float(pre_create_data["fps"])
 
-        instance_data.update({
-            "fps": fps
-        })
+        instance_data["fps"] = fps
 
         # get path of sequence
-        sequence_path_data = pre_create_data["sequence_filepath_data"]
         sequence_paths = self._get_path_from_file_data(
-            sequence_path_data, multi=True)
+            pre_create_data["sequence_filepath_data"],
+            multi=True
+        )
 
-        folder_path_data = pre_create_data["folder_path_data"]
         media_folder_paths = self._get_path_from_file_data(
-            folder_path_data, multi=True)
+            pre_create_data["folder_path_data"],
+            multi=True
+        )
 
         # get all sequences into otio_timelines
         otio_timelines = []
@@ -332,9 +332,7 @@ or updating already created. Publishing will create OTIO file.
 
         ignore_clip_no_content = pre_create_data["ignore_clip_no_content"]
         for media_folder_path in media_folder_paths:
-
             for (sequence_name, sequence_path, otio_timeline) in otio_timelines:
-
                 # create clip instances
                 self._get_clip_instances(
                     folder_entity,
@@ -407,21 +405,21 @@ or updating already created. Publishing will create OTIO file.
             FileExistsError: in case nothing had been set
 
         Returns:
-            str: path string
+            Union[list[str], str]: Paths or single path based on
+                'multi' value.
         """
-        return_path_list = []
+        output_paths = []
+        for item in file_path_data:
+            dirpath = item["directory"]
+            for filename in item["filenames"]:
+                output_paths.append(os.path.join(dirpath, filename))
 
-        if isinstance(file_path_data, list):
-            return_path_list = [
-                os.path.join(f["directory"], f["filenames"][0])
-                for f in file_path_data
-            ]
-
-        if not return_path_list:
-            raise FileExistsError(
-                f"File path was not added: {file_path_data}")
-
-        return return_path_list if multi else return_path_list[0]
+        if not output_paths:
+            raise CreatorError(
+                # The message is cryptic even for me might be worth to change
+                f"File path was not added: {file_path_data}"
+            )
+        return output_paths if multi else output_paths[0]
 
     def _get_clip_instances(
         self,
@@ -450,18 +448,16 @@ or updating already created. Publishing will create OTIO file.
         # Get all tracks from otio timeline
         tracks = otio_timeline.video_tracks()
 
-        # get all clipnames from otio timeline to list of strings
-        clip_names = [clip.name for clip in otio_timeline.find_clips()]
 
-        # Create set of clip names for O(1) lookup
-        clip_names_set = set(clip_names)
+        # get all clipnames from otio timeline to list of strings
+        clip_names_set = {clip.name for clip in otio_timeline.find_clips()}
 
         clip_folders = []
         # Iterate over all media files in media folder
         for root, folders, _ in os.walk(media_folder_path):
             # Use set intersection to find matching folder directly
             clip_folders.extend(
-                folder.replace("\\", "/")
+                folder
                 for folder in folders
                 if folder in clip_names_set
             )
@@ -633,16 +629,9 @@ or updating already created. Publishing will create OTIO file.
         pattern_search = re.compile(
             f".*({re.escape(product_name)}{VARIANTS_PATTERN})"
         )
-        self.log.warning(f">>> pattern_search: {pattern_search}")
-
         # find intersection between files and sequences
         differences = find_string_differences(files)
-        self.log.warning(f">>> files: {pformat(files)}")
-
         collections, reminders = clique.assemble(files)
-        self.log.warning(
-            f">>> reminders: {pformat([rem for rem in reminders])}")
-
         # iterate all collections and search for pattern in file name head
         for collection in collections:
             # check if collection is not empty
@@ -680,7 +669,6 @@ or updating already created. Publishing will create OTIO file.
             collecting_items.append(product_data)
 
         for reminder in reminders:
-            self.log.warning(f"reminder: {reminder}")
             # check if pattern in name head is present
             head, tail = os.path.splitext(reminder)
             match = pattern_search.search(head)
@@ -700,8 +688,6 @@ or updating already created. Publishing will create OTIO file.
 
             if match:
                 # remove product name from suffix
-                self.log.warning(f"match[1]: {match[1]}")
-                self.log.warning(f"match[0]: {match[0]}")
                 suffix = suffix.replace(match[1] or match[0], "")
 
             content_type = "other"
@@ -728,8 +714,6 @@ or updating already created. Publishing will create OTIO file.
                 matched_pattern = match[1]
 
                 product_data["product_name"] = matched_pattern
-
-            self.log.warning(f"product_data: {pformat(product_data)}")
 
             collecting_items.append(product_data)
 
@@ -912,9 +896,6 @@ or updating already created. Publishing will create OTIO file.
             # Create instance in creator context
             editorial_clip_creator.create(instance_data)
 
-            self.log.warning(f"representations: {pformat(representations)}")
-            self.log.warning(f"Created instance: {pformat(instance_data)}")
-
     def _extract_version_from_files(self, representations):
         """Extract version information from files
 
@@ -971,7 +952,6 @@ or updating already created. Publishing will create OTIO file.
                 "instance_id": c_instance.data["instance_id"]
             }
         )
-        self.log.warning(f"Created instance: {pformat(instance_data)}")
         return c_instance
 
     def _set_product_data_to_instance(
