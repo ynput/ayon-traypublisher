@@ -112,6 +112,7 @@ CONTENT_TYPE_MAPPING = {
 VARIANTS_PATTERN = r"(?:_[^_v\.]+|\d+)?"
 VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
+
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
     host_name = "traypublisher"
@@ -259,15 +260,15 @@ or updating already created. Publishing will create OTIO file.
 
     def __init__(self, *args, **kwargs):
         self._shot_metadata_solver = ShotMetadataSolver(self.log)
-        super(EditorialAdvancedCreator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def apply_settings(self, project_settings):
         editorial_creators = deepcopy(
             project_settings["traypublisher"]["editorial_creators"]
         )
-        creator_settings = editorial_creators.get(self.identifier)
+        creator_settings = editorial_creators[self.identifier]
 
-        self.enabled = creator_settings.get("enabled", True)
+        self.enabled = creator_settings["enabled"]
 
         self._shot_metadata_solver.update_data(
             creator_settings["clip_name_tokenizer"],
@@ -277,19 +278,18 @@ or updating already created. Publishing will create OTIO file.
         )
         self.product_type_presets = creator_settings[
             "product_type_advanced_presets"]
-        if default_variants := creator_settings.get("default_variants"):
-            self.default_variants = default_variants
+        self.default_variants = creator_settings["default_variants"]
 
     def create(self, product_name, instance_data, pre_create_data):
         allowed_product_type_presets = self._get_allowed_product_type_presets(
             pre_create_data)
 
+        ignored_keys = set(self.get_product_presets_with_names())
+        ignored_keys |= {"sequence_filepath_data", "folder_path_data"}
         clip_instance_properties = {
             k: v
             for k, v in pre_create_data.items()
-            if k != "sequence_filepath_data"
-            if k != "folder_path_data"
-            if k not in self.get_product_presets_with_names()
+            if k not in ignored_keys
         }
 
         folder_path = instance_data["folderPath"]
