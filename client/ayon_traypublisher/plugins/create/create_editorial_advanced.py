@@ -473,7 +473,7 @@ or updating already created. Publishing will create OTIO file.
                 media_folder_path, clip_folder).replace("\\", "/")
 
             matched_product_items = []
-            for root, folders, files in os.walk(abs_clip_folder):
+            for root, foldernames, filenames in os.walk(abs_clip_folder):
                 # iterate all product names in enabled presets
                 for pres_product_data in product_type_presets:
                     product_name = pres_product_data["product_name"]
@@ -487,7 +487,7 @@ or updating already created. Publishing will create OTIO file.
                     root = root.replace("\\", "/")
                     cl_part_path = root.replace(abs_clip_folder, "")
 
-                    for folder in folders:
+                    for folder in foldernames:
                         product_data = deepcopy(product_data_base)
                         # need to include more since variants might occure
                         pattern_search = re.compile(
@@ -523,7 +523,7 @@ or updating already created. Publishing will create OTIO file.
                     product_data_base["clip_dir_subpath"] = "/"
                     self._include_files_for_processing(
                         product_name,
-                        files,
+                        filenames,
                         product_data_base,
                         matched_product_items,
                     )
@@ -610,7 +610,7 @@ or updating already created. Publishing will create OTIO file.
     def _include_files_for_processing(
         self,
         product_name,
-        files,
+        filenames,
         product_data_base,
         collecting_items,
         strict=True,
@@ -620,7 +620,7 @@ or updating already created. Publishing will create OTIO file.
         Args:
             product_name (str): product name
             partial_path (str): clip folder path
-            files (list): list of files in clip folder to collect
+            filenames (list): list of files in clip folder to collect
             product_data_base (dict): product data
             collecting_items (list): list for collecting product data items
             strict (Optional[bool]): strict mode for filtering files
