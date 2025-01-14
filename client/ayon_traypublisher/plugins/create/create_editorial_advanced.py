@@ -756,7 +756,7 @@ or updating already created. Publishing will create OTIO file.
         # First pass: group matching files by product name and representation
         for item in clip_content_items:
             item_type = item["type"]
-            if pres_product_name not in item["preset_name"]:
+            if pres_product_name != item["preset_name"]:
                 continue
 
             product_name = item["product_name"]
@@ -774,7 +774,7 @@ or updating already created. Publishing will create OTIO file.
 
                 # Prepare filters
                 extensions_filter = [
-                    ext if ext.startswith(".") else f".{ext}"
+                    (ext if ext.startswith(".") else f".{ext}").lower()
                     for ext in repre_preset.get("extensions", [])
                 ]
                 patterns_filter = repre_preset.get("patterns", [])
@@ -784,7 +784,7 @@ or updating already created. Publishing will create OTIO file.
                 for file in item["files"]:
                     # Filter by extension
                     matches_ext = any(
-                        str(file).lower().endswith(ext.lower())
+                        str(file).lower().endswith(ext)
                         for ext in extensions_filter
                     )
                     # Filter by pattern
