@@ -292,8 +292,8 @@ or updating already created. Publishing will create OTIO file.
         }
 
         folder_path = instance_data["folderPath"]
-        folder_entity = ayon_api.get_folder_by_path(
-            self.project_name, folder_path
+        folder_entity = self.create_context.get_folder_entity(
+            folder_path
         )
 
         if folder_entity and pre_create_data["fps"] == "from_selection":
