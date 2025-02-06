@@ -646,6 +646,7 @@ or updating already created. Publishing will create OTIO file.
                 continue
 
             # add collected files to list
+            # NOTE: Guess thumbnail file - potential danger.
             filtered_filenames = [
                 file
                 for file in filenames
