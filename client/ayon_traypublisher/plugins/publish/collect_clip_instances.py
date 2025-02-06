@@ -44,9 +44,7 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
             edit_shared_data[parent_instance_id]
         )
 
-        if "editorialSourcePath" in instance.context.data.keys():
-            instance.data["editorialSourcePath"] = (
-                instance.context.data["editorialSourcePath"])
+        if "editorialSourcePath" in instance.data.keys():
             instance.data["families"].append("trimming")
 
         repres = instance.data.pop("prep_representations", None)
