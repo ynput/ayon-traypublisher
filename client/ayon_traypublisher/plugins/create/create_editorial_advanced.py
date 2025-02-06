@@ -535,9 +535,7 @@ or updating already created. Publishing will create OTIO file.
                     )
                     continue
 
-                clip_content[clip_folder.replace(media_folder_path, "")] = (
-                    matched_product_items
-                )
+                clip_content[clip_folder] = matched_product_items
 
         for track in tracks:
             # set track name
