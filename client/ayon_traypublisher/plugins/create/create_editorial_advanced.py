@@ -767,8 +767,9 @@ or updating already created. Publishing will create OTIO file.
             for repre_preset in pres_representations:
                 preset_repre_name = repre_preset["name"]
                 pres_repr_content_type = repre_preset["content_type"]
-                pres_repr_tags = repre_preset.get("tags", [])
-                pres_repr_custom_tags = repre_preset.get("custom_tags", [])
+                pres_repr_tags = deepcopy(repre_preset.get("tags", []))
+                pres_repr_custom_tags = deepcopy(
+                    repre_preset.get("custom_tags", []))
 
                 # Prepare filters
                 extensions_filter = [
