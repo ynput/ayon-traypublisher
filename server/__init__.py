@@ -1,7 +1,16 @@
+import typing
+
 from ayon_server.addons import BaseServerAddon
 from ayon_server.actions import SimpleActionManifest
 
 from .settings import TraypublisherSettings, DEFAULT_TRAYPUBLISHER_SETTING
+
+if typing.TYPE_CHECKING:
+    from ayon_server.actions import (
+        ActionExecutor,
+        ExecuteResponseModel,
+        SimpleActionManifest,
+    )
 
 
 class Traypublisher(BaseServerAddon):
