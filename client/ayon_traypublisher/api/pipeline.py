@@ -2,6 +2,7 @@ import os
 import json
 import tempfile
 import atexit
+import warnings
 
 import pyblish.api
 
@@ -37,9 +38,23 @@ class TrayPublisherHost(HostBase, IPublishHost):
     def update_context_data(self, data, changes):
         HostContext.save_context_data(data)
 
-    def set_project_name(self, project_name):
-        # TODO Deregister project specific plugins and register new project
-        #   plugins
+    def set_project_name(self, project_name: str):
+        """Change project name.
+
+        DEPRECATED:
+            TrayPublisher now expects that project name is set before
+                is started, and is not possible to change project during
+                process lifetime.
+
+        """
+        warnings.warn(
+            (
+                "'set_project_name' is deprecated and will be removed"
+                " in future versions of TrayPublisher addon."
+                " Project name should be set before TrayPublisher is started."
+            ),
+            DeprecationWarning,
+        )
         os.environ["AYON_PROJECT_NAME"] = project_name
 
 
