@@ -24,6 +24,8 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
     version = __version__
     host_name = "traypublisher"
 
+    _choose_dialog = None
+
     def tray_init(self):
         return
 
