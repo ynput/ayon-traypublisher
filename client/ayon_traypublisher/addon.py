@@ -51,7 +51,7 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
         )
 
         cli_main.command(
-            self._ingest_csv,
+            self._cli_ingest_csv,
             name="ingestcsv",
         ).option(
             "--filepath",
@@ -124,7 +124,7 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
         )
         window.activateWindow()
 
-    def _ingest_csv(
+    def _cli_ingest_csv(
         self,
         filepath,
         project,
