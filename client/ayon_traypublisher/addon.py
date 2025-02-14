@@ -11,6 +11,7 @@ from ayon_core.addon import (
     AYONAddon,
     ITrayAction,
     IHostAddon,
+    IPluginPaths,
 )
 
 from .version import __version__
@@ -18,7 +19,9 @@ from .version import __version__
 TRAYPUBLISH_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
+class TrayPublishAddon(
+    AYONAddon, IHostAddon, ITrayAction, IPluginPaths
+):
     label = "Publisher"
     name = "traypublisher"
     version = __version__
@@ -28,6 +31,25 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
 
     def tray_init(self):
         return
+
+    def get_plugin_paths(self):
+        return {}
+
+    def get_publish_plugin_paths(self, host_name):
+        output = []
+        if host_name == self.host_name:
+            output.append(
+                os.path.join(TRAYPUBLISH_ROOT_DIR, "plugins", "publish")
+            )
+        return output
+
+    def get_create_plugin_paths(self, host_name):
+        output = []
+        if host_name == self.host_name:
+            output.append(
+                os.path.join(TRAYPUBLISH_ROOT_DIR, "plugins", "create")
+            )
+        return output
 
     def on_action_trigger(self):
         self._show_choose_project()
