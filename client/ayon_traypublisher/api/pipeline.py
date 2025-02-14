@@ -29,7 +29,7 @@ class TrayPublisherHost(HostBase, IPublishHost):
         register_creator_plugin_path(CREATE_PATH)
 
     def get_context_title(self):
-        return HostContext.get_project_name()
+        return self.get_current_project_name()
 
     def get_context_data(self):
         return HostContext.get_context_data()
@@ -41,7 +41,6 @@ class TrayPublisherHost(HostBase, IPublishHost):
         # TODO Deregister project specific plugins and register new project
         #   plugins
         os.environ["AYON_PROJECT_NAME"] = project_name
-        HostContext.set_project_name(project_name)
 
 
 class HostContext:
@@ -112,22 +111,6 @@ class HostContext:
     @classmethod
     def save_context_data(cls, data):
         cls._save_data("context", data)
-
-    @classmethod
-    def get_project_name(cls):
-        return cls._get_data("project_name")
-
-    @classmethod
-    def set_project_name(cls, project_name):
-        cls._save_data("project_name", project_name)
-
-    @classmethod
-    def get_data_to_store(cls):
-        return {
-            "project_name": cls.get_project_name(),
-            "instances": cls.get_instances(),
-            "context": cls.get_context_data(),
-        }
 
 
 def list_instances():
