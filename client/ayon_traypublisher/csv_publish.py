@@ -1,7 +1,8 @@
+import os
+
 import pyblish.api
 import pyblish.util
 
-from ayon_api import get_folder_by_path, get_task_by_name
 from ayon_core.lib.attribute_definitions import FileDefItem
 from ayon_core.pipeline import install_host
 from ayon_core.pipeline.create import CreateContext
@@ -24,14 +25,13 @@ def csvpublish(
         folder_path (str): Folder path.
         task_name (Optional[str]): Task name.
         ignore_validators (Optional[bool]): Option to ignore validators.
+
     """
+    os.environ["AYON_PROJECT_NAME"] = project_name
 
     # initialization of host
     host = TrayPublisherHost()
     install_host(host)
-
-    # setting host context into project
-    host.set_project_name(project_name)
 
     # form precreate data with field values
     file_field = FileDefItem.from_paths([filepath], False).pop().to_dict()
