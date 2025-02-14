@@ -1,6 +1,6 @@
-from .window import main
+from .window import ChooseProjectWindow
 
 
 __all__ = (
-    "main",
+    "ChooseProjectWindow",
 )
