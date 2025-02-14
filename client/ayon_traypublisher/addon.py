@@ -94,7 +94,9 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
         args = get_ayon_launcher_args(
             "addon", self.name, "launch", "--project", project_name
         )
-        run_detached_process(args)
+        env = os.environ.copy()
+        env["AYON_PROJECT_NAME"] = project_name
+        run_detached_process(args, env=env)
 
     def _get_choose_dialog(self):
         if self._choose_dialog is None:
@@ -112,6 +114,7 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
 
     def _show_choose_project(self):
         from qtpy import QtCore
+
         window = self._get_choose_dialog()
         window.show()
         window.setWindowState(
