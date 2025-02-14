@@ -84,7 +84,9 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
         pass
 
     def _cli_launch(self, project: Optional[str] = None):
-        pass
+        from .api.main import launch_traypublisher_ui
+
+        launch_traypublisher_ui(project)
 
     def _start_traypublisher(self, project_name: str):
         args = get_ayon_launcher_args(
@@ -92,8 +94,30 @@ class TrayPublishAddon(AYONAddon, IHostAddon, ITrayAction):
         )
         run_detached_process(args)
 
+    def _get_choose_dialog(self):
+        if self._choose_dialog is None:
+            from ayon_traypublisher.ui import ChooseProjectWindow
+
+            choose_dialog = ChooseProjectWindow()
+            choose_dialog.accepted.connect(self._on_choose_dialog_accept)
+            self._choose_dialog = choose_dialog
+        return self._choose_dialog
+
+    def _on_choose_dialog_accept(self):
+        project_name = self._choose_dialog.get_selected_project_name()
+        if project_name:
+            self._start_traypublisher(project_name)
+
     def _show_choose_project(self):
-        pass
+        from qtpy import QtCore
+        window = self._get_choose_dialog()
+        window.show()
+        window.setWindowState(
+            window.windowState()
+            & ~QtCore.Qt.WindowMinimized
+            | QtCore.Qt.WindowActive
+        )
+        window.activateWindow()
 
     def _ingest_csv(
         self,
