@@ -110,7 +110,7 @@ class TrayPublishAddon(
     def _cli_launch(self, project: Optional[str] = None):
         from .api.main import launch_traypublisher_ui
 
-        launch_traypublisher_ui(project)
+        launch_traypublisher_ui(self, project)
 
     def _start_traypublisher(self, project_name: str):
         args = get_ayon_launcher_args(

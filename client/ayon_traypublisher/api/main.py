@@ -1,8 +1,11 @@
+from __future__ import annotations
 import os
+import typing
 from typing import Optional
 
 from qtpy import QtWidgets, QtCore
 
+from ayon_core.addon import ensure_addons_are_process_ready
 from ayon_core.pipeline import install_host
 from ayon_core.tools.utils import get_ayon_qt_app
 # from ayon_core.tools.utils.host_tools import show_publisher
@@ -11,10 +14,14 @@ from ayon_traypublisher.ui import ChooseProjectWindow
 
 from .pipeline import TrayPublisherHost
 
+if typing.TYPE_CHECKING:
+    from ayon_traypublisher import TrayPublishAddon
+
 
 class _LaunchContext:
     def __init__(
         self,
+        addon: TrayPublishAddon,
         app: QtWidgets.QApplication,
         project_name: Optional[str],
     ):
@@ -22,8 +29,9 @@ class _LaunchContext:
 
         init_timer.timeout.connect(self._on_timer)
 
-        self._project_name = project_name
+        self._addon = addon
         self._app = app
+        self._project_name = project_name
         self._init_timer = init_timer
         self._publisher_window = None
 
@@ -44,6 +52,13 @@ class _LaunchContext:
             return
 
         os.environ["AYON_PROJECT_NAME"] = self._project_name
+
+        ensure_addons_are_process_ready(
+            addon_name=self._addon.name,
+            addon_version=self._addon.version,
+            project_name=self._project_name,
+        )
+
         host = TrayPublisherHost()
         install_host(host)
 
@@ -68,8 +83,10 @@ class _LaunchContext:
         self._publisher_window = window
 
 
-def launch_traypublisher_ui(project_name: Optional[str]):
+def launch_traypublisher_ui(
+    addon: TrayPublishAddon, project_name: Optional[str]
+):
     app_instance = get_ayon_qt_app()
-    context = _LaunchContext(app_instance, project_name)
+    context = _LaunchContext(addon, app_instance, project_name)
     context.start()
     app_instance.exec_()
