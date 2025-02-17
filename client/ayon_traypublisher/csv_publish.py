@@ -2,7 +2,6 @@ import os
 
 import pyblish.api
 import pyblish.util
-from ayon_api import get_folder_by_path, get_task_by_name
 
 from ayon_core.lib.attribute_definitions import FileDefItem
 from ayon_core.pipeline import install_host
@@ -42,10 +41,7 @@ def csvpublish(
 
     # create context initialization
     create_context = CreateContext(host, headless=True)
-    folder_entity = get_folder_by_path(
-        project_name,
-        folder_path=folder_path,
-    )
+    folder_entity = create_context.get_folder_entity(folder_path)
 
     if not folder_entity:
         ValueError(
@@ -53,9 +49,8 @@ def csvpublish(
             f"exists at project '{project_name}'."
         )
 
-    task_entity = get_task_by_name(
-        project_name,
-        folder_entity["id"],
+    task_entity = create_context.get_task_entity(
+        folder_path,
         task_name,
     )
 
