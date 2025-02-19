@@ -253,18 +253,24 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
         repre_name = repre_ext = ext[1:]
         if repre_name not in repre_names_counter:
             repre_names_counter[repre_name] = 2
+            counter = None
         else:
             counter = repre_names_counter[repre_name]
             repre_names_counter[repre_name] += 1
             repre_name = "{}_{}".format(repre_name, counter)
         repre_names.append(repre_name)
-        return {
+        representation_data = {
             "ext": repre_ext,
             "name": repre_name,
             "stagingDir": filepath_item["directory"],
             "files": filenames,
             "tags": []
         }
+
+        if counter:
+            representation_data["outputName"] = str(counter)
+
+        return representation_data
 
     def _calculate_source(self, filepaths):
         cols, rems = clique.assemble(filepaths)
