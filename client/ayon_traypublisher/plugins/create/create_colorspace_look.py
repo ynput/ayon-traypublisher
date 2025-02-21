@@ -14,7 +14,11 @@ from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError
 )
-from ayon_core.pipeline import colorspace
+from ayon_core.pipeline.colorspace import (
+    get_current_context_imageio_config_preset,
+    get_ocio_config_colorspaces,
+    get_colorspaces_enumerator_items,
+)
 from ayon_traypublisher.api.plugin import TrayPublishCreator
 
 
@@ -156,16 +160,26 @@ This creator publishes color space look file (LUT).
         ]
 
     def apply_settings(self, project_settings):
-        config_data = colorspace.get_current_context_imageio_config_preset(
-            project_settings=project_settings
-        )
+        config_data = None
+        try:
+            # This might crash because config path is not available
+            #   for the machine
+            config_data = get_current_context_imageio_config_preset(
+                project_settings=project_settings
+            )
+        except Exception:
+            self.log.warning(
+                "Failed to get imageio config preset for current context",
+                exc_info=True
+            )
+
         if not config_data:
             self.enabled = False
             return
 
         filepath = config_data["path"]
-        config_items = colorspace.get_ocio_config_colorspaces(filepath)
-        labeled_colorspaces = colorspace.get_colorspaces_enumerator_items(
+        config_items = get_ocio_config_colorspaces(filepath)
+        labeled_colorspaces = get_colorspaces_enumerator_items(
             config_items,
             include_aliases=True,
             include_roles=True
