@@ -22,6 +22,9 @@ from ayon_core.pipeline.colorspace import (
 from ayon_traypublisher.api.plugin import TrayPublishCreator
 
 
+LUT_KEY_PREFIX = "abs_lut_path"
+
+
 class CreateColorspaceLook(TrayPublishCreator):
     """Creates colorspace look files."""
 
@@ -49,14 +52,9 @@ This creator publishes color space look file (LUT).
         return "mdi.format-color-fill"
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("luts_file")
-        if not repr_file:
+        repr_files = pre_create_data.get("luts_file")
+        if not repr_files:
             raise CreatorError("No files specified")
-
-        files = repr_file.get("filenames")
-        if not files:
-            # this should never happen
-            raise CreatorError("Missing files from representation")
 
         folder_path = instance_data["folderPath"]
         task_name = instance_data["task"]
@@ -76,10 +74,16 @@ This creator publishes color space look file (LUT).
             variant=instance_data["variant"],
         )
 
-        instance_data["creator_attributes"] = {
-            "abs_lut_path": (
-                Path(repr_file["directory"]) / files[0]).as_posix()
-        }
+        instance_data["creator_attributes"] = {}
+        for idx, repr_file in enumerate(repr_files):
+            files = repr_file.get("filenames")
+            if not files:
+                # this should never happen
+                raise CreatorError("Missing files from representation")
+
+            instance_data["creator_attributes"][f"{LUT_KEY_PREFIX}_{idx}"] = (
+                    (Path(repr_file["directory"]) / files[0]).as_posix()
+            )
 
         # Create new instance
         new_instance = CreatedInstance(self.product_type, product_name,
@@ -96,56 +100,71 @@ This creator publishes color space look file (LUT).
                 instance.transient_data["config_items"] = self.config_items
                 instance.transient_data["config_data"] = self.config_data
 
-    def get_instance_attr_defs(self):
-        return [
+    def get_attr_defs_for_instance(self, instance):
+        attrs = [
             EnumDef(
                 "working_colorspace",
                 self.colorspace_items,
                 default="Not set",
                 label="Working Colorspace",
             ),
-            UISeparatorDef(
-                label="Advanced1"
-            ),
-            TextDef(
-                "abs_lut_path",
-                label="LUT Path",
-            ),
-            EnumDef(
-                "input_colorspace",
-                self.colorspace_items,
-                default="Not set",
-                label="Input Colorspace",
-            ),
-            EnumDef(
-                "direction",
-                [
-                    (None, "Not set"),
-                    ("forward", "Forward"),
-                    ("inverse", "Inverse")
-                ],
-                default="Not set",
-                label="Direction"
-            ),
-            EnumDef(
-                "interpolation",
-                [
-                    (None, "Not set"),
-                    ("linear", "Linear"),
-                    ("tetrahedral", "Tetrahedral"),
-                    ("best", "Best"),
-                    ("nearest", "Nearest")
-                ],
-                default="Not set",
-                label="Interpolation"
-            ),
-            EnumDef(
-                "output_colorspace",
-                self.colorspace_items,
-                default="Not set",
-                label="Output Colorspace",
-            ),
         ]
+
+        # Collect all LUT files
+        all_files_url = (
+            key
+            for key in instance.data["creator_attributes"]
+            if key.startswith(LUT_KEY_PREFIX)
+        )
+
+        for idx, _ in enumerate(all_files_url):
+            lut_attrs = [
+                UISeparatorDef(
+                    f"separator_{idx}",
+                    label="Advanced1"
+                ),
+                TextDef(
+                    f"abs_lut_path_{idx}",
+                    label="LUT Path",
+                ),
+                EnumDef(
+                    f"input_colorspace_{idx}",
+                    self.colorspace_items,
+                    default="Not set",
+                    label="Input Colorspace",
+                ),
+                EnumDef(
+                    f"direction_{idx}",
+                    [
+                        (None, "Not set"),
+                        ("forward", "Forward"),
+                        ("inverse", "Inverse")
+                    ],
+                    default="Not set",
+                    label="Direction"
+                ),
+                EnumDef(
+                    f"interpolation_{idx}",
+                    [
+                        (None, "Not set"),
+                        ("linear", "Linear"),
+                        ("tetrahedral", "Tetrahedral"),
+                        ("best", "Best"),
+                        ("nearest", "Nearest")
+                    ],
+                    default="Not set",
+                    label="Interpolation"
+                ),
+                EnumDef(
+                    f"output_colorspace_{idx}",
+                    self.colorspace_items,
+                    default="Not set",
+                    label="Output Colorspace",
+                )
+            ]
+            attrs.extend(lut_attrs)
+
+        return attrs
 
     def get_pre_create_attr_defs(self):
         return [
@@ -154,8 +173,8 @@ This creator publishes color space look file (LUT).
                 folders=False,
                 extensions=self.extensions,
                 allow_sequences=False,
-                single_item=True,
-                label="Look Files",
+                single_item=False,
+                label="Look Up Table File(s)",
             )
         ]
 
