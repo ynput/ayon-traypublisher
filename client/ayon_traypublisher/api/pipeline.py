@@ -2,20 +2,11 @@ import os
 import json
 import tempfile
 import atexit
+import warnings
 
 import pyblish.api
 
-from ayon_core.pipeline import (
-    register_creator_plugin_path,
-)
 from ayon_core.host import HostBase, IPublishHost
-
-
-ROOT_DIR = os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)
-))
-PUBLISH_PATH = os.path.join(ROOT_DIR, "plugins", "publish")
-CREATE_PATH = os.path.join(ROOT_DIR, "plugins", "create")
 
 
 class TrayPublisherHost(HostBase, IPublishHost):
@@ -25,11 +16,9 @@ class TrayPublisherHost(HostBase, IPublishHost):
         os.environ["AYON_HOST_NAME"] = self.name
 
         pyblish.api.register_host("traypublisher")
-        pyblish.api.register_plugin_path(PUBLISH_PATH)
-        register_creator_plugin_path(CREATE_PATH)
 
     def get_context_title(self):
-        return HostContext.get_project_name()
+        return self.get_current_project_name()
 
     def get_context_data(self):
         return HostContext.get_context_data()
@@ -37,11 +26,24 @@ class TrayPublisherHost(HostBase, IPublishHost):
     def update_context_data(self, data, changes):
         HostContext.save_context_data(data)
 
-    def set_project_name(self, project_name):
-        # TODO Deregister project specific plugins and register new project
-        #   plugins
+    def set_project_name(self, project_name: str):
+        """Change project name.
+
+        DEPRECATED:
+            TrayPublisher now expects that project name is set before
+                is started, and is not possible to change project during
+                process lifetime.
+
+        """
+        warnings.warn(
+            (
+                "'set_project_name' is deprecated and will be removed"
+                " in future versions of TrayPublisher addon."
+                " Project name should be set before TrayPublisher is started."
+            ),
+            DeprecationWarning,
+        )
         os.environ["AYON_PROJECT_NAME"] = project_name
-        HostContext.set_project_name(project_name)
 
 
 class HostContext:
@@ -112,22 +114,6 @@ class HostContext:
     @classmethod
     def save_context_data(cls, data):
         cls._save_data("context", data)
-
-    @classmethod
-    def get_project_name(cls):
-        return cls._get_data("project_name")
-
-    @classmethod
-    def set_project_name(cls, project_name):
-        cls._save_data("project_name", project_name)
-
-    @classmethod
-    def get_data_to_store(cls):
-        return {
-            "project_name": cls.get_project_name(),
-            "instances": cls.get_instances(),
-            "context": cls.get_context_data(),
-        }
 
 
 def list_instances():

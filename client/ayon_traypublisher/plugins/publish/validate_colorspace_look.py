@@ -33,7 +33,8 @@ class ValidateColorspaceLook(pyblish.api.InstancePlugin,
 
         for ociolook_item in ociolook_items:
             item_not_set_keys = self.validate_colorspace_set_attrs(
-                ociolook_item, creator_defs_by_key)
+                ociolook_item
+            )
             if item_not_set_keys:
                 not_set_keys[ociolook_item["name"]] = item_not_set_keys
 
@@ -57,7 +58,6 @@ class ValidateColorspaceLook(pyblish.api.InstancePlugin,
     def validate_colorspace_set_attrs(
         self,
         ociolook_item,
-        creator_defs_by_key
     ):
         """Validate colorspace look attributes"""
 
@@ -72,18 +72,10 @@ class ValidateColorspaceLook(pyblish.api.InstancePlugin,
 
         not_set_keys = []
         for key in check_keys:
-            if ociolook_item[key]:
+            if ociolook_item.get(key):
                 # key is set and it is correct
                 continue
 
-            def_label = creator_defs_by_key.get(key)
-
-            if not def_label:
-                # raise since key is not recognized by creator defs
-                raise KeyError(
-                    f"Colorspace look attribute '{key}' is not "
-                    f"recognized by creator attributes: {creator_defs_by_key}"
-                )
-            not_set_keys.append(def_label)
+            not_set_keys.append(key)
 
         return not_set_keys
