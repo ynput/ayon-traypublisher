@@ -385,7 +385,7 @@ or updating already created. Publishing will create OTIO file.
         extension = os.path.splitext(sequence_path)[1]
 
         kwargs = {}
-        if extension == ".edl":
+        if extension.lower() == ".edl":
             # EDL has no frame rate embedded so needs explicit
             # frame rate else 24 is assumed.
             kwargs["rate"] = fps
