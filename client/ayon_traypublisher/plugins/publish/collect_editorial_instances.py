@@ -27,8 +27,6 @@ class CollectEditorialInstance(pyblish.api.InstancePlugin):
             otio_timeline_string)
 
         instance.context.data["otioTimeline"] = otio_timeline
-        instance.context.data["editorialSourcePath"] = (
-            instance.data["editorialSourcePath"])
 
         self.log.info(fpath)
 
