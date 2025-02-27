@@ -24,7 +24,7 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
     # published data might be sequence (.mov, .mp4) in that counting files
     # doesn't make sense
     check_extensions = ["exr", "dpx", "jpg", "jpeg", "png", "tiff", "tga",
-                        "gif", "svg"]
+                        "gif", "svg", "sxr"]
     skip_timelines_check = []  # skip for specific task names (regex)
 
     def process(self, instance):
