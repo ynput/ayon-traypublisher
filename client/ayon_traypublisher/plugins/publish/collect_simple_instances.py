@@ -5,6 +5,9 @@ from pathlib import Path
 import clique
 import pyblish.api
 
+from ayon_core.lib import transcoding
+from ayon_core.pipeline import PublishError
+
 
 class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
     """Collect data for instances created by settings creators.
@@ -83,6 +86,17 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
             # - we should maybe not fill the key when sequence is used?
             origin_basename = Path(source_filepaths[0]).stem
             instance.data["originalBasename"] = origin_basename
+
+        # Special test for SXR format.
+        for repre in instance.data["representations"]:
+            if (
+                repre["ext"].lower() == "sxr"
+                and ".sxr" not in transcoding.IMAGE_EXTENSIONS
+            ):
+                raise PublishError(
+                    "SXR extension is not supported. Update"
+                    " ayon-core in order to fix this."
+                )
 
         self.log.debug(
             (
