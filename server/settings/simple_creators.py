@@ -141,6 +141,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "allow_version_control": False,
         "extensions": [
             ".exr",
+            ".sxr",
             ".png",
             ".dng",
             ".dpx",
@@ -165,6 +166,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "allow_version_control": False,
         "extensions": [
             ".exr",
+            ".sxr",
             ".png",
             ".dng",
             ".dpx",
@@ -215,6 +217,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "allow_version_control": False,
         "extensions": [
             ".exr",
+            ".sxr",
             ".jpg",
             ".jpeg",
             ".dng",
