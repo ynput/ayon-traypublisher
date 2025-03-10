@@ -88,6 +88,9 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
             instance.data["originalBasename"] = origin_basename
 
         # Special test for SXR format.
+        # The following code can be removed as soon as a new
+        # ayon-core dependency is set on ayon-traypublisher.
+        # https://github.com/ynput/ayon-traypublisher/issues/77
         for repre in instance.data["representations"]:
             if (
                 repre["ext"].lower() == "sxr"
