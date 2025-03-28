@@ -71,7 +71,8 @@ DEFAULT_SIMPLE_CREATORS = [
             ".drp",
             ".psd",
             ".psb",
-            ".aep"
+            ".aep",
+            ".spm",
         ]
     },
     {
