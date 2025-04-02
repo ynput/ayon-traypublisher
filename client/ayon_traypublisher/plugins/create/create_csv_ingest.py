@@ -11,12 +11,15 @@ import ayon_api
 
 from ayon_core.pipeline.create import get_product_name
 from ayon_core.pipeline import CreatedInstance
-from ayon_core.lib import FileDef, BoolDef
+from ayon_core.lib import FileDef, BoolDef, Logger
 from ayon_core.lib.transcoding import (
     VIDEO_EXTENSIONS, IMAGE_EXTENSIONS
 )
 from ayon_core.pipeline.create import CreatorError
 from ayon_traypublisher.api.plugin import TrayPublishCreator
+
+
+log = Logger.get_logger(__name__)
 
 
 def _get_row_value_with_validation(
@@ -173,6 +176,8 @@ class ProductItem:
         variant: str,
         product_type: str,
         task_type: Optional[str] = None,
+        width: int = None,
+        height: int = None,
     ):
         self.folder_path = folder_path
         self.task_name = task_name
@@ -185,6 +190,8 @@ class ProductItem:
         self.parents = None
         self._unique_name = None
         self._pre_product_name = None
+        self.width = width
+        self.height = height
 
     @property
     def unique_name(self) -> str:
@@ -219,6 +226,8 @@ class ProductItem:
             for dst_key, column_name in (
                 # Context information
                 ("folder_path", "Folder Path"),
+                ("width", "Shot Width"),
+                ("height", "Shot Height"),
                 ("task_name", "Task Name"),
                 ("version", "Version"),
                 ("variant", "Variant"),
@@ -952,6 +961,21 @@ configuration in project settings.
                         "heroTrack": True,
                     }
                 )
+
+                if product_item.width and product_item.height:
+                    instance_data.update(
+                        {
+                            "resolutionWidth": product_item.width,
+                            "resolutionHeight": product_item.height,
+                        }
+                    )
+                elif product_item.width or product_item.height:
+                    log.warning(
+                        "Ignoring incomplete provided resolution %rx%r for shot %s.",
+                        product_item.width,
+                        product_item.height,
+                        folder_name
+                    )
 
                 folder_type = self._get_folder_type_from_regex_settings(folder_name)
                 instance_data["folder_type"] = folder_type
