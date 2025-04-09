@@ -178,6 +178,7 @@ class ProductItem:
         task_type: Optional[str] = None,
         width: int = None,
         height: int = None,
+        pixel_aspect: float = None,
     ):
         self.folder_path = folder_path
         self.task_name = task_name
@@ -192,6 +193,7 @@ class ProductItem:
         self._pre_product_name = None
         self.width = width
         self.height = height
+        self.pixel_aspect = pixel_aspect
 
     @property
     def unique_name(self) -> str:
@@ -228,6 +230,7 @@ class ProductItem:
                 ("folder_path", "Folder Path"),
                 ("width", "Shot Width"),
                 ("height", "Shot Height"),
+                ("pixel_aspect", "Shot Pixel Aspect"),
                 ("task_name", "Task Name"),
                 ("version", "Version"),
                 ("variant", "Variant"),
@@ -961,6 +964,9 @@ configuration in project settings.
                         "heroTrack": True,
                     }
                 )
+
+                if product_item.pixel_aspect:
+                    instance_data["pixelAspect"] = product_item.pixel_aspect
 
                 if product_item.width and product_item.height:
                     instance_data.update(
