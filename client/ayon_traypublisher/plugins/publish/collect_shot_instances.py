@@ -168,6 +168,21 @@ class CollectShotInstance(pyblish.api.InstancePlugin):
             "tasks": instance.data["tasks"]
         }
 
+        if (
+            instance.data.get("resolutionWidth")
+            and instance.data.get("resolutionHeight")
+        ):
+
+            in_info["attributes"].update(
+                {
+                    "resolutionWidth": instance.data["resolutionWidth"],
+                    "resolutionHeight": instance.data["resolutionHeight"],
+                }
+            )
+
+            if instance.data.get("pixelAspect"):
+                in_info["attributes"]["pixelAspect"] = instance.data["pixelAspect"]
+
         parents = instance.data.get('parents', [])
 
         folder_name = instance.data["folderPath"].split("/")[-1]
