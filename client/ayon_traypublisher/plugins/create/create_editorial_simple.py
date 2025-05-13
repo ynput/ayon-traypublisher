@@ -179,7 +179,7 @@ class EditorialSimpleCreator(TrayPublishCreator):
     Args:
         TrayPublishCreator (Creator): Tray publisher plugin class
     """
-
+    enabled = True
     label = "Editorial Simple"
     product_type = "editorial"
     identifier = "editorial_simple"
@@ -203,6 +203,8 @@ or updating already created. Publishing will create OTIO file.
             project_settings["traypublisher"]["editorial_creators"]
         )
         creator_settings = editorial_creators.get(self.identifier)
+
+        self.enabled = creator_settings["enabled"]
 
         self._shot_metadata_solver.update_data(
             creator_settings["clip_name_tokenizer"],
@@ -285,7 +287,6 @@ or updating already created. Publishing will create OTIO file.
             product_name,
             instance_data,
             seq_path,
-            media_path,
             first_otio_timeline
         )
 
@@ -294,7 +295,6 @@ or updating already created. Publishing will create OTIO file.
         product_name,
         data,
         sequence_path,
-        media_path,
         otio_timeline
     ):
         """Otio instance creating function
@@ -303,13 +303,11 @@ or updating already created. Publishing will create OTIO file.
             product_name (str): Product name.
             data (dict): instance data
             sequence_path (str): path to sequence file
-            media_path (str): path to media file
             otio_timeline (otio.Timeline): otio timeline object
         """
         # Pass precreate data to creator attributes
         data.update({
             "sequenceFilePath": sequence_path,
-            "editorialSourcePath": media_path,
             "otioTimeline": otio.adapters.write_to_string(otio_timeline)
         })
         new_instance = CreatedInstance(
@@ -419,6 +417,9 @@ or updating already created. Publishing will create OTIO file.
                     track_start_frame,
                     folder_entity
                 )
+
+                # passing for trimming
+                base_instance_data["editorialSourcePath"] = media_path
 
                 parenting_data = {
                     "instance_label": None,

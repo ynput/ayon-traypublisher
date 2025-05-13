@@ -372,7 +372,28 @@ DEFAULT_CREATORS = {
                     "default": "",
                     "required_column": False,
                     "validation_pattern": "^(.*)$"
-                }
+                },
+                {
+                    "name": "Shot Height",
+                    "type": "number",
+                    "default": "0",
+                    "required_column": False,
+                    "validation_pattern": "^(\\d*)$"
+                },
+                {
+                    "name": "Shot Width",
+                    "type": "number",
+                    "default": "0",
+                    "required_column": False,
+                    "validation_pattern": "^(\\d*)$"
+                },
+                {
+                    "name": "Shot Pixel Aspect",
+                    "type": "decimal",
+                    "default": "0",
+                    "required_column": False,
+                    "validation_pattern": "^(\\d*.?\\d*)$"
+                },
             ]
         },
         "representations_config": {

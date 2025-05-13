@@ -5,6 +5,9 @@ from pathlib import Path
 import clique
 import pyblish.api
 
+from ayon_core.lib import transcoding
+from ayon_core.pipeline import PublishError
+
 
 class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
     """Collect data for instances created by settings creators.
@@ -83,6 +86,20 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
             # - we should maybe not fill the key when sequence is used?
             origin_basename = Path(source_filepaths[0]).stem
             instance.data["originalBasename"] = origin_basename
+
+        # Special test for SXR format.
+        # The following code can be removed as soon as a new
+        # ayon-core dependency is set on ayon-traypublisher.
+        # https://github.com/ynput/ayon-traypublisher/issues/77
+        for repre in instance.data["representations"]:
+            if (
+                repre["ext"].lower() == "sxr"
+                and ".sxr" not in transcoding.IMAGE_EXTENSIONS
+            ):
+                raise PublishError(
+                    "SXR extension is not supported. Update"
+                    " ayon-core in order to fix this."
+                )
 
         self.log.debug(
             (
@@ -253,18 +270,24 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
         repre_name = repre_ext = ext[1:]
         if repre_name not in repre_names_counter:
             repre_names_counter[repre_name] = 2
+            counter = None
         else:
             counter = repre_names_counter[repre_name]
             repre_names_counter[repre_name] += 1
             repre_name = "{}_{}".format(repre_name, counter)
         repre_names.append(repre_name)
-        return {
+        representation_data = {
             "ext": repre_ext,
             "name": repre_name,
             "stagingDir": filepath_item["directory"],
             "files": filenames,
             "tags": []
         }
+
+        if counter:
+            representation_data["outputName"] = str(counter)
+
+        return representation_data
 
     def _calculate_source(self, filepaths):
         cols, rems = clique.assemble(filepaths)

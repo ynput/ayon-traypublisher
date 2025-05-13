@@ -1,11 +1,11 @@
 name = "traypublisher"
 title = "TrayPublisher"
-version = "0.2.10+dev"
+version = "0.3.2+dev"
 app_host_name = "traypublisher"
 client_dir = "ayon_traypublisher"
 
 ayon_server_version = ">=1.1.2"
 ayon_required_addons = {
-    "core": ">0.3.2",
+    "core": ">1.1.2",
 }
 ayon_compatible_addons = {}
