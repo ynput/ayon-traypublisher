@@ -22,7 +22,7 @@ class BatchInstanceCreator(TrayPublishCreator):
     Intended for full texture sets for an asset.
     """
     identifier = "batch_instances"
-    label = "Batch Split"
+    label = "Batch Instances"
     product_type = "batch"
     description = "Publish batch of files as separate instances"
 
