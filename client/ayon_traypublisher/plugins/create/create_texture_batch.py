@@ -66,10 +66,16 @@ class BatchInstanceCreator(TrayPublishCreator):
                 patterns=[pattern],
             )
             if collections:
-                assert len(collections) == 1
+                if len(collections) != 1:
+                    raise ValueError(
+                        f"Expected exactly one collection, but found {len(collections)}."
+                    )
                 basename = collections[0].format("{head}").rstrip("._")
             else:
-                assert len(remainder) == 1
+                if len(remainder) != 1:
+                    raise ValueError(
+                        f"Expected exactly one remaining file, but found {len(remainder)}."
+                    )
                 basename = os.path.splitext(remainder[0])[0]
 
             if pre_create_data["strip_common_prefix"]:
@@ -142,7 +148,7 @@ class BatchInstanceCreator(TrayPublishCreator):
                 default=True,
                 label="Strip Common Suffix",
                 tooltip=(
-                    "Remove suffix prefix from the variant name.\n\n"
+                    "Remove common suffix from the variant name.\n\n"
                     "This is useful when publishing a batch of files "
                     "that all end with a similar suffix.\n"
                     "By stripping the common suffix, the variant name will "
