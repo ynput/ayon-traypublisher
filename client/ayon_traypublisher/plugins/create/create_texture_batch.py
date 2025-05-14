@@ -44,12 +44,13 @@ class BatchInstanceCreator(TrayPublishCreator):
                                                           task_name)
 
         # All files
-        common_prefix: str = ""
-        if pre_create_data.get("strip_common_prefix"):
-            files = []
-            for file_info in file_paths:
-                files.extend(file_info["filenames"])
-            common_prefix = os.path.commonprefix(files)
+        files = []
+        for file_info in file_paths:
+            files.extend(file_info["filenames"])
+        common_prefix = os.path.commonprefix(files)
+        common_suffix = os.path.commonprefix(
+            [fname[::-1] for fname in files]
+        )[::-1]
         self.log.debug("Found common prefix: %s", common_prefix)
 
         # Process the filepaths to individual instances
@@ -74,6 +75,9 @@ class BatchInstanceCreator(TrayPublishCreator):
             if pre_create_data["strip_common_prefix"]:
                 # Remove common prefix from the variant name
                 basename = basename.removeprefix(common_prefix)
+            if pre_create_data["strip_common_suffix"]:
+                # Remove common suffix from the variant name
+                basename = basename.removesuffix(common_suffix)
 
             prefix = pre_create_data.get("prefix", "")
             suffix = pre_create_data.get("suffix", "")
@@ -131,6 +135,18 @@ class BatchInstanceCreator(TrayPublishCreator):
                     "for an asset that all start with the asset name.\n"
                     "By stripping the common prefix, the variant name will "
                     "then exclude the asset name."
+                )
+            ),
+            BoolDef(
+                "strip_common_suffix",
+                default=True,
+                label="Strip Common Suffix",
+                tooltip=(
+                    "Remove suffix prefix from the variant name.\n\n"
+                    "This is useful when publishing a batch of files "
+                    "that all end with a similar suffix.\n"
+                    "By stripping the common suffix, the variant name will "
+                    "then exclude that part."
                 )
             ),
             TextDef(
