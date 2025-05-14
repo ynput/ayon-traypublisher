@@ -179,7 +179,7 @@ class CollectShotInstance(pyblish.api.InstancePlugin):
             )
 
             # Same goes for shot pixel aspect ratio.
-            # When not explicitely provided, it defaults to square (1.0).
+            # When not explicitly provided, it defaults to square (1.0).
             if instance.data.get("pixelAspect"):
                 attributes["pixelAspect"] = instance.data["pixelAspect"]
 
