@@ -30,12 +30,19 @@ class CollectTextureInstance(pyblish.api.InstancePlugin):
     ):
         """Create new representation data based on file item.
 
+        This method processes the provided file item to generate a dictionary
+        containing representation data. If the file item represents a UDIM
+        texture sequence, the method collects UDIM frame indexes and attaches
+        them to the representation data under the `udim` key.
+
         Args:
             filepath_item (dict[str, Any]): Item with information about
                 representation paths.
 
         Returns:
-            dict[str, Any]: Prepared base representation data.
+            dict[str, Any]: Prepared base representation data, including
+            fields such as `ext`, `name`, `stagingDir`, `files`, `tags`, and
+            optionally `udim` if UDIMs are detected.
         """
 
         filenames = filepath_item["filenames"]
