@@ -38,8 +38,10 @@ class TextureCreator(TrayPublishCreator):
         if not repr_file:
             raise CreatorError("No files specified")
 
-        # Trigger the dedicated `texture_creator` collector plug-in
+        # Pass pre-create attributes to instance creator attributes
         instance_data["creator_attributes"] = pre_create_data or {}
+
+        # Trigger the dedicated `texture_creator` collector plug-in
         instance_data.setdefault("families", []).append("texture_creator")
 
         # Create new instance
