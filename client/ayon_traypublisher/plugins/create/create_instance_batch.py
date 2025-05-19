@@ -32,6 +32,10 @@ class BatchInstanceCreator(TrayPublishCreator):
 
     extensions = {"png", "jpg", "jpeg", "tiff", "tif", "exr"}
 
+    supported_creator_identifiers = {
+        "io.ayon.creators.traypublisher.texture"
+    }
+
     def create(self, product_name, data, pre_create_data):
         file_paths = pre_create_data.get("filepath")
         if not file_paths:
@@ -98,7 +102,12 @@ class BatchInstanceCreator(TrayPublishCreator):
 
         items = []
         for creator in self.create_context.creators.values():
-            if isinstance(creator, SettingsCreator):
+            if (
+                    # Support all Settings Creators
+                    isinstance(creator, SettingsCreator)
+                    # Support dedicated creators (like texture creator)
+                    or creator.identifier in self.supported_creator_identifiers
+            ):
                 items.append({
                     "label": creator.label,
                     "value": creator.identifier
@@ -117,7 +126,7 @@ class BatchInstanceCreator(TrayPublishCreator):
                 "creator_type",
                 items=items,
                 label="Publish Type",
-                default="settings_render",
+                default="io.ayon.creators.traypublisher.texture",
                 tooltip=(
                     "The Simple Creator (publish type) to create instances "
                     "with."
