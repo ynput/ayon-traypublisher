@@ -153,18 +153,40 @@ class CollectShotInstance(pyblish.api.InstancePlugin):
         handle_start = int(instance.data["handleStart"])
         handle_end = int(instance.data["handleEnd"])
 
+        attributes = {
+            "handleStart": handle_start,
+            "handleEnd": handle_end,
+            "frameStart": instance.data["frameStart"],
+            "frameEnd": instance.data["frameEnd"],
+            "clipIn": instance.data["clipIn"],
+            "clipOut": instance.data["clipOut"],
+            "fps": instance.data["fps"]
+        }
+
+        # resolutionWidth and resolutionHeight might not be defined,
+        # they are optional resolution values to create the shot with.
+        # When not provided, the shot inherit parent's values.
+        if (
+            instance.data.get("resolutionWidth")
+            and instance.data.get("resolutionHeight")
+        ):
+
+            attributes.update(
+                {
+                    "resolutionWidth": instance.data["resolutionWidth"],
+                    "resolutionHeight": instance.data["resolutionHeight"],
+                }
+            )
+
+            # Same goes for shot pixel aspect ratio.
+            # When not explicitly provided, it defaults to square (1.0).
+            if instance.data.get("pixelAspect"):
+                attributes["pixelAspect"] = instance.data["pixelAspect"]
+
         in_info = {
             "entity_type": "folder",
             "folder_type": "Shot",
-            "attributes": {
-                "handleStart": handle_start,
-                "handleEnd": handle_end,
-                "frameStart": instance.data["frameStart"],
-                "frameEnd": instance.data["frameEnd"],
-                "clipIn": instance.data["clipIn"],
-                "clipOut": instance.data["clipOut"],
-                "fps": instance.data["fps"]
-            },
+            "attributes": attributes,
             "tasks": instance.data["tasks"]
         }
 
