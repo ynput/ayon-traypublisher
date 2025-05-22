@@ -9,6 +9,7 @@ import clique
 from ayon_core.lib import (
     FileDef,
     BoolDef,
+    EnumDef,
     TextDef,
     UILabelDef,
     UISeparatorDef,
@@ -56,24 +57,36 @@ class TextureCreator(TrayPublishCreator):
         task_entity = self.create_context.get_task_entity(folder_path,
                                                           task_name)
 
+        # Gather inputs
         file_paths = pre_create_data.get("representation_files", [])
-
-        # All files
-        files = []
-        for file_info in file_paths:
-            files.extend(file_info["filenames"])
-        common_prefix = os.path.commonprefix(files)
-        common_suffix = os.path.commonprefix(
-            [fname[::-1] for fname in files]
-        )[::-1]
-        self.log.debug("Found common prefix: %s", common_prefix)
-
         strip_common_prefix: bool = pre_create_data.pop(
             "strip_common_prefix", False)
         strip_common_suffix: bool = pre_create_data.pop(
             "strip_common_suffix", False)
         prefix = pre_create_data.pop("prefix", "")
         suffix = pre_create_data.pop("suffix", "")
+        variant_name_method: str = pre_create_data.pop("variant_name",
+                                                       "filename")
+
+        # All files
+        files = []
+        for file_info in file_paths:
+            files.extend(file_info["filenames"])
+
+        # Find common prefix and suffix in input filenames
+        common_prefix = ""
+        common_suffix = ""
+        if len(file_paths) > 1:
+            # Only consider stripping start/end if there are multiple
+            # files to compare
+            if strip_common_prefix:
+                common_prefix = os.path.commonprefix(files)
+                self.log.debug("Found common prefix: %s", common_prefix)
+            if strip_common_suffix:
+                common_suffix = os.path.commonprefix(
+                    [fname[::-1] for fname in files]
+                )[::-1]  # find reversed common prefix
+                self.log.debug("Found common suffix: %s", common_suffix)
 
         # Process the filepaths to individual instances
         for file_info in file_paths:
@@ -90,13 +103,15 @@ class TextureCreator(TrayPublishCreator):
             if collections:
                 if len(collections) != 1:
                     raise ValueError(
-                        f"Expected exactly one collection, but found {len(collections)}."
+                        "Expected exactly one collection, "
+                        f"but found {len(collections)}."
                     )
-                basename = collections[0].format("{head}").rstrip("._")
+                basename = collections[0].head.rstrip("._")
             else:
                 if len(remainder) != 1:
                     raise ValueError(
-                        f"Expected exactly one remaining file, but found {len(remainder)}."
+                        "Expected exactly one remaining file, "
+                        f"but found {len(remainder)}."
                     )
                 basename = os.path.splitext(remainder[0])[0]
 
@@ -106,8 +121,26 @@ class TextureCreator(TrayPublishCreator):
             if strip_common_suffix:
                 # Remove common suffix from the variant name
                 basename = basename.removesuffix(common_suffix)
-            variant = "{}{}{}".format(prefix, basename, suffix)
 
+            if variant_name_method == "filename":
+                # Use the filename as the variant name
+                variant = basename
+            elif variant_name_method == "variant":
+                variant = instance_data["variant"]
+            elif variant_name_method == "filename_rsplit_underscore":
+                # Use the filename after the last underscore as the
+                # variant name. (Note that we stripped any underscore before
+                # the UDIM tile/sequence number already).
+                variant = basename.rsplit("_", 1)[-1]
+            else:
+                raise ValueError(
+                    f"Unknown variant name method: {variant_name_method}"
+                )
+
+            # Apply variant prefix/suffix if specified
+            variant = "{}{}{}".format(prefix, variant, suffix)
+
+            # Create instance
             product_name = self.get_product_name(
                 self.project_name,
                 folder_entity,
@@ -141,6 +174,26 @@ class TextureCreator(TrayPublishCreator):
                                        instance_data, self)
         self._store_new_instance(new_instance)
 
+    def _get_udim_attr_def(self) -> BoolDef:
+        return BoolDef(
+            "is_udim",
+            default=True,
+            label="UDIM",
+            tooltip=(
+                "Define whether the input files are a UDIM sequence "
+                "instead of frame range sequence.\n"
+                "This is only relevant if the input files is a sequence "
+                "of files."
+            )
+        )
+
+    def _get_review_attr_def(self) -> BoolDef:
+        return BoolDef(
+            "add_review_family",
+            default=True,
+            label="Review"
+        )
+
     def get_instance_attr_defs(self):
         return [
             FileDef(
@@ -151,11 +204,8 @@ class TextureCreator(TrayPublishCreator):
                 single_item=True,
                 label="Representation",
             ),
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
-            ),
+            self._get_review_attr_def(),
+            self._get_udim_attr_def(),
         ]
 
     def get_pre_create_attr_defs(self):
@@ -168,16 +218,29 @@ class TextureCreator(TrayPublishCreator):
                 single_item=False,
                 label="Representations",
             ),
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
-            ),
+            self._get_review_attr_def(),
+            self._get_udim_attr_def(),
             UISeparatorDef("_additionals"),
             UILabelDef("<b>Variant Name Options</b>"),
+            EnumDef(
+                "variant_name",
+                items=[
+                    {"value": "variant", "label": "Use variant name"},
+                    {"value": "filename", "label": "Use filename"},
+                    {"value": "filename_rsplit_underscore", "label": "Use filename (after last underscore)"},
+                ],
+                default="filename",
+                label="Variant Naming",
+                tooltip=(
+                    "Because this Creator supports multiple textures sets at "
+                    "once to be created into separate instances, we will "
+                    "parse the filenames to determine the variant names."
+
+                )
+            ),
             BoolDef(
                 "strip_common_prefix",
-                default=True,
+                default=False,
                 label="Strip Common Prefix",
                 tooltip=(
                     "Remove common prefix from the variant name.\n\n"
@@ -189,7 +252,7 @@ class TextureCreator(TrayPublishCreator):
             ),
             BoolDef(
                 "strip_common_suffix",
-                default=True,
+                default=False,
                 label="Strip Common Suffix",
                 tooltip=(
                     "Remove common suffix from the variant name.\n\n"

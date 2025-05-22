@@ -20,13 +20,16 @@ class CollectTextureInstance(pyblish.api.InstancePlugin):
             filepath_items = [filepath_items]
 
         representations = instance.data.setdefault("representations", [])
+        is_udim: bool = creator_attributes.get("is_udim", True)
         for filepath_item in filepath_items:
-            representation = self._create_representation_data(filepath_item)
+            representation = self._create_representation_data(
+                filepath_item,
+                assume_sequence_as_udim=is_udim)
             if representation:
                 representations.append(representation)
 
     def _create_representation_data(
-        self, filepath_item
+        self, filepath_item, assume_sequence_as_udim
     ):
         """Create new representation data based on file item.
 
@@ -38,6 +41,9 @@ class CollectTextureInstance(pyblish.api.InstancePlugin):
         Args:
             filepath_item (dict[str, Any]): Item with information about
                 representation paths.
+            assume_sequence_as_udim (bool): Whether an input file sequence
+                should be considered as UDIM sequence instead of animated
+                frame range sequence.
 
         Returns:
             dict[str, Any]: Prepared base representation data, including
@@ -61,10 +67,11 @@ class CollectTextureInstance(pyblish.api.InstancePlugin):
             "tags": []
         }
 
-        udims = self.collect_udims(representation_data)
-        if udims:
-            self.log.debug(f"Collected UDIMs: {udims}")
-            representation_data["udim"] = udims
+        if assume_sequence_as_udim:
+            udims = self.collect_udims(representation_data)
+            if udims:
+                self.log.debug(f"Collected UDIMs: {udims}")
+                representation_data["udim"] = udims
 
         return representation_data
 
