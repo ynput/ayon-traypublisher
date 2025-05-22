@@ -20,6 +20,7 @@ from ayon_core.pipeline import (
 )
 from ayon_traypublisher.api.plugin import TrayPublishCreator
 
+
 class TextureCreator(TrayPublishCreator):
     """Creates texture instances from files, supporting UDIM sequences."""
 
@@ -102,14 +103,14 @@ class TextureCreator(TrayPublishCreator):
             )
             if collections:
                 if len(collections) != 1:
-                    raise ValueError(
+                    raise CreatorError(
                         "Expected exactly one collection, "
                         f"but found {len(collections)}."
                     )
                 basename = collections[0].head.rstrip("._")
             else:
                 if len(remainder) != 1:
-                    raise ValueError(
+                    raise CreatorError(
                         "Expected exactly one remaining file, "
                         f"but found {len(remainder)}."
                     )
@@ -138,7 +139,7 @@ class TextureCreator(TrayPublishCreator):
                 )
 
             # Apply variant prefix/suffix if specified
-            variant = "{}{}{}".format(prefix, variant, suffix)
+            variant = f"{prefix}{variant}{suffix}"
 
             # Create instance
             product_name = self.get_product_name(
