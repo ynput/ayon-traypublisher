@@ -69,7 +69,7 @@ class BatchMovieCreator(TrayPublishCreator):
             )
 
         all_task_entities = ayon_api.get_tasks(
-            self.project_name, task_ids=set(data_by_folder_id.keys())
+            self.project_name, folder_ids=set(data_by_folder_id.keys())
         )
         task_entity_by_folder_id = collections.defaultdict(dict)
         for task_entity in all_task_entities:
