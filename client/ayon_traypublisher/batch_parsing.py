@@ -25,8 +25,11 @@ def get_folder_entity_from_filename(
     folder_name = os.path.splitext(source_filename)[0]
     # Always first check if source filename is directly folder
     #   (eg. 'chair.mov')
-    matching_folder_entity = get_folder_by_name_case_not_sensitive(
-        project_name, folder_name, all_selected_folder_ids)
+    matching_folder_entity = list(ayon_api.get_folders(
+        project_name,
+        folder_ids=all_selected_folder_ids,
+        folder_names=[folder_name]
+    ))
 
     if matching_folder_entity is None:
         # name contains also a version
@@ -71,10 +74,12 @@ def parse_with_version(
     regex_result = version_regex.findall(folder_name)
     if regex_result:
         _folder_name, _version_number = regex_result[0]
-        matching_folder_entity = get_folder_by_name_case_not_sensitive(
-            project_name,
-            _folder_name,
-            all_selected_folder_ids=all_selected_folder_ids
+        matching_folder_entity = list(
+            ayon_api.get_folders(
+                project_name,
+                folder_ids=all_selected_folder_ids,
+                folder_names=[folder_name],
+            )
         )
         if matching_folder_entity:
             version_number = int(_version_number)
@@ -94,29 +99,3 @@ def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
                 project_name,
                 folder_entity["id"]
             )
-
-
-def get_folder_by_name_case_not_sensitive(
-    project_name,
-    folder_name,
-    all_selected_folder_ids=None,
-    log=None
-):
-    """Handle more cases in file names"""
-    if not log:
-        log = Logger.get_logger(__name__)
-    folder_name = re.compile(folder_name, re.IGNORECASE)
-
-    folder_entities = list(ayon_api.get_folders(
-        project_name,
-        folder_ids=all_selected_folder_ids,
-        folder_names=[folder_name]
-    ))
-
-    if len(folder_entities) > 1:
-        log.warning("Too many records found for {}".format(
-            folder_name))
-        return None
-
-    if folder_entities:
-        return folder_entities.pop()
