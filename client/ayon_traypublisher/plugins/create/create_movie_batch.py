@@ -103,8 +103,9 @@ class BatchMovieCreator(TrayPublishCreator):
                 instance_data["task"] = task_name
 
                 # Create new instance
-                new_instance = CreatedInstance(self.product_type, product_name,
-                                               instance_data, self)
+                new_instance = CreatedInstance(
+                    self.product_type, product_name, instance_data, self
+                )
                 self._store_new_instance(new_instance)
 
     def _get_product_name(self, project_name, task_entity, variant):
