@@ -64,7 +64,12 @@ class BatchMovieCreator(TrayPublishCreator):
             instance_data["creator_attributes"] = {"filepath": filepath}
 
             folder_entity, version = get_folder_entity_from_filename(
-                self.project_name, file_name, self.version_regex)
+                self.project_name, file_name, self.version_regex
+            )
+
+            if version:
+                instance_data["version"] = version
+
             if not folder_entity:
                 raise CreatorError(
                     f"Couldn't find folder entity for '{file_name}'"
