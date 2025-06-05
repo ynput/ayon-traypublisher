@@ -31,7 +31,7 @@ def get_folder_entity_from_filename(
         folder_names=[folder_name]
     ))
 
-    if matching_folder_entity is None:
+    if not matching_folder_entity:
         # name contains also a version
         matching_folder_entity, version = (
             parse_with_version(
@@ -41,6 +41,8 @@ def get_folder_entity_from_filename(
                 all_selected_folder_ids
             )
         )
+    else:
+        matching_folder_entity = matching_folder_entity.pop()
 
     if matching_folder_entity is None:
         matching_folder_entity = parse_containing(
