@@ -78,7 +78,7 @@ def parse_with_version(
             ayon_api.get_folders(
                 project_name,
                 folder_ids=all_selected_folder_ids,
-                folder_names=[folder_name],
+                folder_names=[_folder_name],
             )
         )
         if matching_folder_entity:
