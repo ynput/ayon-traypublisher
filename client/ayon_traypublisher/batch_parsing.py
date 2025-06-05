@@ -83,6 +83,7 @@ def parse_with_version(
         )
         if matching_folder_entity:
             version_number = int(_version_number)
+            matching_folder_entity = matching_folder_entity.pop()
 
     return matching_folder_entity, version_number
 
