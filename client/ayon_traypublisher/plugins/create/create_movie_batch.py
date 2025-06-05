@@ -11,6 +11,7 @@ from ayon_core.lib import (
 )
 from ayon_core.pipeline import (
     CreatedInstance,
+    CreatorError
 )
 from ayon_core.pipeline.create import (
     get_product_name,
@@ -64,6 +65,11 @@ class BatchMovieCreator(TrayPublishCreator):
 
             folder_entity, version = get_folder_entity_from_filename(
                 self.project_name, file_name, self.version_regex)
+            if not folder_entity:
+                raise CreatorError(
+                    f"Couldn't find folder entity for '{file_name}'"
+                )
+                continue
             data_by_folder_id[folder_entity["id"]].append(
                 (instance_data, folder_entity)
             )
