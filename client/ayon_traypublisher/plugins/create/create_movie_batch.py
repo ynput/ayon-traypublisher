@@ -11,6 +11,7 @@ from ayon_core.lib import (
 )
 from ayon_core.pipeline import (
     CreatedInstance,
+    CreatorError
 )
 from ayon_core.pipeline.create import (
     get_product_name,
@@ -63,13 +64,23 @@ class BatchMovieCreator(TrayPublishCreator):
             instance_data["creator_attributes"] = {"filepath": filepath}
 
             folder_entity, version = get_folder_entity_from_filename(
-                self.project_name, file_name, self.version_regex)
+                self.project_name, file_name, self.version_regex
+            )
+
+            if version:
+                instance_data["version"] = version
+
+            if not folder_entity:
+                raise CreatorError(
+                    f"Couldn't find folder entity for '{file_name}'"
+                )
+                continue
             data_by_folder_id[folder_entity["id"]].append(
                 (instance_data, folder_entity)
             )
 
         all_task_entities = ayon_api.get_tasks(
-            self.project_name, task_ids=set(data_by_folder_id.keys())
+            self.project_name, folder_ids=set(data_by_folder_id.keys())
         )
         task_entity_by_folder_id = collections.defaultdict(dict)
         for task_entity in all_task_entities:
@@ -77,30 +88,30 @@ class BatchMovieCreator(TrayPublishCreator):
             task_name = task_entity["name"].lower()
             task_entity_by_folder_id[folder_id][task_name] = task_entity
 
-        for (
-            folder_id, (instance_data, folder_entity)
-        ) in data_by_folder_id.items():
-            task_entities_by_name = task_entity_by_folder_id[folder_id]
-            task_name = None
-            task_entity = None
-            for default_task_name in self.default_tasks:
-                _name = default_task_name.lower()
-                if _name in task_entities_by_name:
-                    task_name = task_entity["name"]
-                    task_entity = task_entities_by_name[_name]
-                    break
+        for folder_id, instance_tuples in data_by_folder_id.items():
+            for (instance_data, folder_entity) in instance_tuples:
+                task_entities_by_name = task_entity_by_folder_id[folder_id]
+                task_name = None
+                task_entity = None
+                for default_task_name in self.default_tasks:
+                    _name = default_task_name.lower()
+                    if _name in task_entities_by_name:
+                        task_entity = task_entities_by_name[_name]
+                        task_name = task_entity["name"]
+                        break
 
-            product_name = self._get_product_name(
-                self.project_name, task_entity, data["variant"]
-            )
+                product_name = self._get_product_name(
+                    self.project_name, task_entity, data["variant"]
+                )
 
-            instance_data["folderPath"] = folder_entity["path"]
-            instance_data["task"] = task_name
+                instance_data["folderPath"] = folder_entity["path"]
+                instance_data["task"] = task_name
 
-            # Create new instance
-            new_instance = CreatedInstance(self.product_type, product_name,
-                                           instance_data, self)
-            self._store_new_instance(new_instance)
+                # Create new instance
+                new_instance = CreatedInstance(
+                    self.product_type, product_name, instance_data, self
+                )
+                self._store_new_instance(new_instance)
 
     def _get_product_name(self, project_name, task_entity, variant):
         """Create product name according to standard template process"""
