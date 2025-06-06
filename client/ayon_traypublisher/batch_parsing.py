@@ -1,6 +1,5 @@
 """Functions to parse asset names, versions from file names"""
 import os
-import re
 
 import ayon_api
 
