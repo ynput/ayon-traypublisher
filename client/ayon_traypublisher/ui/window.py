@@ -7,7 +7,7 @@ publishing plugins.
 """
 from typing import Optional
 
-from qtpy import QtWidgets, QtCore, QtGui
+from qtpy import QtWidgets, QtGui
 import qtawesome
 
 from ayon_core.style import load_stylesheet
@@ -15,12 +15,9 @@ from ayon_core.resources import get_ayon_icon_filepath
 from ayon_core.lib import AYONSettingsRegistry
 from ayon_core.lib.events import QueuedEventSystem
 from ayon_core.tools.common_models import ProjectsModel
-from ayon_core.tools.utils import (
-    PlaceholderLineEdit,
-    ProjectsQtModel,
-    ProjectSortFilterProxy,
-    PROJECT_NAME_ROLE,
-)
+from ayon_core.tools.utils import PlaceholderLineEdit
+
+from .projects_widget import TrayPublisherProjectsWidget
 
 
 class TrayPublisherRegistry(AYONSettingsRegistry):
@@ -56,6 +53,14 @@ class ChooseProjectController:
     def set_last_user_project_name(self, project_name: str):
         self._registry.set_item("project_name", project_name)
 
+    def set_selected_project(self, project_name: str):
+        """ProjectsWidget from ayon-core requires this method.
+        
+        Tray Publisher does not need to implement it.
+
+        """
+        pass
+
 
 class ChooseProjectWindow(QtWidgets.QDialog):
     default_width = 400
@@ -74,17 +79,9 @@ class ChooseProjectWindow(QtWidgets.QDialog):
 
         header_label = QtWidgets.QLabel("Choose project", content_widget)
         header_label.setObjectName("ChooseProjectLabel")
-        # Create project models and view
-        projects_model = ProjectsQtModel(controller)
-        projects_proxy = ProjectSortFilterProxy()
-        projects_proxy.setSourceModel(projects_model)
-        projects_proxy.setFilterKeyColumn(0)
 
-        projects_view = QtWidgets.QListView(content_widget)
-        projects_view.setObjectName("ChooseProjectView")
-        projects_view.setModel(projects_proxy)
-        projects_view.setEditTriggers(
-            QtWidgets.QAbstractItemView.NoEditTriggers
+        projects_widget = TrayPublisherProjectsWidget(
+            controller, content_widget
         )
 
         btns_widget = QtWidgets.QWidget(content_widget)
@@ -111,21 +108,19 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         content_layout.setSpacing(20)
         content_layout.addWidget(header_label, 0)
         content_layout.addWidget(txt_filter, 0)
-        content_layout.addWidget(projects_view, 1)
+        content_layout.addWidget(projects_widget, 1)
         content_layout.addWidget(btns_widget, 0)
 
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.addWidget(content_widget, 1)
 
-        projects_view.doubleClicked.connect(self._on_double_click)
+        projects_widget.double_clicked.connect(self._on_double_click)
         confirm_btn.clicked.connect(self._on_confirm_click)
         cancel_btn.clicked.connect(self._on_cancel_click)
         txt_filter.textChanged.connect(self._on_text_changed)
 
-        self._projects_view = projects_view
-        self._projects_model = projects_model
-        self._projects_proxy = projects_proxy
+        self._projects_widget = projects_widget
         self._cancel_btn = cancel_btn
         self._confirm_btn = confirm_btn
         self._txt_filter = txt_filter
@@ -147,25 +142,11 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         self._refresh_projects()
 
     def _refresh_projects(self):
-        self._projects_model.refresh()
-        # Sort projects after refresh
-        self._projects_proxy.sort(0)
+        self._projects_widget.refresh()
 
         project_name = self._controller.get_last_user_project_name()
-        if not project_name:
-            return
-
-        src_index = self._projects_model.get_index_by_project_name(
-            project_name
-        )
-        index = self._projects_proxy.mapFromSource(src_index)
-        if index.isValid():
-            selection_model = self._projects_view.selectionModel()
-            selection_model.select(
-                index,
-                QtCore.QItemSelectionModel.SelectCurrent
-            )
-            self._projects_view.setCurrentIndex(index)
+        if project_name:
+            self._projects_widget.set_selected_project(project_name)
 
     def _on_double_click(self):
         self._set_selected_project()
@@ -177,13 +158,12 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         self.reject()
 
     def _on_text_changed(self):
-        self._projects_proxy.setFilterRegularExpression(
-            self._txt_filter.text())
+        self._projects_widget.set_name_filter(
+            self._txt_filter.text()
+        )
 
     def _set_selected_project(self):
-        index = self._projects_view.currentIndex()
-
-        project_name = index.data(PROJECT_NAME_ROLE)
+        project_name = self._projects_widget.get_selected_project()
         if not project_name:
             return
 
