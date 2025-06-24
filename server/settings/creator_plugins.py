@@ -226,6 +226,18 @@ class IngestCSVPluginModel(BaseSettingsModel):
     )
 
 
+class TextureCreatorPluginModel(BaseSettingsModel):
+    """Allow to create folder hierarchy when non-existing."""
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=True,
+    )
+    default_variants: list[str] = SettingsField(
+        title="Default variants",
+        default_factory=list
+    )
+
+
 class TrayPublisherCreatePluginsModel(BaseSettingsModel):
     BatchMovieCreator: BatchMovieCreatorPlugin = SettingsField(
         title="Batch Movie Creator",
@@ -234,6 +246,10 @@ class TrayPublisherCreatePluginsModel(BaseSettingsModel):
     IngestCSV: IngestCSVPluginModel = SettingsField(
         title="Ingest CSV",
         default_factory=IngestCSVPluginModel
+    )
+    TextureCreator: TextureCreatorPluginModel = SettingsField(
+        title="Texture",
+        default_factory=TextureCreatorPluginModel,
     )
 
 
@@ -445,5 +461,11 @@ DEFAULT_CREATORS = {
             "task_type_regexes": [],
             "task_create_type": "Generic",
         }
-    }
+    },
+    "TextureCreator": {
+        "enabled": True,
+        "default_variants": [
+            "Main"
+        ]
+    },
 }
