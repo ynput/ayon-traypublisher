@@ -227,7 +227,7 @@ class IngestCSVPluginModel(BaseSettingsModel):
 
 
 class TextureCreatorPluginModel(BaseSettingsModel):
-    """Allow to create folder hierarchy when non-existing."""
+    """Texture files or UDIM sequences creator"""
     enabled: bool = SettingsField(
         title="Enabled",
         default=True,
