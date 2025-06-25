@@ -205,7 +205,7 @@ class ProductTypeAdvancedPresetItem(BaseSettingsModel):
             "From file - will use version from the file name if any found"
             "Locked - will use locked version number"
         ),
-        conditionalEnum=True,
+        conditional_enum=True,
     )
     locked: int = SettingsField(
         1,
