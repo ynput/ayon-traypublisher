@@ -78,4 +78,8 @@ def csvpublish(
         targets = ["default", "ingest"]
 
     # publishing
-    pyblish.util.publish(context=pyblish_context, targets=targets)
+    pyblish.util.publish(
+        context=pyblish_context,
+        targets=targets,
+        plugins=create_context.publish_plugins,
+    )
