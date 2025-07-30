@@ -132,6 +132,8 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
                 label="Linked to",
                 default=parent_instance,
                 disabled=True,
+                # Hide if parenting is available
+                visible=ParentFlags is None,
             )
         ]
 
