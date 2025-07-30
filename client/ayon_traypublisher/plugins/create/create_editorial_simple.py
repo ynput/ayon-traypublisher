@@ -119,7 +119,8 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
         return new_instance
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance):
+        parent_instance = instance.creator_attributes.get("parent_instance")
         return [
             BoolDef(
                 "add_review_family",
@@ -129,8 +130,9 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
             TextDef(
                 "parent_instance",
                 label="Linked to",
-                disabled=True
-            ),
+                default=parent_instance,
+                disabled=True,
+            )
         ]
 
 
