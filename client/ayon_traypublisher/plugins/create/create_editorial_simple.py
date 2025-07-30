@@ -24,6 +24,11 @@ from ayon_core.lib import (
     UISeparatorDef,
     UILabelDef
 )
+try:
+    from ayon_core.pipeline.create import ParentFlags
+except ImportError:
+    # Parenting was added with 'https://github.com/ynput/ayon-core/pull/1395'
+    ParentFlags = None
 
 
 CLIP_ATTR_DEFS = [
@@ -90,6 +95,17 @@ CLIP_ATTR_DEFS = [
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
     host_name = "traypublisher"
+
+    def _add_instance_to_context(self, instance):
+        parent_id = instance.get("parent_instance_id")
+        if parent_id is not None and ParentFlags is not None:
+            instance.set_parent(
+                parent_id,
+                # Disable if a parent is disabled and delete if a parent
+                #   is deleted
+                ParentFlags.share_active | ParentFlags.parent_lifetime
+            )
+        super()._add_instance_to_context(instance)
 
     def create(self, instance_data, source_data=None):
         product_name = instance_data["productName"]
