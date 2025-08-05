@@ -213,6 +213,15 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "model"
     label = "Model product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
+
 
 class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     """Camera product type class
@@ -222,6 +231,14 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "camera"
     label = "Camera product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """Workfile product type class
@@ -232,6 +249,14 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "workfile"
     label = "Workfile product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialAdvancedCreator(TrayPublishCreator):
     """Advanced Editorial creator class
@@ -884,11 +909,15 @@ or updating already created. Publishing will create OTIO file.
                 "parent_instance_id": parenting_data["instance_id"],
                 "creator_attributes": {
                     "parent_instance": parenting_data["instance_label"],
-                    "add_review_family": reviewable,
                 },
                 "version": version,
                 "prep_representations": representations,
             })
+
+            if pres_product_type not in ["model", "workfile", "camera"]:
+                instance_data["creator_attributes"]["add_review_family"] = (
+                    reviewable
+                )
 
             creator_identifier = f"editorial_{pres_product_type}_advanced"
             editorial_clip_creator = self.create_context.creators[
