@@ -213,6 +213,15 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "model"
     label = "Model product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
+
 
 class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     """Camera product type class
@@ -222,6 +231,14 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "camera"
     label = "Camera product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """Workfile product type class
@@ -232,6 +249,14 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "workfile"
     label = "Workfile product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialAdvancedCreator(TrayPublishCreator):
     """Advanced Editorial creator class
@@ -884,11 +909,15 @@ or updating already created. Publishing will create OTIO file.
                 "parent_instance_id": parenting_data["instance_id"],
                 "creator_attributes": {
                     "parent_instance": parenting_data["instance_label"],
-                    "add_review_family": reviewable,
                 },
                 "version": version,
                 "prep_representations": representations,
             })
+
+            if pres_product_type not in ["model", "workfile", "camera"]:
+                instance_data["creator_attributes"]["add_review_family"] = (
+                    reviewable
+                )
 
             creator_identifier = f"editorial_{pres_product_type}_advanced"
             editorial_clip_creator = self.create_context.creators[
@@ -1280,9 +1309,11 @@ def find_string_differences(files: List[str]) -> Dict[str, str]:
     # Find common prefix using zip_longest to compare all characters at once
     prefix = ""
     for chars in zip_longest(*processed_files):
-        if len(set(chars) - {None}) != 1:  # If there's more than one unique character
+        # If there's more than one unique character
+        if len(set(chars) - {None}) != 1:
             break
-        prefix += chars[0]
+        if chars[0] is not None:  # Ensure we don't add None
+            prefix += chars[0]
 
     # Find common suffix by reversing strings
     reversed_files = [f[::-1] for f in processed_files]
