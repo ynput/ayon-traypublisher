@@ -125,15 +125,13 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
             BoolDef(
                 "add_review_family",
                 default=True,
-                label="Review"
+                label="Review",
             ),
             TextDef(
                 "parent_instance",
                 label="Linked to",
                 default=parent_instance,
                 disabled=True,
-                # Hide if parenting is available
-                visible=ParentFlags is None,
             )
         ]
 
