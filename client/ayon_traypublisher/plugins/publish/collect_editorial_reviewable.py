@@ -18,7 +18,11 @@ class CollectEditorialReviewable(pyblish.api.InstancePlugin):
         if creator_identifier not in [
             "editorial_plate",
             "editorial_audio",
-            "editorial_review"
+            "editorial_review",
+            "editorial_audio_advanced",
+            "editorial_plate_advanced",
+            "editorial_image_advanced",
+            "editorial_render_advanced",
         ]:
             return
 
@@ -27,4 +31,6 @@ class CollectEditorialReviewable(pyblish.api.InstancePlugin):
         if creator_attributes["add_review_family"]:
             instance.data["families"].append("review")
 
-        self.log.debug("instance.data {}".format(instance.data))
+        self.log.info(
+            f"Collecting reviewable data for instance: {instance.name}"
+        )

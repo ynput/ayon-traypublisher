@@ -1280,9 +1280,11 @@ def find_string_differences(files: List[str]) -> Dict[str, str]:
     # Find common prefix using zip_longest to compare all characters at once
     prefix = ""
     for chars in zip_longest(*processed_files):
-        if len(set(chars) - {None}) != 1:  # If there's more than one unique character
+        # If there's more than one unique character
+        if len(set(chars) - {None}) != 1:
             break
-        prefix += chars[0]
+        if chars[0] is not None:  # Ensure we don't add None
+            prefix += chars[0]
 
     # Find common suffix by reversing strings
     reversed_files = [f[::-1] for f in processed_files]
