@@ -1224,7 +1224,7 @@ or updating already created. Publishing will create OTIO file.
                 extensions=[".edl", ".xml", ".aaf", ".fcpxml"],
                 allow_sequences=False,
                 single_item=False,
-                label="Sequence file",
+                label="Edit Project Files",
             ),
             FileDef(
                 "folder_path_data",
@@ -1232,7 +1232,7 @@ or updating already created. Publishing will create OTIO file.
                 single_item=False,
                 extensions=[],
                 allow_sequences=False,
-                label="Folder path",
+                label="Media Source Folder",
             ),
             # TODO: perhaps better would be timecode and fps input
             NumberDef("timeline_offset", default=0, label="Timeline offset"),
