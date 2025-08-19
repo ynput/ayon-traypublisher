@@ -35,7 +35,7 @@ CLIP_ATTR_DEFS = [
     EnumDef(
         "fps",
         items=[
-            {"value": "from_selection", "label": "From selection"},
+            {"value": "from_selection", "label": "From selected context"},
             {"value": 23.997, "label": "23.976"},
             {"value": 24, "label": "24"},
             {"value": 25, "label": "25"},
@@ -251,8 +251,8 @@ or updating already created. Publishing will create OTIO file.
         }
 
         folder_path = instance_data["folderPath"]
-        folder_entity = ayon_api.get_folder_by_path(
-            self.project_name, folder_path
+        folder_entity = self.create_context.get_folder_entity(
+            folder_path
         )
 
         if pre_create_data["fps"] == "from_selection":
@@ -261,9 +261,7 @@ or updating already created. Publishing will create OTIO file.
         else:
             fps = float(pre_create_data["fps"])
 
-        instance_data.update({
-            "fps": fps
-        })
+        instance_data["fps"] = fps
 
         # get path of sequence
         sequence_path_data = pre_create_data["sequence_filepath_data"]

@@ -213,6 +213,15 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "model"
     label = "Model product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
+
 
 class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     """Camera product type class
@@ -222,6 +231,14 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "camera"
     label = "Camera product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """Workfile product type class
@@ -232,6 +249,14 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     product_type = "workfile"
     label = "Workfile product"
 
+    def get_instance_attr_defs(self):
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                disabled=True
+            ),
+        ]
 
 class EditorialAdvancedCreator(TrayPublishCreator):
     """Advanced Editorial creator class
@@ -296,7 +321,7 @@ or updating already created. Publishing will create OTIO file.
             folder_path
         )
 
-        if folder_entity and pre_create_data["fps"] == "from_selection":
+        if pre_create_data["fps"] == "from_selection":
             # get 'fps' from folder attributes
             fps = folder_entity["attrib"]["fps"]
         else:
@@ -884,11 +909,15 @@ or updating already created. Publishing will create OTIO file.
                 "parent_instance_id": parenting_data["instance_id"],
                 "creator_attributes": {
                     "parent_instance": parenting_data["instance_label"],
-                    "add_review_family": reviewable,
                 },
                 "version": version,
                 "prep_representations": representations,
             })
+
+            if pres_product_type not in ["model", "workfile", "camera"]:
+                instance_data["creator_attributes"]["add_review_family"] = (
+                    reviewable
+                )
 
             creator_identifier = f"editorial_{pres_product_type}_advanced"
             editorial_clip_creator = self.create_context.creators[
@@ -944,7 +973,7 @@ or updating already created. Publishing will create OTIO file.
             product_name="shotMain",
         )
         instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
-        c_instance = self.create_context.creators["editorial_shot"].create(
+        c_instance = self.create_context.creators["editorial_shot_advanced"].create(
             instance_data
         )
         parenting_data.update(
@@ -1195,7 +1224,7 @@ or updating already created. Publishing will create OTIO file.
                 extensions=[".edl", ".xml", ".aaf", ".fcpxml"],
                 allow_sequences=False,
                 single_item=False,
-                label="Sequence file",
+                label="Edit Project Files",
             ),
             FileDef(
                 "folder_path_data",
@@ -1203,7 +1232,7 @@ or updating already created. Publishing will create OTIO file.
                 single_item=False,
                 extensions=[],
                 allow_sequences=False,
-                label="Folder path",
+                label="Media Source Folder",
             ),
             # TODO: perhaps better would be timecode and fps input
             NumberDef("timeline_offset", default=0, label="Timeline offset"),
@@ -1280,9 +1309,13 @@ def find_string_differences(files: List[str]) -> Dict[str, str]:
     # Find common prefix using zip_longest to compare all characters at once
     prefix = ""
     for chars in zip_longest(*processed_files):
-        if len(set(chars) - {None}) != 1:  # If there's more than one unique character
+        chars_s = set(chars)
+        # Ignore shorter filenames
+        chars_s.discard(None)
+        # End if a character in all filenames is not the same
+        if len(chars_s) != 1:
             break
-        prefix += chars[0]
+        prefix += next(iter(chars_s))
 
     # Find common suffix by reversing strings
     reversed_files = [f[::-1] for f in processed_files]
