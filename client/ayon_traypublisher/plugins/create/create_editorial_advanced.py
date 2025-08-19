@@ -321,7 +321,7 @@ or updating already created. Publishing will create OTIO file.
             folder_path
         )
 
-        if folder_entity and pre_create_data["fps"] == "from_selection":
+        if pre_create_data["fps"] == "from_selection":
             # get 'fps' from folder attributes
             fps = folder_entity["attrib"]["fps"]
         else:
@@ -973,7 +973,7 @@ or updating already created. Publishing will create OTIO file.
             product_name="shotMain",
         )
         instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
-        c_instance = self.create_context.creators["editorial_shot"].create(
+        c_instance = self.create_context.creators["editorial_shot_advanced"].create(
             instance_data
         )
         parenting_data.update(
