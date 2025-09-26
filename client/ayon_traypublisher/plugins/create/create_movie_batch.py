@@ -122,12 +122,12 @@ class BatchMovieCreator(TrayPublishCreator):
             task_type = task_entity["taskType"]
         try:
             product_name = get_product_name(
-                project_name,
-                task_name,
-                task_type,
-                host_name,
-                self.product_type,
-                variant,
+                project_name=project_name,
+                task_name=task_name,
+                task_type=task_type,
+                host_name=host_name,
+                product_type=self.product_type,
+                variant=variant,
             )
         except TaskNotSetError:
             # Create instance with fake task
@@ -136,12 +136,12 @@ class BatchMovieCreator(TrayPublishCreator):
             # NOTE: This expect that there is not task 'Undefined' on folder
             dumb_value = "Undefined"
             product_name = get_product_name(
-                project_name,
-                dumb_value,
-                dumb_value,
-                host_name,
-                self.product_type,
-                variant,
+                project_name=project_name,
+                task_name=dumb_value,
+                task_type=dumb_value,
+                host_name=host_name,
+                product_type=self.product_type,
+                variant=variant,
             )
 
         return product_name
