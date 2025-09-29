@@ -45,12 +45,13 @@ class _LaunchContext:
         if not self._project_name:
             window = ChooseProjectWindow()
             window.exec_()
-            self._project_name = window.get_selected_project_name()
+            project_name = window.get_selected_project_name()
+            if not project_name:
+                print("Project is not selected, exiting.")
+                self._app.exit(0)
+                return
 
-        if not self._project_name:
-            print("Project is not selected, exiting.")
-            self._app.exit(1)
-            return
+            self._project_name = project_name
 
         project = ayon_api.get_project(self._project_name)
         if not project:
