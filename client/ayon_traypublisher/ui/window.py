@@ -5,7 +5,7 @@ Adds ability to select project using overlay widget with list of projects.
 Tray publisher can be considered as host implementeation with creators and
 publishing plugins.
 """
-from typing import Optional
+from typing import Optional, Any
 
 from qtpy import QtWidgets, QtGui
 import qtawesome
@@ -18,6 +18,7 @@ from ayon_core.tools.common_models import ProjectsModel
 from ayon_core.tools.utils import PlaceholderLineEdit
 
 from .projects_widget import TrayPublisherProjectsWidget
+from .bundles_info import BundlesInfo
 
 
 class TrayPublisherRegistry(AYONSettingsRegistry):
@@ -33,6 +34,9 @@ class ChooseProjectController:
 
     def get_project_items(self, sender=None):
         return self._projects_model.get_project_items(sender)
+
+    def get_project_entity(self, project_name: str) -> dict[str, Any]:
+        return self._projects_model.get_project_entity(project_name)
 
     def emit_event(self, topic, data=None, source=None):
         """Use implemented event system to trigger event."""
@@ -60,6 +64,53 @@ class ChooseProjectController:
 
         """
         pass
+
+
+class UnsupportedDialog(QtWidgets.QDialog):
+    _min_width = 400
+    _min_height = 130
+
+    def __init__(
+        self,
+        project_name: str,
+        parent: QtWidgets.QWidget,
+    ) -> None:
+        super().__init__(parent)
+
+        self.setWindowTitle("Traypublisher unsupported")
+
+        self.setMinimumWidth(self._min_width)
+        self.setMinimumHeight(self._min_height)
+
+        label_widget = QtWidgets.QLabel(
+            (
+                f"Traypublisher is not enabled for project '{project_name}'."
+                "<br/><br/>Please contact your administrator to resolve"
+                " the issue."
+            ),
+            self
+        )
+        label_widget.setWordWrap(True)
+
+        close_btn = QtWidgets.QPushButton("Close", self)
+
+        btns_layout = QtWidgets.QHBoxLayout()
+        btns_layout.addStretch(1)
+        btns_layout.addWidget(close_btn, 0)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.addWidget(label_widget, 0)
+        layout.addStretch(1)
+        layout.addLayout(btns_layout, 0)
+
+        close_btn.clicked.connect(self._on_close)
+
+        self._label_widget = label_widget
+        self._close_btn = close_btn
+
+    def _on_close(self):
+        self.reject()
 
 
 class ChooseProjectWindow(QtWidgets.QDialog):
@@ -126,6 +177,7 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         self._txt_filter = txt_filter
 
         self._controller = controller
+        self._bundles_info = BundlesInfo()
         self._project_name = None
         self._first_show = True
 
@@ -140,6 +192,7 @@ class ChooseProjectWindow(QtWidgets.QDialog):
             self._first_show = False
             self.setStyleSheet(load_stylesheet())
         self._refresh_projects()
+        self._bundles_info.reset()
 
     def _refresh_projects(self):
         self._projects_widget.refresh()
@@ -167,7 +220,19 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         if not project_name:
             return
 
+        project_entity = self._controller.get_project_entity(project_name)
+        addons = self._bundles_info.get_project_addons(
+            project_name, project_entity=project_entity
+        )
+        if "traypublisher" not in addons:
+            self._show_unsupported_project(project_name)
+            return
+
         self._controller.set_last_user_project_name(project_name)
 
         self._project_name = project_name
         self.accept()
+
+    def _show_unsupported_project(self, project_name: str) -> None:
+        dialog = UnsupportedDialog(project_name, self)
+        dialog.exec_()
