@@ -58,7 +58,7 @@ class BundlesInfo:
         self._studio_bundle_info = _PLACEHOLDER
         self._cache_by_project_name = {}
 
-    def get_project_addons(
+    def get_project_bundle_info(
         self,
         project_name: str,
         project_entity: Optional[dict[str, Any]] = None,
