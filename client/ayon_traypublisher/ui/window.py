@@ -221,10 +221,10 @@ class ChooseProjectWindow(QtWidgets.QDialog):
             return
 
         project_entity = self._controller.get_project_entity(project_name)
-        addons = self._bundles_info.get_project_addons(
+        bundle_info = self._bundles_info.get_project_bundle_info(
             project_name, project_entity=project_entity
         )
-        if "traypublisher" not in addons:
+        if "traypublisher" not in bundle_info.addon_versions:
             self._show_unsupported_project(project_name)
             return
 
