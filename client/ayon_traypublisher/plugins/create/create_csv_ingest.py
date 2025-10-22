@@ -889,12 +889,12 @@ configuration in project settings.
             folder_path: str = product_item.folder_path
             version: int = product_item.version
             product_name: str = get_product_name(
-                project_name,
-                product_item.task_name,
-                product_item.task_type,
-                self.host_name,
-                product_item.product_type,
-                product_item.variant
+                project_name=project_name,
+                task_name=product_item.task_name,
+                task_type=product_item.task_type,
+                host_name=self.host_name,
+                product_type=product_item.product_type,
+                variant=product_item.variant,
             )
 
             if version is not None:
