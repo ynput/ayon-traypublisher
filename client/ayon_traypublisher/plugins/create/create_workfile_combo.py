@@ -1,0 +1,156 @@
+# -*- coding: utf-8 -*-
+import inspect
+from typing import Optional
+
+from ayon_core.lib import FileDef
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
+from ayon_core.pipeline import (
+    CreatedInstance,
+    CreatorError,
+)
+from ayon_traypublisher.api.plugin import (
+    TrayPublishCreator,
+    HiddenTrayPublishCreator
+)
+
+
+class ComboCreator(TrayPublishCreator):
+    """Creates additional image publish instances for provided workfile."""
+
+    identifier = "io.ayon.creators.traypublisher.workfile_combo"
+    label = "Workfile + Image"
+    icon = "fa.file"
+    description = (
+        "Creates additional image publish instances for provided workfile."
+    )
+    extensions = [".psd"]
+    product_type = "workfile"
+
+    def get_detail_description(self):
+        return inspect.cleandoc("""# Workfile + Image
+
+        Basic creator that creates image publish instances alongside the main
+        workfile instance. 
+        
+        Matches existing workflow in WebPublisher 
+            ayon+settings://webpublisher/publish/CollectPublishedFiles/task_type_to_product_type/0/value/0/additional_product_types
+    
+        .psd workfile could be used both as `workfile` and `image` product.
+        Different combos are not currently expected.
+        """)
+
+    def create(self, product_name, instance_data, pre_create_data):
+        repr_file = pre_create_data.get("representation_file")
+        if not repr_file:
+            raise CreatorError("No files specified")
+
+        instance_data["creator_attributes"] = {
+            "representation_files": [repr_file],
+            "reviewable": {},
+        }
+
+        # to collect provided files to representations
+        instance_data["settings_creator"] = True
+
+        workfile_creator = self._get_hidden_creator(
+            "io.ayon.creators.traypublisher.workfile_combo.workfile"
+        )
+        if not workfile_creator:
+            raise CreatorError("Workfile creator not found")
+
+        workfile_creator.create(None, instance_data)
+
+        # review only for image instance
+        reviewable = pre_create_data.get("reviewable")
+        if reviewable:
+            instance_data["creator_attributes"]["reviewable"] = reviewable
+
+        image_creator = self._get_hidden_creator(
+            "io.ayon.creators.traypublisher.workfile_combo.image"
+        )
+        if not image_creator:
+            raise CreatorError("Image creator not found")
+
+        image_creator.create(None, instance_data)
+
+    def _get_hidden_creator(self, identifier):
+        creator = self.create_context.creators.get(identifier)
+        if creator is None:
+            self.log.debug(
+                "Creator '%s' not found in create_context.creators", identifier
+            )
+        return creator
+
+    def get_pre_create_attr_defs(self):
+        return [
+            FileDef(
+                "representation_file",
+                folders=False,
+                extensions=self.extensions,
+                allow_sequences=False,
+                single_item=True,
+                label="Representation",
+            ),
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=IMAGE_EXTENSIONS,
+                allow_sequences=True,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item",
+            ),
+        ]
+
+
+class InstanceComboCreator(HiddenTrayPublishCreator):
+    """Base class for instance creation."""
+    identifier = "io.ayon.creators.traypublisher.workfile_combo.workfile"
+    label = "Workfile"
+    host_name = "traypublisher"
+    product_type = "workfile"
+
+    def create(self, _product_name, instance_data):
+        project_entity = self.create_context.get_current_project_entity()
+        folder_path: str = instance_data["folderPath"]
+        task_name: Optional[str] = instance_data.get("task")
+        # get_current_folder_entity returns None
+        folder_entity = self.create_context.get_folder_entity(folder_path)
+        task_entity = self.create_context.get_task_entity(
+            folder_path, task_name
+        )
+
+        project_name = project_entity["name"]
+        host_name = self.create_context.host_name
+
+        product_name = self.get_product_name(
+            project_name=project_name,
+            project_entity=project_entity,
+            folder_entity=folder_entity,
+            task_entity=task_entity,
+            host_name=host_name,
+            variant=instance_data.get("variant", "Main")
+        )
+        new_instance = CreatedInstance(
+            self.product_type, product_name, instance_data, self
+        )
+
+        self._store_new_instance(new_instance)
+
+        return new_instance
+
+
+class WorkfileComboCreator(InstanceComboCreator):
+    """Creates workfile instance."""
+    identifier = "io.ayon.creators.traypublisher.workfile_combo.workfile"
+    label = "Workfile"
+    host_name = "traypublisher"
+    product_type = "workfile"
+
+
+class ImageComboCreator(InstanceComboCreator):
+    """Creates image instance."""
+    identifier = "io.ayon.creators.traypublisher.workfile_combo.image"
+    label = "Image"
+    host_name = "traypublisher"
+    product_type = "image"
