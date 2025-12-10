@@ -25,6 +25,9 @@ class ComboCreator(TrayPublishCreator):
     )
     extensions = [".psd"]
     product_type = "workfile"
+    settings_category = "traypublisher"
+
+    default_variants = ["Main"]
 
     def get_detail_description(self):
         return inspect.cleandoc("""# Workfile + Image
@@ -51,6 +54,8 @@ class ComboCreator(TrayPublishCreator):
 
         # to collect provided files to representations
         instance_data["settings_creator"] = True
+
+        instance_data["default_variants"] = self.default_variants
 
         workfile_creator = self._get_hidden_creator(
             "io.ayon.creators.traypublisher.workfile_combo.workfile"
@@ -123,13 +128,18 @@ class InstanceComboCreator(HiddenTrayPublishCreator):
         project_name = project_entity["name"]
         host_name = self.create_context.host_name
 
+        variant = (
+            instance_data.get("variant") or
+            next(iter(instance_data["default_variants"]), None)
+        )
+
         product_name = self.get_product_name(
             project_name=project_name,
             project_entity=project_entity,
             folder_entity=folder_entity,
             task_entity=task_entity,
             host_name=host_name,
-            variant=instance_data.get("variant", "Main")
+            variant=variant
         )
         new_instance = CreatedInstance(
             self.product_type, product_name, instance_data, self
