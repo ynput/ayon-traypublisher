@@ -30,8 +30,9 @@ class TextureCreator(TrayPublishCreator):
     icon = "fa.file"
     description = "Texture files or UDIM sequences"
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
-                  ".dpx", ".tif", ".png", ".jpg"]
+                  ".dpx", ".tif", ".png", ".jpg", ".tga", ".tx"]
 
+    
     def get_detail_description(self):
         return inspect.cleandoc("""# Textures
 

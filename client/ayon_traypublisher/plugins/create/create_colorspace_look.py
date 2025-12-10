@@ -32,7 +32,7 @@ class CreateColorspaceLook(TrayPublishCreator):
     label = "Colorspace Look"
     product_type = "ociolook"
     description = "Publishes color space look file."
-    extensions = [".cc", ".cube", ".3dl", ".spi1d", ".spi3d", ".csp", ".lut"]
+    extensions = [".cc", ".cube", ".3dl", ".spi1d", ".spi3d", ".csp", ".lut", ".ccc", ".cdl"]
     enabled = False
 
     colorspace_items = [
