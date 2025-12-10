@@ -200,6 +200,21 @@ class FolderCreationConfigModel(BaseSettingsModel):
     )
 
 
+class ComboCreatorPluginModel(BaseSettingsModel):
+    """Creates the workfile and image publish instances together.
+
+    For .psd which could be both workfile and image product type.
+    """
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=True,
+    )
+    default_variants: list[str] = SettingsField(
+        title="Default variants",
+        default_factory=list
+    )
+
+
 class IngestCSVPluginModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -243,6 +258,10 @@ class TrayPublisherCreatePluginsModel(BaseSettingsModel):
         title="Batch Movie Creator",
         default_factory=BatchMovieCreatorPlugin
     )
+    ComboCreator: ComboCreatorPluginModel = SettingsField(
+        title="Workfile + Image Combo Creator",
+        default_factory=ComboCreatorPluginModel,
+    )
     IngestCSV: IngestCSVPluginModel = SettingsField(
         title="Ingest CSV",
         default_factory=IngestCSVPluginModel
@@ -255,15 +274,13 @@ class TrayPublisherCreatePluginsModel(BaseSettingsModel):
 
 DEFAULT_CREATORS = {
     "BatchMovieCreator": {
-        "default_variants": [
-            "Main"
-        ],
-        "default_tasks": [
-            "Compositing"
-        ],
-        "extensions": [
-            ".mov"
-        ]
+        "default_variants": ["Main"],
+        "default_tasks": ["Compositing"],
+        "extensions": [".mov"],
+    },
+    "ComboCreator": {
+        "enabled": False,
+        "default_variants": ["Main"]
     },
     "IngestCSV": {
         "enabled": True,
