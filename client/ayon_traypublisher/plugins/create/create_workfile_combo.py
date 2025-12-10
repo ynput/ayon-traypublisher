@@ -43,12 +43,12 @@ class ComboCreator(TrayPublishCreator):
         """)
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("representation_file")
+        repr_file = pre_create_data.get("representation_files")
         if not repr_file:
             raise CreatorError("No files specified")
 
         instance_data["creator_attributes"] = {
-            "representation_files": [repr_file],
+            "representation_files": repr_file,
             "reviewable": {},
         }
 
@@ -89,7 +89,7 @@ class ComboCreator(TrayPublishCreator):
     def get_pre_create_attr_defs(self):
         return [
             FileDef(
-                "representation_file",
+                "representation_files",
                 folders=False,
                 extensions=self.extensions,
                 allow_sequences=False,
@@ -110,7 +110,7 @@ class ComboCreator(TrayPublishCreator):
 
 class InstanceComboCreator(HiddenTrayPublishCreator):
     """Base class for instance creation."""
-    identifier = "io.ayon.creators.traypublisher.workfile_combo.workfile"
+    identifier = "io.ayon.creators.traypublisher.workfile_combo"
     label = "Workfile"
     host_name = "traypublisher"
     product_type = "workfile"
@@ -149,6 +149,19 @@ class InstanceComboCreator(HiddenTrayPublishCreator):
 
         return new_instance
 
+    def get_instance_attr_defs(self):
+        return [
+            FileDef(
+                "representation_files",
+                folders=False,
+                extensions=[".psd"],
+                allow_sequences=False,
+                single_item=True,
+                label="Representation",
+                disabled=True,
+            ),
+        ]
+
 
 class WorkfileComboCreator(InstanceComboCreator):
     """Creates workfile instance."""
@@ -157,10 +170,45 @@ class WorkfileComboCreator(InstanceComboCreator):
     host_name = "traypublisher"
     product_type = "workfile"
 
+    def get_instance_attr_defs(self):
+        defs = super().get_instance_attr_defs()
+        # do not show reviewable for workfile
+        defs.append(
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=IMAGE_EXTENSIONS,
+                allow_sequences=False,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item",
+                disabled=True,
+                hidden=True
+            )
+        )
+        return defs
+
 
 class ImageComboCreator(InstanceComboCreator):
     """Creates image instance."""
+
     identifier = "io.ayon.creators.traypublisher.workfile_combo.image"
     label = "Image"
     host_name = "traypublisher"
     product_type = "image"
+
+    def get_instance_attr_defs(self):
+        defs = super().get_instance_attr_defs()
+        defs.append(
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=IMAGE_EXTENSIONS,
+                allow_sequences=False,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item",
+                disabled=True,
+            )
+        )
+        return defs
