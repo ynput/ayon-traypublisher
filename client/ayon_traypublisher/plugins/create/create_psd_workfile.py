@@ -14,11 +14,11 @@ from ayon_traypublisher.api.plugin import (
 )
 
 
-class ComboCreator(TrayPublishCreator):
-    """Creates additional image publish instances for provided workfile."""
+class PSDWorkfileCreator(TrayPublishCreator):
+    """Creates additional image publish instance for provided workfile."""
 
-    identifier = "io.ayon.creators.traypublisher.workfile_combo"
-    label = "Workfile + Image"
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image"
+    label = "PSD Workfile + Image"
     icon = "fa.file"
     description = (
         "Creates additional image publish instances for provided workfile."
@@ -58,7 +58,7 @@ class ComboCreator(TrayPublishCreator):
         instance_data["default_variants"] = self.default_variants
 
         workfile_creator = self._get_hidden_creator(
-            "io.ayon.creators.traypublisher.workfile_combo.workfile"
+            "io.ayon.creators.traypublisher.psd_workfile_image.workfile"
         )
         if not workfile_creator:
             raise CreatorError("Workfile creator not found")
@@ -71,7 +71,7 @@ class ComboCreator(TrayPublishCreator):
             instance_data["creator_attributes"]["reviewable"] = reviewable
 
         image_creator = self._get_hidden_creator(
-            "io.ayon.creators.traypublisher.workfile_combo.image"
+            "io.ayon.creators.traypublisher.psd_workfile_image.image"
         )
         if not image_creator:
             raise CreatorError("Image creator not found")
@@ -108,9 +108,9 @@ class ComboCreator(TrayPublishCreator):
         ]
 
 
-class InstanceComboCreator(HiddenTrayPublishCreator):
+class BaseInstanceComboCreator(HiddenTrayPublishCreator):
     """Base class for instance creation."""
-    identifier = "io.ayon.creators.traypublisher.workfile_combo"
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.base"
     label = "Workfile"
     host_name = "traypublisher"
     product_type = "workfile"
@@ -163,9 +163,9 @@ class InstanceComboCreator(HiddenTrayPublishCreator):
         ]
 
 
-class WorkfileComboCreator(InstanceComboCreator):
+class WorkfileComboCreator(BaseInstanceComboCreator):
     """Creates workfile instance."""
-    identifier = "io.ayon.creators.traypublisher.workfile_combo.workfile"
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.workfile"
     label = "Workfile"
     host_name = "traypublisher"
     product_type = "workfile"
@@ -189,10 +189,10 @@ class WorkfileComboCreator(InstanceComboCreator):
         return defs
 
 
-class ImageComboCreator(InstanceComboCreator):
+class ImageComboCreator(BaseInstanceComboCreator):
     """Creates image instance."""
 
-    identifier = "io.ayon.creators.traypublisher.workfile_combo.image"
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.image"
     label = "Image"
     host_name = "traypublisher"
     product_type = "image"

@@ -200,7 +200,7 @@ class FolderCreationConfigModel(BaseSettingsModel):
     )
 
 
-class ComboCreatorPluginModel(BaseSettingsModel):
+class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
     """Creates the workfile and image publish instances together.
 
     For .psd which could be both workfile and image product type.
@@ -258,9 +258,9 @@ class TrayPublisherCreatePluginsModel(BaseSettingsModel):
         title="Batch Movie Creator",
         default_factory=BatchMovieCreatorPlugin
     )
-    ComboCreator: ComboCreatorPluginModel = SettingsField(
-        title="Workfile + Image Combo Creator",
-        default_factory=ComboCreatorPluginModel,
+    PSDWorkfileCreator: PSDWorkfileCreatorPluginModel = SettingsField(
+        title="PSD Workfile + Image Creator",
+        default_factory=PSDWorkfileCreatorPluginModel,
     )
     IngestCSV: IngestCSVPluginModel = SettingsField(
         title="Ingest CSV",
@@ -278,7 +278,7 @@ DEFAULT_CREATORS = {
         "default_tasks": ["Compositing"],
         "extensions": [".mov"],
     },
-    "ComboCreator": {
+    "PSDWorkfileCreator": {
         "enabled": False,
         "default_variants": ["Main"]
     },
