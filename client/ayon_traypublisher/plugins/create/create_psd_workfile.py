@@ -94,7 +94,7 @@ class PSDWorkfileCreator(TrayPublishCreator):
                 extensions=self.extensions,
                 allow_sequences=False,
                 single_item=True,
-                label="Representation",
+                label="PSD file",
             ),
             FileDef(
                 "reviewable",
