@@ -3,7 +3,6 @@ import inspect
 from typing import Optional
 
 from ayon_core.lib import FileDef
-from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError,
@@ -17,7 +16,7 @@ from ayon_traypublisher.api.plugin import (
 class PSDWorkfileCreator(TrayPublishCreator):
     """Creates additional image publish instance for provided workfile."""
 
-    identifier = "io.ayon.creators.traypublisher.psd_workfile_image"
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.workfile"
     label = "PSD Workfile + Image"
     group_label = "Workfile"
     icon = "fa.file"
@@ -45,32 +44,21 @@ class PSDWorkfileCreator(TrayPublishCreator):
         """)
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("representation_files")
+        repr_file = pre_create_data.get("workfile_file")
         if not repr_file:
             raise CreatorError("No files specified")
 
         instance_data["creator_attributes"] = {
-            "representation_files": repr_file,
-            "reviewable": {},
+            "workfile_file": repr_file,
         }
-
-        # to collect provided files to representations
-        instance_data["settings_creator"] = True
 
         instance_data["default_variants"] = self.default_variants
 
-        workfile_creator = self._get_hidden_creator(
-            "io.ayon.creators.traypublisher.psd_workfile_image.workfile"
+        workfile_instance = CreatedInstance(
+            self.product_type, product_name, instance_data, self
         )
-        if not workfile_creator:
-            raise CreatorError("Workfile creator not found")
 
-        workfile_creator.create(None, instance_data)
-
-        # review only for image instance
-        reviewable = pre_create_data.get("reviewable")
-        if reviewable:
-            instance_data["creator_attributes"]["reviewable"] = reviewable
+        self._store_new_instance(workfile_instance)
 
         image_creator = self._get_hidden_creator(
             "io.ayon.creators.traypublisher.psd_workfile_image.image"
@@ -91,31 +79,27 @@ class PSDWorkfileCreator(TrayPublishCreator):
     def get_pre_create_attr_defs(self):
         return [
             FileDef(
-                "representation_files",
+                "workfile_file",
                 folders=False,
-                extensions=self.extensions,
+                extensions=[".psd"],
                 allow_sequences=False,
                 single_item=True,
                 label="PSD file",
-            ),
-            FileDef(
-                "reviewable",
-                folders=False,
-                extensions=IMAGE_EXTENSIONS,
-                allow_sequences=True,
-                single_item=True,
-                label="Reviewable representations",
-                extensions_label="Single reviewable item",
-            ),
+            )
         ]
 
+    def get_instance_attr_defs(self):
+        return self.get_pre_create_attr_defs()
 
-class BaseInstanceComboCreator(HiddenTrayPublishCreator):
-    """Base class for instance creation."""
-    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.base"
-    label = "Workfile"
+
+class ImageComboCreator(HiddenTrayPublishCreator):
+    """Creates image instance."""
+
+    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.image"
+    label = "Image"
     host_name = "traypublisher"
-    product_type = "workfile"
+    product_type = "image"
+    product_base_type = "image"
 
     def create(self, _product_name, instance_data):
         project_entity = self.create_context.get_current_project_entity()
@@ -154,63 +138,11 @@ class BaseInstanceComboCreator(HiddenTrayPublishCreator):
     def get_instance_attr_defs(self):
         return [
             FileDef(
-                "representation_files",
+                "workfile_file",
                 folders=False,
                 extensions=[".psd"],
                 allow_sequences=False,
                 single_item=True,
-                label="Representation",
-                disabled=True,
-            ),
+                label="PSD file",
+            )
         ]
-
-
-class WorkfileComboCreator(BaseInstanceComboCreator):
-    """Creates workfile instance."""
-    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.workfile"
-    label = "Workfile"
-    host_name = "traypublisher"
-    product_type = "workfile"
-
-    def get_instance_attr_defs(self):
-        defs = super().get_instance_attr_defs()
-        # do not show reviewable for workfile
-        defs.append(
-            FileDef(
-                "reviewable",
-                folders=False,
-                extensions=IMAGE_EXTENSIONS,
-                allow_sequences=False,
-                single_item=True,
-                label="Reviewable representations",
-                extensions_label="Single reviewable item",
-                disabled=True,
-                hidden=True
-            )
-        )
-        return defs
-
-
-class ImageComboCreator(BaseInstanceComboCreator):
-    """Creates image instance."""
-
-    identifier = "io.ayon.creators.traypublisher.psd_workfile_image.image"
-    label = "Image"
-    host_name = "traypublisher"
-    product_type = "image"
-
-    def get_instance_attr_defs(self):
-        defs = super().get_instance_attr_defs()
-        defs.append(
-            FileDef(
-                "reviewable",
-                folders=False,
-                extensions=IMAGE_EXTENSIONS,
-                allow_sequences=False,
-                single_item=True,
-                label="Reviewable representations",
-                extensions_label="Single reviewable item",
-                disabled=True,
-            )
-        )
-        return defs
