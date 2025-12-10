@@ -19,6 +19,7 @@ class PSDWorkfileCreator(TrayPublishCreator):
 
     identifier = "io.ayon.creators.traypublisher.psd_workfile_image"
     label = "PSD Workfile + Image"
+    group_label = "Workfile"
     icon = "fa.file"
     description = (
         "Creates additional image publish instances for provided workfile."
