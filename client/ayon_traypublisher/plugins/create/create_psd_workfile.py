@@ -2,7 +2,7 @@
 import inspect
 from typing import Optional
 
-from ayon_core.lib import FileDef
+from ayon_core.lib import FileDef, BoolDef
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError,
@@ -59,6 +59,10 @@ class PSDWorkfileCreator(TrayPublishCreator):
 
         self._store_new_instance(workfile_instance)
 
+        add_review_family = pre_create_data.get("add_review_family", False)
+        instance_data["creator_attributes"]["add_review_family"] = (
+            add_review_family
+        )
         image_creator = self._get_hidden_creator(
             "io.ayon.creators.traypublisher.psd_workfile_image.image"
         )
@@ -84,11 +88,25 @@ class PSDWorkfileCreator(TrayPublishCreator):
                 allow_sequences=False,
                 single_item=True,
                 label="PSD file",
-            )
+            ),
+            BoolDef(
+                "add_review_family",
+                default=True,
+                label="Review"
+            ),
         ]
 
     def get_instance_attr_defs(self):
-        return self.get_pre_create_attr_defs()
+        return [
+            FileDef(
+                "filepath",
+                folders=False,
+                extensions=[".psd"],
+                allow_sequences=False,
+                single_item=True,
+                label="PSD file",
+            )
+        ]
 
 
 class ImageComboCreator(HiddenTrayPublishCreator):
@@ -143,5 +161,10 @@ class ImageComboCreator(HiddenTrayPublishCreator):
                 allow_sequences=False,
                 single_item=True,
                 label="PSD file",
-            )
+            ),
+            BoolDef(
+                "add_review_family",
+                default=True,
+                label="Review"
+            ),
         ]
