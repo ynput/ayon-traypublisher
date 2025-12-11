@@ -24,7 +24,9 @@ class _LaunchContext:
         self,
         addon: TrayPublishAddon,
         app: QtWidgets.QApplication,
-        project_name: Optional[str],
+        project_name: Optional[str] = None,
+        folder_path: Optional[str] = None,
+        task_name: Optional[str] = None,
     ):
         init_timer = QtCore.QTimer()
 
@@ -33,6 +35,8 @@ class _LaunchContext:
         self._addon = addon
         self._app = app
         self._project_name = project_name
+        self._folder_path = folder_path
+        self._task_name = task_name
         self._init_timer = init_timer
         self._publisher_window = None
 
@@ -60,6 +64,10 @@ class _LaunchContext:
             return
 
         os.environ["AYON_PROJECT_NAME"] = self._project_name
+        if self._folder_path:
+            os.environ["AYON_FOLDER_PATH"] = self._folder_path
+        if self._task_name:
+            os.environ["AYON_TASK_NAME"] = self._task_name
 
         ensure_addons_are_process_ready(
             addon_name=self._addon.name,
@@ -92,9 +100,19 @@ class _LaunchContext:
 
 
 def launch_traypublisher_ui(
-    addon: TrayPublishAddon, project_name: Optional[str]
+    addon: TrayPublishAddon,
+    project_name: Optional[str] = None,
+    folder_path: Optional[str] = None,
+    task_name: Optional[str] = None,
+
 ):
     app_instance = get_ayon_qt_app()
-    context = _LaunchContext(addon, app_instance, project_name)
+    context = _LaunchContext(
+        addon,
+        app_instance,
+        project_name,
+        folder_path,
+        task_name,
+    )
     context.start()
     app_instance.exec_()

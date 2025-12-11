@@ -70,6 +70,16 @@ class TrayPublishAddon(
             help="Project name",
             envvar="AYON_PROJECT_NAME",
             default=None,
+        ).option(
+            "--folder-path",
+            help="Asset name in which the context will be used",
+            type=str,
+            required=False,
+        ).option(
+            "--task",
+            help="Task name under Asset in which the context will be used",
+            type=str,
+            required=False,
         )
 
         cli_main.command(
@@ -107,10 +117,15 @@ class TrayPublishAddon(
     def _cli_main(self):
         pass
 
-    def _cli_launch(self, project: Optional[str] = None):
+    def _cli_launch(
+            self,
+            project: Optional[str] = None,
+            folder_path: Optional[str] = None,
+            task: Optional[str] = None,
+        )-> None:
         from .api.main import launch_traypublisher_ui
 
-        launch_traypublisher_ui(self, project)
+        launch_traypublisher_ui(self, project, folder_path, task)
 
     def _start_traypublisher(self, project_name: str):
         args = get_ayon_launcher_args(
