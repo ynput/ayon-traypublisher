@@ -34,7 +34,6 @@ class TextureCreator(TrayPublishCreator):
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
                   ".dpx", ".tif", ".png", ".jpg", ".tga", ".tx"]
 
-    
     def get_detail_description(self):
         return inspect.cleandoc("""# Textures
 
