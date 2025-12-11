@@ -138,7 +138,7 @@ class ImageComboCreator(HiddenTrayPublishCreator):
     def get_instance_attr_defs(self):
         return [
             FileDef(
-                "workfile_file",
+                "filepath",
                 folders=False,
                 extensions=[".psd"],
                 allow_sequences=False,
