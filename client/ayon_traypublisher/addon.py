@@ -125,6 +125,9 @@ class TrayPublishAddon(
         )-> None:
         from .api.main import launch_traypublisher_ui
 
+        if task and not folder_path:
+            raise ValueError("`--folder-path` is required when `--task` is provided.")
+
         launch_traypublisher_ui(self, project, folder_path, task)
 
     def _start_traypublisher(self, project_name: str):
