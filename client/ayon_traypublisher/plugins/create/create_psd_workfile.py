@@ -44,12 +44,12 @@ class PSDWorkfileCreator(TrayPublishCreator):
         """)
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("workfile_file")
+        repr_file = pre_create_data.get("filepath")
         if not repr_file:
             raise CreatorError("No files specified")
 
         instance_data["creator_attributes"] = {
-            "workfile_file": repr_file,
+            "filepath": repr_file,
         }
 
         instance_data["default_variants"] = self.default_variants
