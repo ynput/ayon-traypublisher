@@ -25,8 +25,8 @@ class CollectPSDWorkfile(
 
         creator_attributes = instance.data["creator_attributes"]
 
-        workfile_file = creator_attributes["workfile_file"]
-        file_name = workfile_file["filenames"][0]
+        filepath_def = creator_attributes["filepath"]
+        file_name = filepath_def["filenames"][0]
         _, ext = os.path.splitext(file_name)
 
         ext = ext.lstrip(".")
@@ -34,12 +34,12 @@ class CollectPSDWorkfile(
             "name": ext,
             "ext": ext,
             "files": file_name,
-            "stagingDir": workfile_file["directory"],
+            "stagingDir": filepath_def["directory"],
             "tags": []
         }
         instance.data["representations"].append(repre)
 
-        file_url = os.path.join(workfile_file["directory"], file_name)
+        file_url = os.path.join(filepath_def["directory"], file_name)
         if instance.data["productType"] == "image":
             repre["tags"].append("review")
             instance.data["families"].append("review")
