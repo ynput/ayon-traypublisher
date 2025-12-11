@@ -23,6 +23,7 @@ class EditorialPackageCreator(TrayPublishCreator):
     identifier = "editorial_pkg"
     label = "Editorial package"
     product_type = "editorial_pkg"
+    product_base_type = "editorial_pkg"
     description = "Publish folder with OTIO file and resources"
 
     # Position batch creator after simple creators

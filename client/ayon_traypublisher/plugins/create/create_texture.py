@@ -27,6 +27,7 @@ class TextureCreator(TrayPublishCreator):
     identifier = "io.ayon.creators.traypublisher.texture"
     label = "Texture"
     product_type = "texture"
+    product_base_type = "texture"
     icon = "fa.file"
     description = "Texture files or UDIM sequences"
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
