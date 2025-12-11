@@ -17,7 +17,6 @@ class CollectPSDWorkfile(
     order = pyblish.api.CollectorOrder
 
     hosts = ["traypublisher"]
-    # families = ["editorial"]
 
     def process(self, instance):
         if "psd_workfile_image" not in instance.data.get("creator_identifier"):
