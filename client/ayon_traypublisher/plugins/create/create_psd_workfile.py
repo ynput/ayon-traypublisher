@@ -23,7 +23,6 @@ class PSDWorkfileCreator(TrayPublishCreator):
     description = (
         "Creates additional image publish instances for provided workfile."
     )
-    extensions = [".psd"]
     product_type = "workfile"
     product_base_type = "workfile"
     settings_category = "traypublisher"
