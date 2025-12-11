@@ -23,6 +23,7 @@ class OnlineCreator(TrayPublishCreator):
     identifier = "io.ayon.creators.traypublisher.online"
     label = "Online"
     product_type = "online"
+    product_base_type = "online"
     description = "Publish file retaining its original file name"
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
                   ".dpx", ".tif", ".png", ".jpg"]

@@ -316,11 +316,12 @@ class SettingsCreator(TrayPublishCreator):
         identifier = item_data["identifier"]
         product_type = item_data["product_type"]
         if not identifier:
-            identifier = "settings_{}".format(product_type)
+            identifier = f"settings_{product_type}"
         return type(
-            "{}{}".format(cls.__name__, identifier),
+            f"{cls.__name__}{identifier}",
             (cls, ),
             {
+                "product_base_type": product_type,
                 "product_type": product_type,
                 "identifier": identifier,
                 "label": item_data["label"].strip(),

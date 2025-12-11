@@ -143,6 +143,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_shot"
     product_type = "shot"
+    product_base_type = "shot"
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -164,6 +165,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_plate"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Editorial Plate"
 
 
@@ -174,6 +176,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_audio"
     product_type = "audio"
+    product_base_type = "audio"
     label = "Editorial Audio"
 
 
@@ -184,6 +187,7 @@ class EditorialReviewInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_review"
     product_type = "review"
+    product_base_type = "review"
     label = "Editorial Review"
 
 
@@ -200,6 +204,7 @@ class EditorialSimpleCreator(TrayPublishCreator):
     enabled = True
     label = "Editorial Simple"
     product_type = "editorial"
+    product_base_type = "editorial"
     identifier = "editorial_simple"
     default_variants = [
         "main"
@@ -214,7 +219,7 @@ or updating already created. Publishing will create OTIO file.
 
     def __init__(self, *args, **kwargs):
         self._shot_metadata_solver = ShotMetadataSolver(self.log)
-        super(EditorialSimpleCreator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def apply_settings(self, project_settings):
         editorial_creators = deepcopy(
