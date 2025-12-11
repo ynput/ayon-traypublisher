@@ -48,5 +48,3 @@ class CollectPSDWorkfile(
                 instance.data["thumbnailSource"] = file_url
 
         instance.data["source"] = file_url
-
-        self.log.debug("instance.data {}".format(instance.data))
