@@ -236,6 +236,13 @@ class TextureCreatorPluginModel(BaseSettingsModel):
         title="Default variants",
         default_factory=list
     )
+    extensions: list[str] = SettingsField(
+        title="Extensions",
+        default_factory=list,
+        description=(
+            "List of file extensions that are allowed as textures."
+        )
+    )
 
 
 class TrayPublisherCreatePluginsModel(BaseSettingsModel):
@@ -466,6 +473,10 @@ DEFAULT_CREATORS = {
         "enabled": True,
         "default_variants": [
             "Main"
+        ],
+        "extensions": [
+            ".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr", ".dpx", ".tif",
+            ".png", ".jpg", ".tga", ".tx"
         ]
     },
 }

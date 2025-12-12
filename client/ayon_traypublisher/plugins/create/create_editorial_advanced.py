@@ -150,6 +150,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_shot_advanced"
     product_type = "shot"
+    product_base_type = "shot"
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -172,6 +173,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_plate_advanced"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Plate product"
 
 
@@ -182,6 +184,7 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_image_advanced"
     product_type = "image"
+    product_base_type = "image"
     label = "Image product"
 
 
@@ -191,6 +194,7 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_render_advanced"
     product_type = "render"
+    product_base_type = "render"
     label = "Render product"
 
 
@@ -201,6 +205,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_audio_advanced"
     product_type = "audio"
+    product_base_type = "audio"
     label = "Audio product"
 
 
@@ -211,6 +216,7 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_model_advanced"
     product_type = "model"
+    product_base_type = "model"
     label = "Model product"
 
     def get_instance_attr_defs(self):
@@ -229,6 +235,7 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_camera_advanced"
     product_type = "camera"
+    product_base_type = "camera"
     label = "Camera product"
 
     def get_instance_attr_defs(self):
@@ -247,6 +254,7 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """
     identifier = "editorial_workfile_advanced"
     product_type = "workfile"
+    product_base_type = "workfile"
     label = "Workfile product"
 
     def get_instance_attr_defs(self):
@@ -270,6 +278,7 @@ class EditorialAdvancedCreator(TrayPublishCreator):
     enabled = True
     label = "Editorial Advanced"
     product_type = "editorial"
+    product_base_type = "editorial"
     identifier = "editorial_advanced"
     default_variants = [
         "main"

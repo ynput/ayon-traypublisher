@@ -33,6 +33,7 @@ class BatchMovieCreator(TrayPublishCreator):
     identifier = "render_movie_batch"
     label = "Batch Movies"
     product_type = "render"
+    product_base_type = "render"
     description = "Publish batch of video files"
 
     create_allow_context_change = False
