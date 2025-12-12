@@ -66,10 +66,10 @@ class Traypublisher(BaseServerAddon):
         context = executor.context
 
         project_name = context.project_name
-        args = ["--project", project_name]
-
-        if executor.identifier == "traypublisher.project":
-            pass
+        args = [
+            "addon", "traypublisher", "launch",
+            "--project", project_name,
+        ]
 
         if executor.identifier == "traypublisher.folder":
             folder_id = context.entity_ids[0]
@@ -85,8 +85,4 @@ class Traypublisher(BaseServerAddon):
                 "--task-name", task.name,
             ])
 
-        return await executor.get_launcher_action_response(
-            args=[
-                "addon", "traypublisher", "launch", *args,
-            ],
-        )
+        return await executor.get_launcher_action_response(args=args)
