@@ -72,12 +72,12 @@ class TrayPublishAddon(
             default=None,
         ).option(
             "--folder-path",
-            help="Asset name in which the context will be used",
+            help="Initial folder path to be selected in the UI",
             type=str,
             required=False,
         ).option(
-            "--task",
-            help="Task name under Asset in which the context will be used",
+            "--task-name",
+            help="Initial task to be selected in the UI (requires `--folder-path`)",
             type=str,
             required=False,
         )
@@ -121,14 +121,14 @@ class TrayPublishAddon(
             self,
             project: Optional[str] = None,
             folder_path: Optional[str] = None,
-            task: Optional[str] = None,
+            task_name: Optional[str] = None,
         )-> None:
         from .api.main import launch_traypublisher_ui
 
-        if task and not folder_path:
-            raise ValueError("`--folder-path` is required when `--task` is provided.")
+        if task_name and not folder_path:
+            raise ValueError("`--folder-path` is required when `--task-name` is used.")
 
-        launch_traypublisher_ui(self, project, folder_path, task)
+        launch_traypublisher_ui(self, project, folder_path, task_name)
 
     def _start_traypublisher(self, project_name: str):
         args = get_ayon_launcher_args(
