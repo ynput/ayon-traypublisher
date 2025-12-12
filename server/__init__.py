@@ -2,6 +2,7 @@ import typing
 
 from ayon_server.addons import BaseServerAddon
 from ayon_server.actions import SimpleActionManifest
+from ayon_server.entities import FolderEntity, TaskEntity
 
 from .settings import TraypublisherSettings, DEFAULT_TRAYPUBLISHER_SETTING
 
@@ -9,7 +10,6 @@ if typing.TYPE_CHECKING:
     from ayon_server.actions import (
         ActionExecutor,
         ExecuteResponseModel,
-        SimpleActionManifest,
     )
 
 
@@ -62,13 +62,27 @@ class Traypublisher(BaseServerAddon):
         self,
         executor: "ActionExecutor",
     ) -> "ExecuteResponseModel":
-        """Execute an action provided by the addon"""
+        """Execute an action provided by the addon."""
         context = executor.context
-        project_name = context.project_name
 
-        return await executor.get_launcher_action_response(
-            args=[
-                "addon", "traypublisher",
-                "launch", "--project", project_name,
-            ]
-        )
+        project_name = context.project_name
+        args = [
+            "addon", "traypublisher", "launch",
+            "--project", project_name,
+        ]
+
+        if executor.identifier == "traypublisher.folder":
+            folder_id = context.entity_ids[0]
+            folder = await FolderEntity.load(project_name, folder_id)
+            args.extend(["--folder-path", folder.path])
+
+        elif executor.identifier == "traypublisher.task":
+            task_id = context.entity_ids[0]
+            task = await TaskEntity.load(project_name, task_id)
+            folder = await FolderEntity.load(project_name, task.folder_id)
+            args.extend([
+                "--folder-path", folder.path,
+                "--task-name", task.name,
+            ])
+
+        return await executor.get_launcher_action_response(args=args)
