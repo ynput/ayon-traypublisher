@@ -73,11 +73,16 @@ class TrayPublishAddon(
         ).option(
             "--folder-path",
             help="Initial folder path to be selected in the UI",
+            envvar="AYON_FOLDER_PATH",
             type=str,
             required=False,
         ).option(
             "--task-name",
-            help="Initial task to be selected in the UI (requires `--folder-path`)",
+            help=(
+                "Initial task to be selected in the UI"
+                " (requires `--folder-path`)"
+            ),
+            envvar="AYON_TASK_NAME",
             type=str,
             required=False,
         )

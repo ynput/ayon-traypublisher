@@ -76,12 +76,14 @@ class Traypublisher(BaseServerAddon):
             folder = await FolderEntity.load(project_name, folder_id)
             args.extend(["--folder-path", folder.path])
 
-        if executor.identifier == "traypublisher.task":
+        elif executor.identifier == "traypublisher.task":
             task_id = context.entity_ids[0]
             task = await TaskEntity.load(project_name, task_id)
             folder = await FolderEntity.load(project_name, task.folder_id)
-            args.extend(["--task-name", task.name])
-            args.extend(["--folder-path", folder.path])
+            args.extend([
+                "--folder-path", folder.path,
+                "--task-name", task.name,
+            ])
 
         return await executor.get_launcher_action_response(
             args=[
