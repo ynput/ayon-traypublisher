@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
 import typing
-from typing import Optional
+from typing import Optional, Union
 
 import ayon_api
 from qtpy import QtWidgets, QtCore
@@ -24,9 +24,9 @@ class _LaunchContext:
         self,
         addon: TrayPublishAddon,
         app: QtWidgets.QApplication,
-        project_name: Optional[str] = None,
-        folder_path: Optional[str] = None,
-        task_name: Optional[str] = None,
+        project_name: Union[str, None],
+        folder_path: Union[str, None],
+        task_name: Union[str, None],
     ):
         init_timer = QtCore.QTimer()
 
@@ -101,10 +101,9 @@ class _LaunchContext:
 
 def launch_traypublisher_ui(
     addon: TrayPublishAddon,
-    project_name: Optional[str] = None,
+    project_name: Union[str, None],
     folder_path: Optional[str] = None,
     task_name: Optional[str] = None,
-
 ):
     app_instance = get_ayon_qt_app()
     context = _LaunchContext(
