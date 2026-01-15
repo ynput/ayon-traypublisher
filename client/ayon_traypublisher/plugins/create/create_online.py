@@ -67,9 +67,8 @@ class OnlineCreator(TrayPublishCreator):
         instance_data["originalBasename"] = origin_basename
         product_name = origin_basename
 
-        instance_data["creator_attributes"] = {
-            "path": (Path(repr_file["directory"]) / files[0]).as_posix()
-        }
+        # Pass pre-create attributes to instance creator attributes
+        instance_data["creator_attributes"] = pre_create_data
 
         # Create new instance
         new_instance = CreatedInstance(self.product_type, product_name,
@@ -77,13 +76,7 @@ class OnlineCreator(TrayPublishCreator):
         self._store_new_instance(new_instance)
 
     def get_instance_attr_defs(self):
-        return [
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
-            )
-        ]
+        return self.get_pre_create_attr_defs()
 
     def get_pre_create_attr_defs(self):
         return [
