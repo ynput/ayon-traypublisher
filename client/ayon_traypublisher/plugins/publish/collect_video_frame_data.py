@@ -174,10 +174,7 @@ class CollectVideoData(
         }
 
     def get_video_data(self, video_filepath: str) -> VideoData:
-        info = get_video_info_metadata(
-            video_filepath,
-            keys={"nb_frames", "timecode", "framerate"}
-        )
+        info = get_video_info_metadata(video_filepath, logger=self.log)
         num_frames: int = int(info.get("nb_frames", 0))
         # TODO: Should this fall back to folder/task entity fps instead?
         fps: float = info.get("framerate", 25.0)
