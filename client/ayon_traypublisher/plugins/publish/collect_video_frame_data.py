@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import logging
+import dataclasses
 from typing import Union
 
 from ayon_core.pipeline import OptionalPyblishPluginMixin
@@ -8,7 +9,6 @@ from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
 from ayon_core.lib import get_ffprobe_data
 
 import pyblish.api
-import attr
 
 
 def get_video_info_metadata(
@@ -98,7 +98,7 @@ def timecode_to_frame(timecode: str, fps: float) -> int:
     return int(frames)
 
 
-@attr.define
+@dataclasses.dataclass
 class VideoData:
     frame_start: int
     frame_end: int
