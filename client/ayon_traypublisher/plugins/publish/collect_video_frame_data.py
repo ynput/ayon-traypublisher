@@ -4,45 +4,21 @@ import logging
 from typing import Union
 
 from ayon_core.pipeline import OptionalPyblishPluginMixin
-from ayon_core.lib.transcoding import (
-    IMAGE_EXTENSIONS,
-    VIDEO_EXTENSIONS,
-    get_oiio_info_for_input,
-)
-from ayon_core.lib import (
-    get_ffprobe_data,
-    is_oiio_supported,
-)
+from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
+from ayon_core.lib import get_ffprobe_data
 
 import pyblish.api
 import attr
 
 
-# This is a direct copy from `ayon_core.plugins.loader.export_otio`
-# TODO: turn this into a core library function and import from there instead
-#  even though here `oiiotool` is technically redundant because we're only
-#  processing videos
-def get_image_info_metadata(
+def get_video_info_metadata(
     path_to_file,
-    keys=None,
     logger=None,
 ):
-    """Get flattened metadata from image file
-
-    With combined approach via FFMPEG and OIIOTool.
-
-    At first it will try to detect if the image input is supported by
-    OpenImageIO. If it is then it gets the metadata from the image using
-    OpenImageIO. If it is not supported by OpenImageIO then it will try to
-    get the metadata using FFprobe.
+    """Get flattened metadata from video file using ffprobe.
 
     Args:
         path_to_file (str): Path to image file.
-        keys (Iterable[str] | None): List of keys that should be returned. If
-            None then all keys are returned. Keys are expected all lowercase.
-            Additional keys are:
-            - "framerate" - will be created from "r_frame_rate" or
-                "framespersecond" and evaluated to float value.
         logger (logging.Logger): Logger used for logging.
     """
     if logger is None:
@@ -72,63 +48,21 @@ def get_image_info_metadata(
             if stream["codec_type"] == "video":
                 video_stream = stream
                 break
-        metadata_stream = _ffprobe_metadata_conversion(video_stream)
-        return metadata_stream
+        return _ffprobe_metadata_conversion(video_stream)
 
-    metadata_stream = None
-    ext = os.path.splitext(path_to_file)[-1].lower()
-    if ext not in IMAGE_EXTENSIONS:
-        logger.info(
-            (
-                'File extension "{}" is not supported by OpenImageIO.'
-                " Trying to get metadata using FFprobe."
-            ).format(ext)
-        )
-        ffprobe_stream = get_ffprobe_data(path_to_file, logger)
-        if "streams" in ffprobe_stream and len(ffprobe_stream["streams"]) > 0:
-            metadata_stream = _get_video_metadata_from_ffprobe(ffprobe_stream)
-
-    if not metadata_stream and is_oiio_supported():
-        oiio_stream = get_oiio_info_for_input(path_to_file, logger=logger)
-        if "attribs" in (oiio_stream or {}):
-            metadata_stream = {}
-            for key, val in oiio_stream["attribs"].items():
-                if "smpte:" in key.lower():
-                    key = key.replace("smpte:", "")
-                metadata_stream[key.lower()] = val
-            for key, val in oiio_stream.items():
-                if key == "attribs":
-                    continue
-                metadata_stream[key] = val
-    else:
-        logger.info(
-            (
-                "OpenImageIO is not supported on this system."
-                " Trying to get metadata using FFprobe."
-            )
-        )
-        ffprobe_stream = get_ffprobe_data(path_to_file, logger)
-        if "streams" in ffprobe_stream and len(ffprobe_stream["streams"]) > 0:
-            metadata_stream = _get_video_metadata_from_ffprobe(ffprobe_stream)
-
-    if not metadata_stream:
-        logger.warning("Failed to get metadata from image file.")
+    ffprobe_stream = get_ffprobe_data(path_to_file, logger)
+    if not ffprobe_stream.get("streams"):
+        logger.warning("Failed to get metadata from video file.")
         return {}
 
-    if keys is None:
-        return metadata_stream
+    metadata_stream = _get_video_metadata_from_ffprobe(ffprobe_stream)
 
     # create framerate key from available ffmpeg:r_frame_rate
-    # or oiiotool:framespersecond and evaluate its string expression
-    # value into float value
+    # evaluate its string expression value into float value
     if (
         "r_frame_rate" in metadata_stream
-        or "framespersecond" in metadata_stream
     ):
         rate_info = metadata_stream.get("r_frame_rate")
-        if rate_info is None:
-            rate_info = metadata_stream.get("framespersecond")
-
         # calculate framerate from string expression
         if "/" in str(rate_info):
             time, frame = str(rate_info).split("/")
@@ -143,18 +77,7 @@ def get_image_info_metadata(
                 )
             )
 
-    # aggregate all required metadata from prepared metadata stream
-    output = {}
-    for key in keys:
-        for k, v in metadata_stream.items():
-            if key == k:
-                output[key] = v
-                break
-            if isinstance(v, dict) and key in v:
-                output[key] = v[key]
-                break
-
-    return output
+    return metadata_stream
 
 
 def timecode_to_frame(timecode: str, fps: float) -> int:
@@ -251,7 +174,7 @@ class CollectVideoData(
         }
 
     def get_video_data(self, video_filepath: str) -> VideoData:
-        info = get_image_info_metadata(
+        info = get_video_info_metadata(
             video_filepath,
             keys={"nb_frames", "timecode", "framerate"}
         )
