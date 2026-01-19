@@ -249,7 +249,7 @@ class ProductItem:
             )
         if not product_base_type:
             # Fallback to product type
-            product_base_type = kwargs["product_type"]
+            product_base_type = kwargs.get("product_type", "")
         kwargs["product_base_type"] = product_base_type
 
         return cls(**kwargs)
