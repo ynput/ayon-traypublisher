@@ -174,6 +174,7 @@ class ProductItem:
         task_name: str,
         version: int,
         variant: str,
+        product_base_type: str,
         product_type: str,
         task_type: Optional[str] = None,
         width: int = None,
@@ -185,6 +186,7 @@ class ProductItem:
         self.task_type = task_type
         self.version = version
         self.variant = variant
+        self.product_base_type = product_base_type
         self.product_type = product_type
         self.repre_items: List[RepreItem] = []
         self.has_promised_context = False
@@ -220,7 +222,7 @@ class ProductItem:
         self.repre_items.append(repre_item)
 
     @classmethod
-    def from_csv_row(cls, columns_config, row):
+    def from_csv_row(cls, columns_config: Dict[str, Any], row):
         kwargs = {
             dst_key: _get_row_value_with_validation(
                 columns_config, column_name, row
@@ -237,6 +239,19 @@ class ProductItem:
                 ("product_type", "Product Type"),
             )
         }
+
+        # Product base type is optional, for backwards compatibility. When
+        # it is not set it will be matched to product type.
+        product_base_type: str = ""
+        if "Product Base Type" in columns_config:
+            product_base_type = _get_row_value_with_validation(
+                columns_config, "Product Base Type", row
+            )
+        if not product_base_type:
+            # Fallback to product type
+            product_base_type = kwargs["product_type"]
+        kwargs["product_base_type"] = product_base_type
+
         return cls(**kwargs)
 
 
@@ -366,7 +381,11 @@ configuration in project settings.
         )
 
         csv_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self
         )
 
         csv_instance["csvFileData"] = {
@@ -889,13 +908,19 @@ configuration in project settings.
         for product_item in product_items_by_name.values():
             folder_path: str = product_item.folder_path
             version: int = product_item.version
+            # TODO: This function overload does not work with product_base_type
             product_name: str = get_product_name(
                 project_name=project_name,
                 task_name=product_item.task_name,
                 task_type=product_item.task_type,
                 host_name=self.host_name,
+                product_base_type=product_item.product_base_type,
                 product_type=product_item.product_type,
                 variant=product_item.variant,
+                project_settings=(
+                    self.create_context.get_current_project_settings()
+                ),
+                project_entity=self.create_context.get_current_project_entity()
             )
 
             if version is not None:
@@ -998,10 +1023,11 @@ configuration in project settings.
 
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(
-                product_item.product_type,
-                product_name,
-                instance_data,
-                self
+                product_base_type=product_item.product_base_type,
+                product_type=product_item.product_type,
+                product_name=product_name,
+                data=instance_data,
+                creator=self
             )
             self._prepare_representations(product_item, new_instance)
 
