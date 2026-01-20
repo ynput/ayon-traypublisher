@@ -1000,10 +1000,10 @@ configuration in project settings.
                 ),
             )
 
+            version_label: str = "[next]"
             if version is not None:
-                label: str = f"{folder_path}_{product_name}_v{version:>03}"
-            else:
-                label: str = f"{folder_path}_{product_name}_v[next]"
+                version_label = f"{version:>03}"
+            label: str = f"{folder_path}_{product_name}_v{version_label}"
 
             repre_items: List[RepreItem] = product_item.repre_items
             first_repre_item: RepreItem = repre_items[0]
