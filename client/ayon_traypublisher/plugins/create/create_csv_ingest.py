@@ -242,7 +242,9 @@ class ProductItem:
         }
 
         # Product base type is optional, for backwards compatibility. When
-        # it is not set it will be matched to product type.
+        # it is not set it will be matched to product type. This was introduced
+        # later and may not exist in older settings if they were overridden
+        # so may be lacking in `columns_config`
         product_base_type: str = ""
         if "Product Base Type" in columns_config:
             product_base_type = _get_row_value_with_validation(
