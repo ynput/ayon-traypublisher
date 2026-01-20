@@ -905,22 +905,99 @@ configuration in project settings.
 
         instances = []
         project_name: str = self.create_context.get_current_project_name()
+        # Pre-fetch all existing entities to find matching
+        folder_paths = {
+            product_item.folder_path
+            for product_item in product_items_by_name.values()
+        }
+        folder_entities_by_path = {
+            folder_entity["path"]: folder_entity
+            for folder_entity in ayon_api.get_folders(
+                project_name,
+                folder_paths=folder_paths,
+                fields={"id", "path", "folderType"},
+            )
+        }
+        folder_paths_by_id = {
+            f["id"]: f["path"]
+            for f in folder_entities_by_path
+        }
+        task_entities = list(ayon_api.get_tasks(
+            project_name,
+            folder_ids=folder_paths_by_id,
+            fields={"name", "taskType", "folderId"},
+        ))
+        task_entities_by_folder_path = collections.defaultdict(list)
+        for task_entity in task_entities:
+            folder_id = task_entity["folderId"]
+            folder_path = folder_paths_by_id[folder_id]
+            task_entities_by_folder_path[folder_path].append(task_entity)
+
         for product_item in product_items_by_name.values():
             folder_path: str = product_item.folder_path
+            hierarchy, folder_name = folder_path.rsplit("/", 1)
+
+            folder_entity = folder_entities_by_path.get(folder_path)
+            if folder_entity is not None:
+                folder_type = folder_entity["folderType"]
+            else:
+                # TODO find out how to define default folder type
+                # - was hardcoded in pyblish plugin 'CollectShotInstances'
+                folder_type: str = "Shot"
+                if product_item.has_promised_context:
+                    folder_type = self._get_folder_type_from_regex_settings(
+                        folder_name
+                    )
+                # Fake folder entity, this might break if more data
+                #   is used in 'get_product_name'.
+                folder_entity = {
+                    "name": folder_name,
+                    "path": folder_path,
+                    "folderType": folder_type,
+                }
+
+            instance_tasks = None
+            task_name = None
+            task_entity = None
+            if product_item.task_name:
+                task_name_low = product_item.task_name.lower()
+                for f_task_entity in task_entities_by_folder_path[folder_path]:
+                    if f_task_entity["name"].lower() == task_name_low:
+                        task_entity = f_task_entity
+                        break
+
+                if task_entity is not None:
+                    task_name = task_entity["name"]
+                    task_type = task_entity["taskType"]
+                else:
+                    task_name = product_item.task_name
+                    task_type = self._get_task_type_from_task_name(task_name)
+                    # Fake task entity, this might break if more data
+                    #   is used in 'get_product_name'.
+                    task_entity = {
+                        "name": task_name,
+                        "taskType": task_type,
+                    }
+
+                if product_item.has_promised_context:
+                    instance_tasks = {task_name: {"type": task_type}}
+
             version: int = product_item.version
             # TODO: This function overload does not work with product_base_type
             product_name: str = get_product_name(
                 project_name=project_name,
-                task_name=product_item.task_name,
-                task_type=product_item.task_type,
-                host_name=self.host_name,
+                folder_entity=folder_entity,
+                task_entity=task_entity,
                 product_base_type=product_item.product_base_type,
                 product_type=product_item.product_type,
+                host_name=self.host_name,
                 variant=product_item.variant,
                 project_settings=(
                     self.create_context.get_current_project_settings()
                 ),
-                project_entity=self.create_context.get_current_project_entity()
+                project_entity=(
+                    self.create_context.get_current_project_entity()
+                ),
             )
 
             if version is not None:
@@ -962,10 +1039,11 @@ configuration in project settings.
 
             instance_data = {
                 "name": product_item.instance_name,
-                "folderPath": folder_path,
-                "families": families,
                 "label": label,
-                "task": product_item.task_name,
+                "folderPath": folder_path,
+                "task": task_name,
+                "folder_type": folder_type,
+                "families": families,
                 "variant": product_item.variant,
                 "source": "csv",
                 "frameStart": first_repre_item.frame_start,
@@ -975,11 +1053,12 @@ configuration in project settings.
                 "fps": first_repre_item.fps,
                 "version": version,
                 "comment": version_comment,
-                "prepared_data_for_repres": []
+                "prepared_data_for_repres": [],
             }
+            if instance_tasks:
+                instance_data["tasks"] = instance_tasks
 
             if product_item.has_promised_context:
-                hierarchy, folder_name = folder_path.rsplit("/", 1)
                 families.append("shot")
                 instance_data.update(
                     {
@@ -1008,18 +1087,6 @@ configuration in project settings.
                         product_item.height,
                         folder_name
                     )
-
-                folder_type = self._get_folder_type_from_regex_settings(folder_name)
-                instance_data["folder_type"] = folder_type
-
-                if product_item.task_name:
-                    task_type = self._get_task_type_from_task_name(
-                        product_item.task_name
-                    )
-                    tasks = instance_data.setdefault("tasks", {})
-                    tasks[product_item.task_name] = {
-                        "type": task_type
-                    }
 
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(
