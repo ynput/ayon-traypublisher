@@ -955,6 +955,7 @@ configuration in project settings.
                 #   is used in 'get_product_name'.
                 folder_entity = {
                     "name": folder_name,
+                    "label": folder_name,
                     "path": folder_path,
                     "folderType": folder_type,
                 }
@@ -979,6 +980,7 @@ configuration in project settings.
                     #   is used in 'get_product_name'.
                     task_entity = {
                         "name": task_name,
+                        "label": task_name,
                         "taskType": task_type,
                     }
 
