@@ -89,6 +89,7 @@ class OnlineCreator(TrayPublishCreator):
         host_name=None,
         instance=None,
         project_entity=None,
+        product_type=None,
     ):
         if instance is None:
             return "{originalBasename}"
