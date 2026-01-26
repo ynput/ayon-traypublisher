@@ -323,6 +323,13 @@ DEFAULT_CREATORS = {
                     "validation_pattern": "^(.*)$"
                 },
                 {
+                    "name": "Product Base Type",
+                    "type": "text",
+                    "default": "",
+                    "required_column": False,
+                    "validation_pattern": "^(.*)$"
+                },
+                {
                     "name": "Variant",
                     "type": "text",
                     "default": "",
