@@ -127,7 +127,10 @@ class SettingsCreator(TrayPublishCreator):
 
         # Create new instance
         new_instance = CreatedInstance(
-            self.product_type, product_name, data, self
+            data=data,
+            creator=self,
+            product_type=self.product_base_type,
+            product_name=product_name,
         )
 
         self._store_new_instance(new_instance)

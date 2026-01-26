@@ -90,8 +90,12 @@ This creator publishes color space look file (LUT).
             )
 
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            data=instance_data,
+            creator=self,
+            product_type=self.product_base_type,
+            product_name=product_name,
+        )
         new_instance.transient_data["config_items"] = self.config_items
         new_instance.transient_data["config_data"] = self.config_data
 

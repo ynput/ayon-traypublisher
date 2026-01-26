@@ -112,7 +112,10 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
         # Create new instance
         new_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            data=instance_data,
+            creator=self,
+            product_type=self.product_base_type,
+            product_name=product_name,
         )
 
         self._store_new_instance(new_instance)
@@ -332,7 +335,10 @@ or updating already created. Publishing will create OTIO file.
             "otioTimeline": otio.adapters.write_to_string(otio_timeline)
         })
         new_instance = CreatedInstance(
-            self.product_type, product_name, data, self
+            data=data,
+            creator=self,
+            product_type=self.product_base_type,
+            product_name=product_name,
         )
         self._store_new_instance(new_instance)
 

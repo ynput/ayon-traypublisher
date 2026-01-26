@@ -54,8 +54,12 @@ class EditorialPackageCreator(TrayPublishCreator):
         }
 
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            data=instance_data,
+            creator=self,
+            product_type=self.product_base_type,
+            product_name=product_name,
+        )
         self._store_new_instance(new_instance)
 
     def get_pre_create_attr_defs(self):
