@@ -1,10 +1,11 @@
+from __future__ import annotations
 import os
 import re
 import csv
 import collections
 from io import StringIO
 from copy import deepcopy, copy
-from typing import Optional, List, Set, Dict, Union, Any
+from typing import Optional, Union, Any
 
 import clique
 import ayon_api
@@ -23,9 +24,9 @@ log = Logger.get_logger(__name__)
 
 
 def _get_row_value_with_validation(
-    columns_config: Dict[str, Any],
+    columns_config: dict[str, Any],
     column_name: str,
-    row_data: Dict[str, Any],
+    row_data: dict[str, Any],
 ):
     """Get row value with validation"""
 
@@ -174,6 +175,7 @@ class ProductItem:
         task_name: str,
         version: int,
         variant: str,
+        product_base_type: str,
         product_type: str,
         task_type: Optional[str] = None,
         width: int = None,
@@ -185,8 +187,9 @@ class ProductItem:
         self.task_type = task_type
         self.version = version
         self.variant = variant
+        self.product_base_type = product_base_type
         self.product_type = product_type
-        self.repre_items: List[RepreItem] = []
+        self.repre_items: list[RepreItem] = []
         self.has_promised_context = False
         self.parents = None
         self._unique_name = None
@@ -220,7 +223,7 @@ class ProductItem:
         self.repre_items.append(repre_item)
 
     @classmethod
-    def from_csv_row(cls, columns_config, row):
+    def from_csv_row(cls, columns_config: dict[str, Any], row):
         kwargs = {
             dst_key: _get_row_value_with_validation(
                 columns_config, column_name, row
@@ -237,6 +240,21 @@ class ProductItem:
                 ("product_type", "Product Type"),
             )
         }
+
+        # Product base type is optional, for backwards compatibility. When
+        # it is not set it will be matched to product type. This was introduced
+        # later and may not exist in older settings if they were overridden
+        # so may be lacking in `columns_config`
+        product_base_type: str = ""
+        if "Product Base Type" in columns_config:
+            product_base_type = _get_row_value_with_validation(
+                columns_config, "Product Base Type", row
+            )
+        if not product_base_type:
+            # Fallback to product type
+            product_base_type = kwargs.get("product_type", "")
+        kwargs["product_base_type"] = product_base_type
+
         return cls(**kwargs)
 
 
@@ -296,8 +314,8 @@ configuration in project settings.
     def create(
         self,
         product_name: str,
-        instance_data: Dict[str, Any],
-        pre_create_data: Dict[str, Any]
+        instance_data: dict[str, Any],
+        pre_create_data: dict[str, Any]
     ):
         """Create product from each row found in the CSV.
 
@@ -321,7 +339,7 @@ configuration in project settings.
 
     def _pass_data_to_csv_instance(
         self,
-        instance_data: Dict[str, Any],
+        instance_data: dict[str, Any],
         staging_dir: str,
         filename: str
     ):
@@ -345,7 +363,7 @@ configuration in project settings.
     def _process_csv_file(
         self,
         product_name: str,
-        instance_data: Dict[str, Any],
+        instance_data: dict[str, Any],
         csv_dir: str,
         filename: str
     ):
@@ -366,7 +384,11 @@ configuration in project settings.
         )
 
         csv_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self
         )
 
         csv_instance["csvFileData"] = {
@@ -479,7 +501,7 @@ configuration in project settings.
 
     def _get_data_from_csv(
         self, csv_dir: str, filename: str
-    ) -> Dict[str, ProductItem]:
+    ) -> dict[str, ProductItem]:
         """Generate instances from the csv file"""
         # get current project name and code from context.data
         project_name = self.create_context.get_current_project_name()
@@ -519,7 +541,7 @@ configuration in project settings.
                 f"Missing required columns: {required_columns}"
             )
 
-        product_items_by_name: Dict[str, ProductItem] = {}
+        product_items_by_name: dict[str, ProductItem] = {}
         for row in csv_reader:
             _product_item: ProductItem = ProductItem.from_csv_row(
                 self.columns_config, row
@@ -536,19 +558,19 @@ configuration in project settings.
                 )
             )
 
-        folder_paths: Set[str] = {
+        folder_paths: set[str] = {
             product_item.folder_path
             for product_item in product_items_by_name.values()
         }
-        folder_ids_by_path: Dict[str, str] = {
+        folder_ids_by_path: dict[str, str] = {
             folder_entity["path"]: folder_entity["id"]
             for folder_entity in ayon_api.get_folders(
                 project_name, folder_paths=folder_paths, fields={"id", "path"}
             )
         }
-        missing_paths: Set[str] = folder_paths - set(folder_ids_by_path.keys())
+        missing_paths: set[str] = folder_paths - set(folder_ids_by_path.keys())
 
-        task_names: Set[str] = {
+        task_names: set[str] = {
             product_item.task_name
             for product_item in product_items_by_name.values()
         }
@@ -562,7 +584,7 @@ configuration in project settings.
             folder_id = task_entity["folderId"]
             task_entities_by_folder_id[folder_id].append(task_entity)
 
-        missing_tasks: Set[str] = set()
+        missing_tasks: set[str] = set()
         if missing_paths and not self.folder_creation_config["enabled"]:
             error_msg = (
                 "Folder creation is disabled but found missing folder(s): %r" %
@@ -606,8 +628,8 @@ configuration in project settings.
             )
 
         for product_item in product_items_by_name.values():
-            repre_paths: Set[str] = set()
-            duplicated_paths: Set[str] = set()
+            repre_paths: set[str] = set()
+            duplicated_paths: set[str] = set()
             for repre_item in product_item.repre_items:
                 # Resolve relative paths in csv file
                 repre_item.filepath = self._resolve_repre_path(
@@ -633,7 +655,7 @@ configuration in project settings.
 
     def _add_thumbnail_repre(
         self,
-        thumbnails: Set[str],
+        thumbnails: set[str],
         instance: CreatedInstance,
         repre_item: RepreItem,
         multiple_thumbnails: bool,
@@ -644,7 +666,7 @@ configuration in project settings.
             yet.
 
         Args:
-            thumbnails (Set[str]): Set of all thumbnail paths that should
+            thumbnails (set[str]): set of all thumbnail paths that should
                 create representation.
             instance (CreatedInstance): Instance from create plugin.
             repre_item (RepreItem): Representation item.
@@ -721,7 +743,7 @@ configuration in project settings.
         extension: str = os.path.splitext(basename)[-1].lower()
 
         # validate filepath is having correct extension based on output
-        repre_config_data: Union[Dict[str, Any], None] = None
+        repre_config_data: Union[dict[str, Any], None] = None
         for repre in self.representations_config["representations"]:
             if repre["name"] == repre_item.name:
                 repre_config_data = repre
@@ -733,7 +755,7 @@ configuration in project settings.
                 "in config representation data."
             )
 
-        validate_extensions: List[str] = repre_config_data["extensions"]
+        validate_extensions: list[str] = repre_config_data["extensions"]
         if extension not in validate_extensions:
             raise CreatorError(
                 f"File extension '{extension}' not valid for "
@@ -775,7 +797,7 @@ configuration in project settings.
 
         frame_start: Union[int, None] = None
         frame_end: Union[int, None] = None
-        files: Union[str, List[str]] = basename
+        files: Union[str, list[str]] = basename
         if is_sequence:
             # get only filtered files form dirname
             files_from_dir = [
@@ -795,13 +817,13 @@ configuration in project settings.
             frame_start = min(col.indexes)
             frame_end = max(col.indexes)
 
-        tags: List[str] = deepcopy(repre_item.tags)
+        tags: list[str] = deepcopy(repre_item.tags)
         # if slate in repre_data is True then remove one frame from start
         if repre_item.slate_exists:
             tags.append("has_slate")
 
         # get representation data
-        representation_data: Dict[str, Any] = {
+        representation_data: dict[str, Any] = {
             "name": repre_item.name,
             "ext": extension[1:],
             "files": files,
@@ -836,7 +858,7 @@ configuration in project settings.
         #   to check if multiple thumbnails are present.
         # Once representation is created for certain thumbnail it is removed
         #   from the set.
-        thumbnails: Set[str] = {
+        thumbnails: set[str] = {
             repre_item.thumbnail_path
             for repre_item in product_item.repre_items
             if repre_item.thumbnail_path
@@ -880,30 +902,114 @@ configuration in project settings.
         """Create instances from csv data"""
         # from special function get all data from csv file and convert them
         # to new instances
-        product_items_by_name: Dict[str, ProductItem] = (
+        product_items_by_name: dict[str, ProductItem] = (
             self._get_data_from_csv(csv_dir, filename)
         )
 
         instances = []
         project_name: str = self.create_context.get_current_project_name()
+        # Pre-fetch all existing entities to find matching
+        folder_paths = {
+            product_item.folder_path
+            for product_item in product_items_by_name.values()
+        }
+        folder_entities_by_path = {
+            folder_entity["path"]: folder_entity
+            for folder_entity in ayon_api.get_folders(
+                project_name,
+                folder_paths=folder_paths,
+                fields={"id", "path", "folderType"},
+            )
+        }
+        folder_paths_by_id = {
+            f["id"]: f["path"]
+            for f in folder_entities_by_path
+        }
+        task_entities = list(ayon_api.get_tasks(
+            project_name,
+            folder_ids=folder_paths_by_id,
+            fields={"name", "taskType", "folderId"},
+        ))
+        task_entities_by_folder_path = collections.defaultdict(list)
+        for task_entity in task_entities:
+            folder_id = task_entity["folderId"]
+            folder_path = folder_paths_by_id[folder_id]
+            task_entities_by_folder_path[folder_path].append(task_entity)
+
         for product_item in product_items_by_name.values():
             folder_path: str = product_item.folder_path
+            hierarchy, folder_name = folder_path.rsplit("/", 1)
+
+            folder_entity = folder_entities_by_path.get(folder_path)
+            if folder_entity is not None:
+                folder_type = folder_entity["folderType"]
+            else:
+                # TODO find out how to define default folder type
+                # - was hardcoded in pyblish plugin 'CollectShotInstances'
+                folder_type: str = "Shot"
+                if product_item.has_promised_context:
+                    folder_type = self._get_folder_type_from_regex_settings(
+                        folder_name
+                    )
+                # Fake folder entity, this might break if more data
+                #   is used in 'get_product_name'.
+                folder_entity = {
+                    "name": folder_name,
+                    "label": folder_name,
+                    "path": folder_path,
+                    "folderType": folder_type,
+                }
+
+            instance_tasks = None
+            task_name = None
+            task_entity = None
+            if product_item.task_name:
+                task_name_low = product_item.task_name.lower()
+                for f_task_entity in task_entities_by_folder_path[folder_path]:
+                    if f_task_entity["name"].lower() == task_name_low:
+                        task_entity = f_task_entity
+                        break
+
+                if task_entity is not None:
+                    task_name = task_entity["name"]
+                    task_type = task_entity["taskType"]
+                else:
+                    task_name = product_item.task_name
+                    task_type = self._get_task_type_from_task_name(task_name)
+                    # Fake task entity, this might break if more data
+                    #   is used in 'get_product_name'.
+                    task_entity = {
+                        "name": task_name,
+                        "label": task_name,
+                        "taskType": task_type,
+                    }
+
+                if product_item.has_promised_context:
+                    instance_tasks = {task_name: {"type": task_type}}
+
             version: int = product_item.version
             product_name: str = get_product_name(
                 project_name=project_name,
-                task_name=product_item.task_name,
-                task_type=product_item.task_type,
-                host_name=self.host_name,
+                folder_entity=folder_entity,
+                task_entity=task_entity,
+                product_base_type=product_item.product_base_type,
                 product_type=product_item.product_type,
+                host_name=self.host_name,
                 variant=product_item.variant,
+                project_settings=(
+                    self.create_context.get_current_project_settings()
+                ),
+                project_entity=(
+                    self.create_context.get_current_project_entity()
+                ),
             )
 
+            version_label: str = "[next]"
             if version is not None:
-                label: str = f"{folder_path}_{product_name}_v{version:>03}"
-            else:
-                label: str = f"{folder_path}_{product_name}_v[next]"
+                version_label = f"{version:>03}"
+            label: str = f"{folder_path}_{product_name}_v{version_label}"
 
-            repre_items: List[RepreItem] = product_item.repre_items
+            repre_items: list[RepreItem] = product_item.repre_items
             first_repre_item: RepreItem = repre_items[0]
             version_comment: Union[str, None] = next(
                 (
@@ -925,7 +1031,7 @@ configuration in project settings.
                 if "review" in repre_item.tags
             )
 
-            families: List[str] = ["csv_ingest"]
+            families: list[str] = ["csv_ingest"]
             if slate_exists:
                 # adding slate to families mainly for loaders to be able
                 # to filter out slates
@@ -937,10 +1043,11 @@ configuration in project settings.
 
             instance_data = {
                 "name": product_item.instance_name,
-                "folderPath": folder_path,
-                "families": families,
                 "label": label,
-                "task": product_item.task_name,
+                "folderPath": folder_path,
+                "task": task_name,
+                "folder_type": folder_type,
+                "families": families,
                 "variant": product_item.variant,
                 "source": "csv",
                 "frameStart": first_repre_item.frame_start,
@@ -950,11 +1057,12 @@ configuration in project settings.
                 "fps": first_repre_item.fps,
                 "version": version,
                 "comment": version_comment,
-                "prepared_data_for_repres": []
+                "prepared_data_for_repres": [],
             }
+            if instance_tasks:
+                instance_data["tasks"] = instance_tasks
 
             if product_item.has_promised_context:
-                hierarchy, folder_name = folder_path.rsplit("/", 1)
                 families.append("shot")
                 instance_data.update(
                     {
@@ -984,24 +1092,13 @@ configuration in project settings.
                         folder_name
                     )
 
-                folder_type = self._get_folder_type_from_regex_settings(folder_name)
-                instance_data["folder_type"] = folder_type
-
-                if product_item.task_name:
-                    task_type = self._get_task_type_from_task_name(
-                        product_item.task_name
-                    )
-                    tasks = instance_data.setdefault("tasks", {})
-                    tasks[product_item.task_name] = {
-                        "type": task_type
-                    }
-
             # create new instance
             new_instance: CreatedInstance = CreatedInstance(
-                product_item.product_type,
-                product_name,
-                instance_data,
-                self
+                product_base_type=product_item.product_base_type,
+                product_type=product_item.product_type,
+                product_name=product_name,
+                data=instance_data,
+                creator=self
             )
             self._prepare_representations(product_item, new_instance)
 
