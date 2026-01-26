@@ -95,6 +95,7 @@ CLIP_ATTR_DEFS = [
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
     host_name = "traypublisher"
+    skip_discovery = True
 
     def _add_instance_to_context(self, instance):
         parent_id = instance.get("parent_instance_id")
