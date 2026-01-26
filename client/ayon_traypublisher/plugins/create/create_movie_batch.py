@@ -89,6 +89,8 @@ class BatchMovieCreator(TrayPublishCreator):
             task_name = task_entity["name"].lower()
             task_entity_by_folder_id[folder_id][task_name] = task_entity
 
+        project_entity = self.create_context.get_current_project_entity()
+        project_settings = self.create_context.get_current_project_settings()
         for folder_id, instance_tuples in data_by_folder_id.items():
             for (instance_data, folder_entity) in instance_tuples:
                 task_entities_by_name = task_entity_by_folder_id[folder_id]
@@ -102,7 +104,12 @@ class BatchMovieCreator(TrayPublishCreator):
                         break
 
                 product_name = self._get_product_name(
-                    self.project_name, task_entity, data["variant"]
+                    self.project_name,
+                    project_settings,
+                    project_entity,
+                    folder_entity,
+                    task_entity,
+                    data["variant"],
                 )
 
                 instance_data["folderPath"] = folder_entity["path"]
@@ -110,40 +117,68 @@ class BatchMovieCreator(TrayPublishCreator):
 
                 # Create new instance
                 new_instance = CreatedInstance(
-                    self.product_type, product_name, instance_data, self
+                    data=instance_data,
+                    creator=self,
+                    product_type=self.product_base_type,
+                    product_name=product_name,
                 )
                 self._store_new_instance(new_instance)
 
-    def _get_product_name(self, project_name, task_entity, variant):
+    def _get_product_name(
+        self,
+        project_name,
+        project_settings,
+        project_entity,
+        folder_entity,
+        task_entity,
+        variant,
+    ):
         """Create product name according to standard template process"""
         host_name = self.create_context.host_name
-        task_name = task_type = None
-        if task_entity:
-            task_name = task_entity["name"]
-            task_type = task_entity["taskType"]
+        get_product_name_kwargs = dict(
+            project_name=project_name,
+            product_type=self.product_type,
+            variant=variant,
+            host_name=host_name,
+        )
+        if getattr(get_product_name, "use_entities", False):
+            get_product_name_kwargs.update({
+                "folder_entity": folder_entity,
+                "task_entity": task_entity,
+                "project_entity": project_entity,
+                "project_settings": project_settings,
+                "product_base_type": self.product_base_type,
+            })
+        else:
+            task_name = task_type = None
+            if task_entity:
+                task_name = task_entity["name"]
+                task_type = task_entity["type"]
+            get_product_name_kwargs.update({
+                "task_name": task_name,
+                "task_type": task_type,
+            })
         try:
-            product_name = get_product_name(
-                project_name=project_name,
-                task_name=task_name,
-                task_type=task_type,
-                host_name=host_name,
-                product_type=self.product_type,
-                variant=variant,
-            )
+            product_name = get_product_name(**get_product_name_kwargs)
         except TaskNotSetError:
             # Create instance with fake task
             # - instance will be marked as invalid so it can't be published
             #   but user have ability to change it
             # NOTE: This expect that there is not task 'Undefined' on folder
-            dumb_value = "Undefined"
-            product_name = get_product_name(
-                project_name=project_name,
-                task_name=dumb_value,
-                task_type=dumb_value,
-                host_name=host_name,
-                product_type=self.product_type,
-                variant=variant,
-            )
+
+            if getattr(get_product_name, "use_entities", False):
+                get_product_name_kwargs["task_entity"] = {
+                    "type": "Undefined",
+                    "name": "Undefined",
+                    "label": "Undefined",
+                }
+            else:
+                get_product_name_kwargs.update({
+                    "task_name": "Undefined",
+                    "task_type": "Undefined",
+                })
+
+            product_name = get_product_name(**get_product_name_kwargs)
 
         return product_name
 
