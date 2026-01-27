@@ -12,7 +12,7 @@ import ayon_api
 
 from ayon_core.pipeline.create import get_product_name
 from ayon_core.pipeline import CreatedInstance
-from ayon_core.lib import FileDef, BoolDef, Logger
+from ayon_core.lib import FileDef, BoolDef, Logger, EnumDef
 from ayon_core.lib.transcoding import (
     VIDEO_EXTENSIONS, IMAGE_EXTENSIONS
 )
@@ -279,10 +279,19 @@ configuration in project settings.
     # Position in the list of creators.
     order = 10
 
+    presets = []
     # settings for this creator
     columns_config = {}
     representations_config = {}
     folder_creation_config = {}
+
+    def apply_settings(self, project_settings):
+        self.presets = (
+            project_settings["traypublisher"]
+                            ["create"]
+                            ["IngestCSV"]
+                            ["presets"]
+        )
 
     def get_instance_attr_defs(self):
         return [
@@ -300,7 +309,15 @@ configuration in project settings.
             list: list of attribute object instances
         """
         # Use same attributes as for instance attributes
+        preset_items = []
+        for preset in self.presets:
+            preset_items.append({"value": preset["name"], "label": preset["name"]})
         return [
+            EnumDef(
+                "preset",
+                items=preset_items,
+                label="Preset",
+            ),
             FileDef(
                 "csv_filepath_data",
                 folders=False,
@@ -324,6 +341,21 @@ configuration in project settings.
             instance_data (dict): The instance data.
             pre_create_data (dict):
         """
+        selected_preset = pre_create_data["preset"]
+        preset_data = next(
+            (
+                preset for preset in self.presets
+                if preset["name"] == selected_preset
+            ),
+            None,
+        )
+        self.columns_config = preset_data.get(
+            "columns_config", [])
+        self.representations_config = preset_data.get(
+            "representations_config", [])
+        self.folder_creation_config = preset_data.get(
+            "folder_creation_config", [])
+
 
         csv_filepath_data = pre_create_data.get("csv_filepath_data", {})
 

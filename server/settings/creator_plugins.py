@@ -215,16 +215,14 @@ class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
     )
 
 
-class IngestCSVPluginModel(BaseSettingsModel):
+class IngestCSVPresetModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
      'my_asset_to_publish.mov')"""
-
-    enabled: bool = SettingsField(
-        title="Enabled",
-        default=False
+    name: str = SettingsField(
+        title="Name",
+        default="Default"
     )
-
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
         default_factory=ColumnConfigModel
@@ -238,6 +236,22 @@ class IngestCSVPluginModel(BaseSettingsModel):
     folder_creation_config: FolderCreationConfigModel = SettingsField(
         title="Folder creation config",
         default_factory=FolderCreationConfigModel
+    )
+
+
+class IngestCSVPluginModel(BaseSettingsModel):
+    """Allows to publish multiple video files in one go. <br />Name of matching
+     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
+     'my_asset_to_publish.mov')"""
+
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=False
+    )
+
+    presets: list[IngestCSVPresetModel] = SettingsField(
+        title="Presets",
+        default_factory=list
     )
 
 
@@ -291,207 +305,212 @@ DEFAULT_CREATORS = {
     },
     "IngestCSV": {
         "enabled": True,
-        "columns_config": {
-            "csv_delimiter": ",",
-            "columns": [
-                {
-                    "name": "File Path",
-                    "type": "text",
-                    "default": "",
-                    "required_column": True,
-                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
-                },
-                {
-                    "name": "Folder Path",
-                    "type": "text",
-                    "default": "",
-                    "required_column": True,
-                    "validation_pattern": "^([a-zA-Z0-9_\\/]*)$"
-                },
-                {
-                    "name": "Task Name",
-                    "type": "text",
-                    "default": "",
-                    "required_column": True,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Product Type",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Product Base Type",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Variant",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Version",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": False,
-                    "validation_pattern": "^(\\d{1,3})$"
-                },
-                {
-                    "name": "Version Comment",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Version Thumbnail",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
-                },
-                {
-                    "name": "Frame Start",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": True,
-                    "validation_pattern": "^(\\d{1,8})$"
-                },
-                {
-                    "name": "Frame End",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": True,
-                    "validation_pattern": "^(\\d{1,8})$"
-                },
-                {
-                    "name": "Handle Start",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": True,
-                    "validation_pattern": "^(\\d)$"
-                },
-                {
-                    "name": "Handle End",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": True,
-                    "validation_pattern": "^(\\d)$"
-                },
-                {
-                    "name": "FPS",
-                    "type": "decimal",
-                    "default": "0.0",
-                    "required_column": True,
-                    "validation_pattern": "^[0-9]*\\.[0-9]+$|^[0-9]+$"
-                },
-                {
-                    "name": "Slate Exists",
-                    "type": "bool",
-                    "default": "True",
-                    "required_column": False,
-                    "validation_pattern": "(True|False)"
-                },
-                {
-                    "name": "Representation",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Representation Colorspace",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Representation Tags",
-                    "type": "text",
-                    "default": "",
-                    "required_column": False,
-                    "validation_pattern": "^(.*)$"
-                },
-                {
-                    "name": "Shot Height",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": False,
-                    "validation_pattern": "^(\\d*)$"
-                },
-                {
-                    "name": "Shot Width",
-                    "type": "number",
-                    "default": "0",
-                    "required_column": False,
-                    "validation_pattern": "^(\\d*)$"
-                },
-                {
-                    "name": "Shot Pixel Aspect",
-                    "type": "decimal",
-                    "default": "0",
-                    "required_column": False,
-                    "validation_pattern": "^(\\d*.?\\d*)$"
-                },
-            ]
-        },
-        "representations_config": {
-            "tags_delimiter": ";",
-            "default_tags": [
-                "review"
-            ],
-            "representations": [
-                {
-                    "name": "preview",
-                    "extensions": [
-                        ".mp4",
-                        ".mov"
+        "presets": [
+            {
+                "name": "Default",
+                "columns_config": {
+                    "csv_delimiter": ",",
+                    "columns": [
+                        {
+                            "name": "File Path",
+                            "type": "text",
+                            "default": "",
+                            "required_column": True,
+                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
+                        },
+                        {
+                            "name": "Folder Path",
+                            "type": "text",
+                            "default": "",
+                            "required_column": True,
+                            "validation_pattern": "^([a-zA-Z0-9_\\/]*)$"
+                        },
+                        {
+                            "name": "Task Name",
+                            "type": "text",
+                            "default": "",
+                            "required_column": True,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Product Base Type",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Product Type",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Variant",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Version",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": False,
+                            "validation_pattern": "^(\\d{1,3})$"
+                        },
+                        {
+                            "name": "Version Comment",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Version Thumbnail",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
+                        },
+                        {
+                            "name": "Frame Start",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": True,
+                            "validation_pattern": "^(\\d{1,8})$"
+                        },
+                        {
+                            "name": "Frame End",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": True,
+                            "validation_pattern": "^(\\d{1,8})$"
+                        },
+                        {
+                            "name": "Handle Start",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": True,
+                            "validation_pattern": "^(\\d)$"
+                        },
+                        {
+                            "name": "Handle End",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": True,
+                            "validation_pattern": "^(\\d)$"
+                        },
+                        {
+                            "name": "FPS",
+                            "type": "decimal",
+                            "default": "0.0",
+                            "required_column": True,
+                            "validation_pattern": "^[0-9]*\\.[0-9]+$|^[0-9]+$"
+                        },
+                        {
+                            "name": "Slate Exists",
+                            "type": "bool",
+                            "default": "True",
+                            "required_column": False,
+                            "validation_pattern": "(True|False)"
+                        },
+                        {
+                            "name": "Representation",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Representation Colorspace",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Representation Tags",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$"
+                        },
+                        {
+                            "name": "Shot Height",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": False,
+                            "validation_pattern": "^(\\d*)$"
+                        },
+                        {
+                            "name": "Shot Width",
+                            "type": "number",
+                            "default": "0",
+                            "required_column": False,
+                            "validation_pattern": "^(\\d*)$"
+                        },
+                        {
+                            "name": "Shot Pixel Aspect",
+                            "type": "decimal",
+                            "default": "0",
+                            "required_column": False,
+                            "validation_pattern": "^(\\d*.?\\d*)$"
+                        },
                     ]
                 },
-                {
-                    "name": "exr",
-                    "extensions": [
-                        ".exr"
+                "representations_config": {
+                    "tags_delimiter": ";",
+                    "default_tags": [
+                        "review"
+                    ],
+                    "representations": [
+                        {
+                            "name": "preview",
+                            "extensions": [
+                                ".mp4",
+                                ".mov"
+                            ]
+                        },
+                        {
+                            "name": "exr",
+                            "extensions": [
+                                ".exr"
+                            ]
+                        },
+                        {
+                            "name": "edit",
+                            "extensions": [
+                                ".mov"
+                            ]
+                        },
+                        {
+                            "name": "review",
+                            "extensions": [
+                                ".mov"
+                            ]
+                        },
+                        {
+                            "name": "nuke",
+                            "extensions": [
+                                ".nk"
+                            ]
+                        }
                     ]
                 },
-                {
-                    "name": "edit",
-                    "extensions": [
-                        ".mov"
-                    ]
-                },
-                {
-                    "name": "review",
-                    "extensions": [
-                        ".mov"
-                    ]
-                },
-                {
-                    "name": "nuke",
-                    "extensions": [
-                        ".nk"
-                    ]
+                "folder_creation_config": {
+                    "enabled": False,
+                    "folder_type_regexes": [
+                        {"regex": "(sh.*)", "folder_type": "Shot"},
+                        {"regex": "(seq.*)", "folder_type": "Sequence"}
+                    ],
+                    "folder_create_type": "Folder",
+                    "task_type_regexes": [],
+                    "task_create_type": "Generic",
                 }
-            ]
-        },
-        "folder_creation_config": {
-            "enabled": False,
-            "folder_type_regexes": [
-                {"regex": "(sh.*)", "folder_type": "Shot"},
-                {"regex": "(seq.*)", "folder_type": "Sequence"}
-            ],
-            "folder_create_type": "Folder",
-            "task_type_regexes": [],
-            "task_create_type": "Generic",
-        }
+            }
+        ]
     },
     "TextureCreator": {
         "enabled": True,
