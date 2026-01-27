@@ -7,8 +7,6 @@ exists under selected folder.
 """
 from pathlib import Path
 
-# import ayon_api
-
 from ayon_core.lib.attribute_definitions import FileDef, BoolDef
 from ayon_core.pipeline import (
     CreatedInstance,
@@ -51,25 +49,11 @@ class OnlineCreator(TrayPublishCreator):
             raise CreatorError("Missing files from representation")
 
         origin_basename = Path(files[0]).stem
-
-        # disable check for existing product with the same name
-        """
-        folder_entity = ayon_api.get_folder_by_path(
-            self.project_name, instance_data["folderPath"], fields={"id"})
-
-        if ayon_api.get_product_by_name(
-                self.project_name, origin_basename, folder_entity["id"],
-                fields={"id"}):
-            raise CreatorError(f"product with {origin_basename} already "
-                               "exists in selected folder")
-        """
-
         instance_data["originalBasename"] = origin_basename
         product_name = origin_basename
 
-        instance_data["creator_attributes"] = {
-            "path": (Path(repr_file["directory"]) / files[0]).as_posix()
-        }
+        # Pass pre-create attributes to instance creator attributes
+        instance_data["creator_attributes"] = pre_create_data
 
         # Create new instance
         new_instance = CreatedInstance(self.product_type, product_name,
@@ -77,13 +61,7 @@ class OnlineCreator(TrayPublishCreator):
         self._store_new_instance(new_instance)
 
     def get_instance_attr_defs(self):
-        return [
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
-            )
-        ]
+        return self.get_pre_create_attr_defs()
 
     def get_pre_create_attr_defs(self):
         return [
