@@ -216,9 +216,7 @@ class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
 
 
 class IngestCSVPresetModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Model for CSV ingest preset."""
     name: str = SettingsField(
         title="Name",
         default="Default"
