@@ -275,6 +275,7 @@ class IngestCSV(TrayPublishCreator):
 Ingest products' data from CSV file following column and representation
 configuration in project settings.
 """
+    settings_category = "traypublisher"
 
     # Position in the list of creators.
     order = 10
@@ -284,14 +285,6 @@ configuration in project settings.
     columns_config = {}
     representations_config = {}
     folder_creation_config = {}
-
-    def apply_settings(self, project_settings):
-        self.presets = (
-            project_settings["traypublisher"]
-                            ["create"]
-                            ["IngestCSV"]
-                            ["presets"]
-        )
 
     def get_instance_attr_defs(self):
         return [
@@ -311,7 +304,12 @@ configuration in project settings.
         # Use same attributes as for instance attributes
         preset_items = []
         for preset in self.presets:
-            preset_items.append({"value": preset["name"], "label": preset["name"]})
+            preset_items.append(
+                {"value": preset["name"], "label": preset["name"]})
+
+        if not preset_items:
+            raise ValueError("No CSV ingest presets found in settings")
+
         return [
             EnumDef(
                 "preset",
