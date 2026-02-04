@@ -63,9 +63,7 @@ class ColumnItemModel(BaseSettingsModel):
 
 
 class ColumnConfigModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Column configuration model"""
 
     csv_delimiter: str = SettingsField(
         title="CSV delimiter",
@@ -110,9 +108,7 @@ class RepresentationItemModel(BaseSettingsModel):
 
 
 class RepresentationConfigModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Representation configuration model"""
 
     tags_delimiter: str = SettingsField(
         title="Tags delimiter",
@@ -151,7 +147,7 @@ class TaskTypeRegexItem(BaseSettingsModel):
     _layout = "compact"
     regex: str = SettingsField("", title="Task Regex")
     task_type: str = SettingsField(
-        "",
+        "Generic",
         title="Task Type",
         enum_resolver=task_types_enum,
         description=(
@@ -175,7 +171,7 @@ class FolderCreationConfigModel(BaseSettingsModel):
         section="Folder Settings"
     )
     folder_type_regexes: list[FolderTypeRegexItem] = SettingsField(
-        default_factory=FolderTypeRegexItem,
+        default_factory=list,
         description=(
             "Using Regex expressions to create missing folders. \nThose can be used"
             " to define which folder types are used for new folder creation"
@@ -191,7 +187,7 @@ class FolderCreationConfigModel(BaseSettingsModel):
         section="Task Settings"
     )
     task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
-        default_factory=TaskTypeRegexItem,
+        default_factory=list,
         description=(
             "Using Regex expressions to create missing tasks. \nThose can be used"
             " to define which task types are used for new folder+task creation"
@@ -218,8 +214,8 @@ class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
 class IngestCSVPresetModel(BaseSettingsModel):
     """Model for CSV ingest preset."""
     name: str = SettingsField(
+        "Default",
         title="Name",
-        default="Default"
     )
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
@@ -238,9 +234,7 @@ class IngestCSVPresetModel(BaseSettingsModel):
 
 
 class IngestCSVPluginModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """CSV ingest plugin."""
 
     enabled: bool = SettingsField(
         title="Enabled",

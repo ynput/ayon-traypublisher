@@ -5,30 +5,27 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 def _convert_csv_ingest_0_3_9(overrides):
-    csv_ingest_settings = overrides.get("create", {}).get("IngestCSV")
+    csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
     if not csv_ingest_settings:
+        return
+    if "presets" in csv_ingest_settings:
         return
 
     default_preset = {}
-    columns_config = csv_ingest_settings.get("columns_config")
-    representations_config = csv_ingest_settings.get("representations_config")
-    folder_creation_config = csv_ingest_settings.get("folder_creation_config")
+    if "columns_config" in csv_ingest_settings:
+        default_preset["columns_config"] = csv_ingest_settings.pop(
+            "columns_config")
 
-    changed = False
-    if columns_config:
-        default_preset["columns_config"] = columns_config
-        changed = True
+    if "representations_config" in csv_ingest_settings:
+        default_preset["representations_config"] = csv_ingest_settings.pop(
+            "representations_config")
 
-    if representations_config:
-        default_preset["representations_config"] = representations_config
-        changed = True
+    if "folder_creation_config" in csv_ingest_settings:
+        default_preset["folder_creation_config"] = csv_ingest_settings.pop(
+            "folder_creation_config")
 
-    if folder_creation_config:
-        default_preset["folder_creation_config"] = folder_creation_config
-        changed = True
-
-    if changed:
-        default_preset["name"] = "Default"
+    if default_preset:
+        default_preset["name"] = "Test"
         overrides["create"]["IngestCSV"]["presets"] = [default_preset]
 
 
