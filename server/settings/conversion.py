@@ -25,7 +25,7 @@ def _convert_csv_ingest_0_3_9(overrides):
             "folder_creation_config")
 
     if default_preset:
-        default_preset["name"] = "Test"
+        default_preset["name"] = "Default"
         overrides["create"]["IngestCSV"]["presets"] = [default_preset]
 
 
