@@ -1,24 +1,21 @@
 from __future__ import annotations
+
+import collections
+import csv
 import os
 import re
-import csv
-import collections
+from copy import copy, deepcopy
 from io import StringIO
-from copy import deepcopy, copy
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
-import clique
 import ayon_api
-
-from ayon_core.pipeline.create import get_product_name
-from ayon_core.pipeline import CreatedInstance
-from ayon_core.lib import FileDef, BoolDef, Logger
-from ayon_core.lib.transcoding import (
-    VIDEO_EXTENSIONS, IMAGE_EXTENSIONS
-)
-from ayon_core.pipeline.create import CreatorError
+import clique
 from ayon_traypublisher.api.plugin import TrayPublishCreator
 
+from ayon_core.lib import BoolDef, EnumDef, FileDef, Logger
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline.create import CreatorError, get_product_name
 
 log = Logger.get_logger(__name__)
 
@@ -275,14 +272,12 @@ class IngestCSV(TrayPublishCreator):
 Ingest products' data from CSV file following column and representation
 configuration in project settings.
 """
+    settings_category = "traypublisher"
 
     # Position in the list of creators.
     order = 10
 
-    # settings for this creator
-    columns_config = {}
-    representations_config = {}
-    folder_creation_config = {}
+    presets = []
 
     def get_instance_attr_defs(self):
         return [
@@ -300,7 +295,21 @@ configuration in project settings.
             list: list of attribute object instances
         """
         # Use same attributes as for instance attributes
+        preset_items = []
+        for preset in self.presets:
+            preset_items.append(
+                {"value": preset["name"], "label": preset["name"]})
+
+        if not preset_items:
+            preset_items.append(
+                {"value": None, "label": "< Missing preset >"})
+
         return [
+            EnumDef(
+                "preset",
+                items=preset_items,
+                label="Preset",
+            ),
             FileDef(
                 "csv_filepath_data",
                 folders=False,
@@ -324,6 +333,19 @@ configuration in project settings.
             instance_data (dict): The instance data.
             pre_create_data (dict):
         """
+        selected_preset = pre_create_data["preset"]
+        preset_data = next(
+            (
+                preset for preset in self.presets
+                if preset["name"] == selected_preset
+            ),
+            None,
+        )
+
+        if not preset_data:
+            raise CreatorError(
+                f"Invalid preset '{selected_preset}'"
+            )
 
         csv_filepath_data = pre_create_data.get("csv_filepath_data", {})
 
@@ -334,7 +356,7 @@ configuration in project settings.
             )
         filename = csv_filepath_data.get("filenames", [])
         self._process_csv_file(
-            product_name, instance_data, csv_dir, filename[0]
+            preset_data, product_name, instance_data, csv_dir, filename[0]
         )
 
     def _pass_data_to_csv_instance(
@@ -362,6 +384,7 @@ configuration in project settings.
 
     def _process_csv_file(
         self,
+        preset_data: dict[str, Any],
         product_name: str,
         instance_data: dict[str, Any],
         csv_dir: str,
@@ -370,6 +393,7 @@ configuration in project settings.
         """Process CSV file.
 
         Args:
+            preset_data (dict[str, Any]): The selected preset data.
             product_name (str): The subset name.
             instance_data (dict): The instance data.
             csv_dir (str): The csv directory.
@@ -397,7 +421,8 @@ configuration in project settings.
         }
 
         # create instances from csv data via self function
-        instances = self._create_instances_from_csv_data(csv_dir, filename)
+        instances = self._create_instances_from_csv_data(
+            preset_data, csv_dir, filename)
         for instance in instances:
             self._store_new_instance(instance)
         self._store_new_instance(csv_instance)
@@ -426,21 +451,26 @@ configuration in project settings.
 
         return filepath
 
-    def _get_folder_type_from_regex_settings(self, folder_name: str) -> str:
+    def _get_folder_type_from_regex_settings(
+        self,
+        folder_name: str,
+        folder_creation_config: dict
+    ) -> str:
         """ Get the folder type that matches the regex settings.
 
         Args:
             folder_name (str): The folder name.
+            folder_creation_config (dict): The folder creation configuration.
 
         Returns:
             str. The folder type to use.
         """
-        for folder_setting in self.folder_creation_config["folder_type_regexes"]:
+        for folder_setting in folder_creation_config["folder_type_regexes"]:
             if re.match(folder_setting["regex"], folder_name):
                 folder_type = folder_setting["folder_type"]
                 return folder_type
 
-        return self.folder_creation_config["folder_create_type"]
+        return folder_creation_config["folder_create_type"]
 
     def _compute_parents_data(self, project_name: str, product_item: ProductItem) -> list:
         """ Compute parent data when new hierarchy has to be created during the
@@ -500,17 +530,22 @@ configuration in project settings.
 
 
     def _get_data_from_csv(
-        self, csv_dir: str, filename: str
+        self, preset_data: dict[str, Any], csv_dir: str, filename: str
     ) -> dict[str, ProductItem]:
         """Generate instances from the csv file"""
         # get current project name and code from context.data
         project_name = self.create_context.get_current_project_name()
         csv_path = os.path.join(csv_dir, filename)
 
+        # preset's variables
+        columns_config = preset_data["columns_config"]
+        representations_config = preset_data["representations_config"]
+        folder_creation_config = preset_data["folder_creation_config"]
+
         # make sure csv file contains columns from following list
         required_columns = [
             column["name"]
-            for column in self.columns_config["columns"]
+            for column in columns_config["columns"]
             if column["required_column"]
         ]
 
@@ -521,7 +556,7 @@ configuration in project settings.
         # read csv file with DictReader
         csv_reader = csv.DictReader(
             StringIO(csv_content),
-            delimiter=self.columns_config["csv_delimiter"]
+            delimiter=columns_config["csv_delimiter"]
         )
 
         # fix fieldnames
@@ -543,17 +578,17 @@ configuration in project settings.
 
         product_items_by_name: dict[str, ProductItem] = {}
         for row in csv_reader:
-            _product_item: ProductItem = ProductItem.from_csv_row(
-                self.columns_config, row
+            product_item_: ProductItem = ProductItem.from_csv_row(
+                columns_config, row
             )
-            unique_name = _product_item.unique_name
+            unique_name = product_item_.unique_name
             if unique_name not in product_items_by_name:
-                product_items_by_name[unique_name] = _product_item
+                product_items_by_name[unique_name] = product_item_
             product_item: ProductItem = product_items_by_name[unique_name]
             product_item.add_repre_item(
                 RepreItem.from_csv_row(
-                    self.columns_config,
-                    self.representations_config,
+                    columns_config,
+                    representations_config,
                     row
                 )
             )
@@ -585,7 +620,7 @@ configuration in project settings.
             task_entities_by_folder_id[folder_id].append(task_entity)
 
         missing_tasks: set[str] = set()
-        if missing_paths and not self.folder_creation_config["enabled"]:
+        if missing_paths and not folder_creation_config["enabled"]:
             error_msg = (
                 "Folder creation is disabled but found missing folder(s): %r" %
                 ",".join(missing_paths)
@@ -616,7 +651,7 @@ configuration in project settings.
                 None
             )
             if task_entity is None:
-                missing_tasks.add("/".join([folder_path, task_name]))
+                missing_tasks.add(f"{folder_path}/{task_name}")
             else:
                 product_item.task_type = task_entity["taskType"]
 
@@ -658,7 +693,7 @@ configuration in project settings.
         thumbnails: set[str],
         instance: CreatedInstance,
         repre_item: RepreItem,
-        multiple_thumbnails: bool,
+        multiple_thumbnails: bool = False,
     ) -> Union[str, None]:
         """Add thumbnail to instance.
 
@@ -726,25 +761,32 @@ configuration in project settings.
 
     def _add_representation(
         self,
+        preset_data: dict[str, Any],
         instance: CreatedInstance,
         repre_item: RepreItem,
         explicit_output_name: Optional[str] = None
-    ):
+    ) -> None:
         """Get representation data
 
         Args:
+            preset_data (dict[str, Any]): Preset data.
+            instance (CreatedInstance): Created instance.
             repre_item (RepreItem): Representation item based on csv row.
             explicit_output_name (Optional[str]): Explicit output name.
                 For grouping purposes with reviewable components.
 
+        Exception:
+            CreatorError: If representation not found.
         """
+        representations_config = preset_data["representations_config"]
+
         # get extension of file
         basename: str = os.path.basename(repre_item.filepath)
         extension: str = os.path.splitext(basename)[-1].lower()
 
         # validate filepath is having correct extension based on output
         repre_config_data: Union[dict[str, Any], None] = None
-        for repre in self.representations_config["representations"]:
+        for repre in representations_config["representations"]:
             if repre["name"] == repre_item.name:
                 repre_config_data = repre
                 break
@@ -852,8 +894,18 @@ configuration in project settings.
         })
 
     def _prepare_representations(
-        self, product_item: ProductItem, instance: CreatedInstance
-    ):
+        self,
+        preset_data: dict[str, Any],
+        product_item: ProductItem,
+        instance: CreatedInstance
+    ) -> None:
+        """Prepare representations for the given product item.
+
+        Args:
+            preset_data (dict[str, Any]): The preset data.
+            product_item (ProductItem): The product item.
+            instance (CreatedInstance): The created instance.
+        """
         # Collect thumbnail paths from all representation items
         #   to check if multiple thumbnails are present.
         # Once representation is created for certain thumbnail it is removed
@@ -875,35 +927,57 @@ configuration in project settings.
 
             # get representation data
             self._add_representation(
+                preset_data,
                 instance,
                 repre_item,
                 explicit_output_name
             )
 
-    def _get_task_type_from_task_name(self, task_name: str):
-        """ Retrieve task type from task name.
+    def _get_task_type_from_task_name(
+        self,
+        preset_data: dict[str, Any],
+        task_name: str
+    ) -> str:
+        """Retrieve task type from task name.
 
         Args:
+            preset_data (dict[str, Any]): The preset data.
             task_name (str): The task name.
 
         Returns:
             str. The task type computed from settings.
         """
-        for task_setting in self.folder_creation_config["task_type_regexes"]:
+        folder_creation_config = preset_data["folder_creation_config"]
+
+        for task_setting in folder_creation_config["task_type_regexes"]:
             if re.match(task_setting["regex"], task_name):
                 task_type = task_setting["task_type"]
                 break
         else:
-            task_type = self.folder_creation_config["task_create_type"]
+            task_type = folder_creation_config["task_create_type"]
 
         return task_type
 
-    def _create_instances_from_csv_data(self, csv_dir: str, filename: str):
-        """Create instances from csv data"""
+    def _create_instances_from_csv_data(
+        self,
+        preset_data: dict[str, Any],
+        csv_dir: str,
+        filename: str
+    ) -> list[CreatedInstance]:
+        """Create instances from csv data.
+
+        Args:
+            preset_data (dict[str, Any]): The preset data.
+            csv_dir (str): The directory of the CSV file.
+            filename (str): The name of the CSV file.
+
+        Returns:
+            list[CreatedInstance]. The created instances.
+        """
         # from special function get all data from csv file and convert them
         # to new instances
         product_items_by_name: dict[str, ProductItem] = (
-            self._get_data_from_csv(csv_dir, filename)
+            self._get_data_from_csv(preset_data, csv_dir, filename)
         )
 
         instances = []
@@ -949,7 +1023,7 @@ configuration in project settings.
                 folder_type: str = "Shot"
                 if product_item.has_promised_context:
                     folder_type = self._get_folder_type_from_regex_settings(
-                        folder_name
+                        folder_name, preset_data["folder_creation_config"]
                     )
                 # Fake folder entity, this might break if more data
                 #   is used in 'get_product_name'.
@@ -975,7 +1049,8 @@ configuration in project settings.
                     task_type = task_entity["taskType"]
                 else:
                     task_name = product_item.task_name
-                    task_type = self._get_task_type_from_task_name(task_name)
+                    task_type = self._get_task_type_from_task_name(
+                        preset_data, task_name)
                     # Fake task entity, this might break if more data
                     #   is used in 'get_product_name'.
                     task_entity = {
@@ -1086,7 +1161,10 @@ configuration in project settings.
                     )
                 elif product_item.width or product_item.height:
                     log.warning(
-                        "Ignoring incomplete provided resolution %rx%r for shot %s.",
+                        (
+                            "Ignoring incomplete provided resolution"
+                            " %rx%r for shot %s."
+                        ),
                         product_item.width,
                         product_item.height,
                         folder_name
@@ -1100,7 +1178,8 @@ configuration in project settings.
                 data=instance_data,
                 creator=self
             )
-            self._prepare_representations(product_item, new_instance)
+            self._prepare_representations(
+                preset_data, product_item, new_instance)
 
             if product_item.has_promised_context:
                 new_instance.transient_data["has_promised_context"] = True
