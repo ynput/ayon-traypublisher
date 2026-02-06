@@ -301,7 +301,8 @@ configuration in project settings.
                 {"value": preset["name"], "label": preset["name"]})
 
         if not preset_items:
-            raise ValueError("No CSV ingest presets found in settings")
+            preset_items.append(
+                {"value": None, "label": "< Missing preset >"})
 
         return [
             EnumDef(
