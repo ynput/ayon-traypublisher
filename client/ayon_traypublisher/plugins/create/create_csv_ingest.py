@@ -987,7 +987,7 @@ configuration in project settings.
             product_item.folder_path
             for product_item in product_items_by_name.values()
         }
-        folder_entities_by_path: dict[str, dict[str, Any]] = {
+        folder_entities_by_path: dict[str, dict[str, str]] = {
             folder_entity["path"]: folder_entity
             for folder_entity in ayon_api.get_folders(
                 project_name,
