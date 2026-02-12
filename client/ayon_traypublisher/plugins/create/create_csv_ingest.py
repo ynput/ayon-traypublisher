@@ -992,7 +992,6 @@ configuration in project settings.
             for folder_entity in ayon_api.get_folders(
                 project_name,
                 folder_paths=folder_paths,
-                fields={"id", "path", "folderType"},
             )
         }
         folder_paths_by_id = {
