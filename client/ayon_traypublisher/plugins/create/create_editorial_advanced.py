@@ -15,6 +15,7 @@ from ayon_core.lib import (
     TextDef,
     UILabelDef,
     UISeparatorDef,
+    AbstractAttrDef,
 )
 from ayon_core.lib.transcoding import (
     IMAGE_EXTENSIONS,
@@ -46,51 +47,6 @@ CREATOR_CLIP_ATTR_DEFS = [
     NumberDef("handle_end", default=0, label="Handle end"),
 ]
 
-CLIP_ATTR_DEFS = [
-    NumberDef(
-        "frameStart",
-        default=0,
-        label="Frame start",
-        disabled=True,
-    ),
-    NumberDef(
-        "frameEnd",
-        default=0,
-        label="Frame end",
-        disabled=True,
-    ),
-    NumberDef(
-        "clipIn",
-        default=0,
-        label="Clip in",
-        disabled=True,
-    ),
-    NumberDef(
-        "clipOut",
-        default=0,
-        label="Clip out",
-        disabled=True,
-    ),
-    NumberDef(
-        "clipDuration",
-        default=0,
-        label="Clip duration",
-        disabled=True,
-    ),
-    NumberDef(
-        "sourceIn",
-        default=0,
-        label="Media source in",
-        disabled=True,
-    ),
-    NumberDef(
-        "sourceOut",
-        default=0,
-        label="Media source out",
-        disabled=True,
-    ),
-]
-
 CONTENT_TYPE_MAPPING = {
     "other": [
         "audio",
@@ -112,6 +68,63 @@ VARIANTS_PATTERN = r"(?:_[^_v\.]+|\d+)?"
 VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 
+def get_instance_creator_attrib_defs(instance):
+    fields = deepcopy(CREATOR_CLIP_ATTR_DEFS)
+
+    for field in fields:
+        field_key = field.key
+        field.default = instance.creator_attributes.get(field_key)
+
+    return fields
+
+
+def get_clip_attrib_defs(instance) -> list[NumberDef]:
+    return [
+        NumberDef(
+            "frameStart",
+            default=instance.creator_attributes.get("frameStart"),
+            label="Frame start",
+            disabled=True,
+        ),
+        NumberDef(
+            "frameEnd",
+            default=instance.creator_attributes.get("frameEnd"),
+            label="Frame end",
+            disabled=True,
+        ),
+        NumberDef(
+            "clipIn",
+            default=instance.creator_attributes.get("clipIn"),
+            label="Clip in",
+            disabled=True,
+        ),
+        NumberDef(
+            "clipOut",
+            default=instance.creator_attributes.get("clipOut"),
+            label="Clip out",
+            disabled=True,
+        ),
+        NumberDef(
+            "clipDuration",
+            default=instance.creator_attributes.get("clipDuration"),
+            label="Clip duration",
+            disabled=True,
+        ),
+        NumberDef(
+            "sourceIn",
+            default=instance.creator_attributes.get("sourceIn"),
+            label="Media source in",
+            disabled=True,
+        ),
+        NumberDef(
+            "sourceOut",
+            default=instance.creator_attributes.get("sourceOut"),
+            label="Media source out",
+            disabled=True,
+        ),
+    ]
+
+
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product type creators."""
     host_name = "traypublisher"
@@ -128,18 +141,19 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
         return new_instance
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance):
         return [
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
-            ),
             TextDef(
                 "parent_instance",
                 label="Linked to",
-                disabled=True
+                default=instance.creator_attributes.get("parent_instance"),
+                disabled=True,
             ),
+            BoolDef(
+                "add_review_family",
+                default=instance.creator_attributes.get("add_review_family"),
+                label="Review",
+            )
         ]
 
 
@@ -153,16 +167,20 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
     product_base_type = "shot"
     label = "Editorial Shot"
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance) -> list[AbstractAttrDef]:
         instance_attributes = [
             TextDef(
                 "folderPath",
                 label="Folder path",
                 disabled=True,
-            )
+                default=instance.creator_attributes.get("folderPath"),
+            ),
         ]
-        instance_attributes.extend(CREATOR_CLIP_ATTR_DEFS)
-        instance_attributes.extend(CLIP_ATTR_DEFS)
+        instance_attributes.extend(
+            get_instance_creator_attrib_defs(instance))
+        instance_attributes.extend(
+            get_clip_attrib_defs(instance))
+
         return instance_attributes
 
 
@@ -208,6 +226,17 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     product_base_type = "audio"
     label = "Audio product"
 
+    def get_attr_defs_for_instance(self, instance):
+        parent = instance.creator_attributes.get("parent_instance")
+        return [
+            TextDef(
+                "parent_instance",
+                label="Linked to",
+                default=parent,
+                disabled=True,
+            ),
+        ]
+
 
 class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     """Model product type class
@@ -219,12 +248,14 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     product_base_type = "model"
     label = "Model product"
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance):
+        parent = instance.creator_attributes.get("parent_instance")
         return [
             TextDef(
                 "parent_instance",
                 label="Linked to",
-                disabled=True
+                default=parent,
+                disabled=True,
             ),
         ]
 
@@ -238,14 +269,17 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     product_base_type = "camera"
     label = "Camera product"
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance):
+        parent = instance.creator_attributes.get("parent_instance")
         return [
             TextDef(
                 "parent_instance",
                 label="Linked to",
-                disabled=True
+                default=parent,
+                disabled=True,
             ),
         ]
+
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """Workfile product type class
@@ -257,14 +291,17 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     product_base_type = "workfile"
     label = "Workfile product"
 
-    def get_instance_attr_defs(self):
+    def get_attr_defs_for_instance(self, instance):
+        parent = instance.creator_attributes.get("parent_instance")
         return [
             TextDef(
                 "parent_instance",
                 label="Linked to",
-                disabled=True
+                default=parent,
+                disabled=True,
             ),
         ]
+
 
 class EditorialAdvancedCreator(TrayPublishCreator):
     """Advanced Editorial creator class
