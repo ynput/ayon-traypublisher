@@ -118,10 +118,17 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
     def create(self, instance_data, source_data=None):
         product_name = instance_data["productName"]
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
 
         # Create new instance
         new_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
 
         self._store_new_instance(new_instance)
@@ -149,8 +156,8 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
     The shot metadata instance carrier.
     """
     identifier = "editorial_shot_advanced"
-    product_type = "shot"
     product_base_type = "shot"
+    product_type = product_base_type
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -172,8 +179,8 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     Plate representation instance.
     """
     identifier = "editorial_plate_advanced"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Plate product"
 
 
@@ -183,8 +190,8 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
     Plate representation instance.
     """
     identifier = "editorial_image_advanced"
-    product_type = "image"
     product_base_type = "image"
+    product_type = product_base_type
     label = "Image product"
 
 
@@ -193,8 +200,8 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
     Render representation instance.
     """
     identifier = "editorial_render_advanced"
-    product_type = "render"
     product_base_type = "render"
+    product_type = product_base_type
     label = "Render product"
 
 
@@ -204,8 +211,8 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     Audio representation instance.
     """
     identifier = "editorial_audio_advanced"
-    product_type = "audio"
     product_base_type = "audio"
+    product_type = product_base_type
     label = "Audio product"
 
 
@@ -215,8 +222,8 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
     Model representation instance.
     """
     identifier = "editorial_model_advanced"
-    product_type = "model"
     product_base_type = "model"
+    product_type = product_base_type
     label = "Model product"
 
     def get_instance_attr_defs(self):
@@ -234,8 +241,8 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
     Camera representation instance.
     """
     identifier = "editorial_camera_advanced"
-    product_type = "camera"
     product_base_type = "camera"
+    product_type = product_base_type
     label = "Camera product"
 
     def get_instance_attr_defs(self):
@@ -253,8 +260,8 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     Workfile representation instance.
     """
     identifier = "editorial_workfile_advanced"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     label = "Workfile product"
 
     def get_instance_attr_defs(self):
@@ -277,8 +284,8 @@ class EditorialAdvancedCreator(TrayPublishCreator):
     """
     enabled = True
     label = "Editorial Advanced"
-    product_type = "editorial"
     product_base_type = "editorial"
+    product_type = product_base_type
     identifier = "editorial_advanced"
     default_variants = [
         "main"
@@ -289,7 +296,7 @@ Supporting publishing new shots to project
 or updating already created. Publishing will create OTIO file.
 """
     icon = "fa.file"
-    product_type_presets = []
+    product_base_type_presets = []
 
     def __init__(self, *args, **kwargs):
         self._shot_metadata_solver = ShotMetadataSolver(self.log)
@@ -309,13 +316,14 @@ or updating already created. Publishing will create OTIO file.
             creator_settings["shot_hierarchy"],
             creator_settings["shot_add_tasks"]
         )
-        self.product_type_presets = creator_settings[
-            "product_type_advanced_presets"]
+        self.product_base_type_presets = creator_settings[
+            "product_base_type_advanced_presets"]
         self.default_variants = creator_settings["default_variants"]
 
     def create(self, product_name, instance_data, pre_create_data):
-        allowed_product_type_presets = self._get_allowed_product_type_presets(
-            pre_create_data)
+        allowed_product_base_type_presets = (
+            self._get_allowed_product_base_type_presets(pre_create_data)
+        )
 
         ignored_keys = set(self.get_product_presets_with_names())
         ignored_keys |= {"sequence_filepath_data", "folder_path_data"}
@@ -372,7 +380,7 @@ or updating already created. Publishing will create OTIO file.
                     otio_timeline,
                     media_folder_path,
                     clip_instance_properties,
-                    allowed_product_type_presets,
+                    allowed_product_base_type_presets,
                     sequence_name,
                     ignore_clip_no_content,
                 )
@@ -401,7 +409,11 @@ or updating already created. Publishing will create OTIO file.
             }
         )
         new_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_base_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
         self._store_new_instance(new_instance)
 
@@ -460,7 +472,7 @@ or updating already created. Publishing will create OTIO file.
         otio_timeline,
         media_folder_path,
         instance_data,
-        product_type_presets,
+        product_base_type_presets,
         sequence_file_name,
         ignore_clip_no_content,
     ):
@@ -471,7 +483,7 @@ or updating already created. Publishing will create OTIO file.
             otio_timeline (otio.Timeline): otio timeline object
             media_folder_path (str): Folder with media files
             instance_data (dict): clip instance data
-            product_type_presets (list[dict]): list of dict settings
+            product_base_type_presets (list[dict]): list of dict settings
                 product presets
             sequence_file_name (str): sequence file name
             ignore_clip_no_content (bool): ignore clips with no content
@@ -508,7 +520,7 @@ or updating already created. Publishing will create OTIO file.
             matched_product_items = []
             for root, foldernames, filenames in os.walk(abs_clip_folder):
                 # iterate all product names in enabled presets
-                for pres_product_data in product_type_presets:
+                for pres_product_data in product_base_type_presets:
                     product_name = pres_product_data["product_name"]
 
                     product_data_base = {
@@ -595,7 +607,7 @@ or updating already created. Publishing will create OTIO file.
 
                     if not any(
                         item
-                        for preset in product_type_presets
+                        for preset in product_base_type_presets
                         for item in clip_related_content
                         if preset["product_name"] in item["product_name"]
                     ):
@@ -629,7 +641,7 @@ or updating already created. Publishing will create OTIO file.
                 abs_clip_folder = os.path.join(
                     media_folder_path, otio_clip.name).replace("\\", "/")
 
-                for pres_product_data in product_type_presets:
+                for pres_product_data in product_base_type_presets:
                     self._make_product_instance(
                         pres_product_data,
                         deepcopy(base_instance_data),
@@ -777,7 +789,7 @@ or updating already created. Publishing will create OTIO file.
             clip_content_items (list[dict]): list of clip content items
             media_folder_path (str): media folder path
         """
-        pres_product_type = product_preset["product_type"]
+        pres_product_base_type = product_preset["product_base_type"]
         pres_product_name = product_preset["product_name"]
         pres_versioning = product_preset["versioning_type"]
         pres_representations = product_preset["representations"]
@@ -909,7 +921,7 @@ or updating already created. Publishing will create OTIO file.
             instance_data = deepcopy(base_instance_data)
             self._set_product_data_to_instance(
                 instance_data,
-                pres_product_type,
+                pres_product_base_type,
                 product_name=product_name,
             )
 
@@ -923,12 +935,14 @@ or updating already created. Publishing will create OTIO file.
                 "prep_representations": representations,
             })
 
-            if pres_product_type not in ["model", "workfile", "camera"]:
+            if pres_product_base_type not in ["model", "workfile", "camera"]:
                 instance_data["creator_attributes"]["add_review_family"] = (
                     reviewable
                 )
 
-            creator_identifier = f"editorial_{pres_product_type}_advanced"
+            creator_identifier = (
+                f"editorial_{pres_product_base_type}_advanced"
+            )
             editorial_clip_creator = self.create_context.creators[
                 creator_identifier]
 
@@ -996,7 +1010,7 @@ or updating already created. Publishing will create OTIO file.
     def _set_product_data_to_instance(
         self,
         instance_data,
-        product_type,
+        product_base_type,
         variant=None,
         product_name=None,
     ):
@@ -1004,7 +1018,7 @@ or updating already created. Publishing will create OTIO file.
 
         Args:
             instance_data (dict): instance data
-            product_type (str): product type
+            product_base_type (str): product base type
             variant (Optional[str]): product variant
                 default is "main"
             product_name (Optional[str]): product name
@@ -1013,22 +1027,23 @@ or updating already created. Publishing will create OTIO file.
             str: label string
         """
         if not variant:
+            variant = "main"
             if product_name:
-                variant = product_name.split(product_type)[-1].lower()
-            else:
-                variant = "main"
+                variant = product_name.split(product_base_type)[-1].lower()
 
         folder_path = instance_data["creator_attributes"]["folderPath"]
 
         # product name
-        product_name = product_name or f"{product_type}{variant.capitalize()}"
+        if not product_name:
+            product_name = f"{product_base_type}{variant.capitalize()}"
         label = f"{folder_path} {product_name}"
 
         instance_data.update(
             {
                 "label": label,
                 "variant": variant,
-                "productType": product_type,
+                "productBaseType": product_base_type,
+                "productType": product_base_type,
                 "productName": product_name,
             }
         )
@@ -1175,8 +1190,8 @@ or updating already created. Publishing will create OTIO file.
             "sourceOut": int(source_out)
         }
 
-    def _get_allowed_product_type_presets(self, pre_create_data):
-        """Filter out allowed product type presets.
+    def _get_allowed_product_base_type_presets(self, pre_create_data):
+        """Filter out allowed product base type presets.
 
         Args:
             pre_create_data (dict): precreate attributes inputs
@@ -1184,10 +1199,11 @@ or updating already created. Publishing will create OTIO file.
         Returns:
             list: Filtered list of extended preset items.
         """
+        presets_by_name = self.get_product_presets_with_names()
         return [
             # return dict with name of preset and add preset dict
             {"product_name": product_name, **preset}
-            for product_name, preset in self.get_product_presets_with_names().items()  # noqa
+            for product_name, preset in presets_by_name.items()
             if pre_create_data[product_name]
         ]
 
@@ -1280,9 +1296,9 @@ or updating already created. Publishing will create OTIO file.
             dict: dict with product names and preset items
         """
         output = {}
-        for item in self.product_type_presets:
+        for item in self.product_base_type_presets:
             product_name = (
-                f"{item['product_type']}"
+                f"{item['product_base_type']}"
                 f"{(item['variant']).capitalize()}"
             )
             output[product_name] = item
