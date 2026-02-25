@@ -29,6 +29,17 @@ def _convert_csv_ingest_0_3_9(overrides):
         overrides["create"]["IngestCSV"]["presets"] = [default_preset]
 
 
+def _convert_simple_creators_0_4_0(overrides):
+    simple_creators = overrides.get("simple_creators")
+    if not simple_creators:
+        return
+
+    for plugin in simple_creators:
+        if "product_base_type" in plugin or "product_type" not in plugin:
+            return
+        plugin["product_base_type"] = plugin.pop("product_type")
+
+
 def _convert_editorial_0_4_0(overrides):
     editorial_creators = overrides.get("editorial_creators", {})
     editorial_advanced = editorial_creators.get("editorial_advanced", {})
@@ -51,5 +62,6 @@ def convert_settings_overrides(
     overrides: dict[str, Any],
 ) -> dict[str, Any]:
     _convert_csv_ingest_0_3_9(overrides)
+    _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
     return overrides
