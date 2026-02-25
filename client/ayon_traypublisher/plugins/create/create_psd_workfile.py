@@ -73,7 +73,7 @@ class PSDWorkfileCreator(TrayPublishCreator):
         if not image_creator:
             raise CreatorError("Image creator not found")
 
-        image_creator.create(None, instance_data)
+        image_creator.create(instance_data)
 
     def _get_hidden_creator(self, identifier):
         creator = self.create_context.creators.get(identifier)
@@ -122,7 +122,7 @@ class ImageComboCreator(HiddenTrayPublishCreator):
     product_base_type = "image"
     product_type = product_base_type
 
-    def create(self, _product_name, instance_data):
+    def create(self, instance_data):
         project_entity = self.create_context.get_current_project_entity()
         folder_path: str = instance_data["folderPath"]
         task_name: Optional[str] = instance_data.get("task")
