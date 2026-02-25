@@ -8,7 +8,7 @@ from ayon_server.settings import (
 from ayon_server.exceptions import BadRequestException
 
 
-def get_product_type_enum():
+def get_product_base_type_enum():
     return [
         {"label": "Image", "value": "image"},
         {"label": "Plate", "value": "plate"},
@@ -171,10 +171,10 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     )
 
 
-class ProductTypePresetItem(BaseSettingsModel):
+class ProductBaseTypePresetItem(BaseSettingsModel):
     _layout = "compact"
 
-    product_type: str = SettingsField("", title="Product type")
+    product_base_type: str = SettingsField("", title="Product base type")
     # TODO add placeholder '< Inherited >'
     variant: str = SettingsField("", title="Variant")
     review: bool = SettingsField(True, title="Review")
@@ -184,12 +184,12 @@ class ProductTypePresetItem(BaseSettingsModel):
     )
 
 
-class ProductTypeAdvancedPresetItem(BaseSettingsModel):
+class ProductBaseTypeAdvancedPresetItem(BaseSettingsModel):
     default_enabled: bool = True
-    product_type: str = SettingsField(
+    product_base_type: str = SettingsField(
         "plate",
-        title="Product type",
-        enum_resolver=get_product_type_enum
+        title="Product base type",
+        enum_resolver=get_product_base_type_enum
     )
     variant: str = SettingsField("", title="Variant")
     versioning_type: str = SettingsField(
@@ -245,7 +245,7 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
         default_factory=ShotAddTasksItem,
         description="The following list of tasks will be added to each created shot."
     )
-    product_type_presets: list[ProductTypePresetItem] = SettingsField(
+    product_base_type_presets: list[ProductBaseTypePresetItem] = SettingsField(
         default_factory=list
     )
 
@@ -272,22 +272,22 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
         title="Add tasks to shot", default_factory=ShotAddTasksItem
     )
-    product_type_advanced_presets: list[ProductTypeAdvancedPresetItem] = (
+    product_base_type_advanced_presets: list[ProductBaseTypeAdvancedPresetItem] = (
         SettingsField(
             title="Product type presets",
             default_factory=list
         )
     )
 
-    @validator("product_type_advanced_presets")
+    @validator("product_base_type_advanced_presets")
     def validate_unique_product_names(cls, value):
         product_names = []
         for item in value:
-            product_name = item.product_type + item.variant
+            product_name = item.product_base_type + item.variant
             if product_name in product_names:
                 raise BadRequestException(
                     "Duplicate product preset: \n"
-                    f" > Product type: {item.product_type} \n"
+                    f" > Product type: {item.product_base_type} \n"
                     f" > Variant: {item.variant}"
                 )
             product_names.append(product_name)
@@ -335,21 +335,21 @@ DEFAULT_EDITORIAL_CREATORS = {
             ],
         },
         "shot_add_tasks": [],
-        "product_type_presets": [
+        "product_base_type_presets": [
             {
-                "product_type": "review",
+                "product_base_type": "review",
                 "variant": "Reference",
                 "review": True,
                 "output_file_type": ".mp4",
             },
             {
-                "product_type": "plate",
+                "product_base_type": "plate",
                 "variant": "",
                 "review": False,
                 "output_file_type": ".mov",
             },
             {
-                "product_type": "audio",
+                "product_base_type": "audio",
                 "variant": "",
                 "review": False,
                 "output_file_type": ".wav",
@@ -385,10 +385,10 @@ DEFAULT_EDITORIAL_CREATORS = {
             ],
         },
         "shot_add_tasks": [],
-        "product_type_advanced_presets": [
+        "product_base_type_advanced_presets": [
             {
                 "default_enabled": True,
-                "product_type": "plate",
+                "product_base_type": "plate",
                 "variant": "Reference",
                 "representations": [
                     {
