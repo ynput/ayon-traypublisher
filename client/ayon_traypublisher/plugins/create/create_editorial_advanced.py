@@ -113,7 +113,7 @@ VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
-    """Wrapper class for clip product type creators."""
+    """Wrapper class for clip product base type creators."""
     host_name = "traypublisher"
 
     def create(self, instance_data, source_data=None):
@@ -151,7 +151,7 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
 
 class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Shot product type class
+    """Shot product base type class
 
     The shot metadata instance carrier.
     """
@@ -174,7 +174,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Plate product type class
+    """Plate product base type class
 
     Plate representation instance.
     """
@@ -185,7 +185,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Image product type class
+    """Image product base type class
 
     Plate representation instance.
     """
@@ -196,7 +196,7 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Render product type class
+    """Render product base type class
     Render representation instance.
     """
     identifier = "editorial_render_advanced"
@@ -206,7 +206,7 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Audio product type class
+    """Audio product base type class
 
     Audio representation instance.
     """
@@ -217,7 +217,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Model product type class
+    """Model product base type class
 
     Model representation instance.
     """
@@ -237,7 +237,7 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Camera product type class
+    """Camera product base type class
     Camera representation instance.
     """
     identifier = "editorial_camera_advanced"
@@ -255,7 +255,7 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
         ]
 
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Workfile product type class
+    """Workfile product base type class
 
     Workfile representation instance.
     """
@@ -1272,8 +1272,8 @@ or updating already created. Publishing will create OTIO file.
             UISeparatorDef("two"),
         ]
 
-        # transform all items in product type presets to join product
-        # type and product variant together as single camel case string
+        # transform all items in product base type presets to join product
+        # base type and product variant together as single camel case string
         product_names = self.get_product_presets_with_names()
 
         # add variants swithers
@@ -1291,9 +1291,11 @@ or updating already created. Publishing will create OTIO file.
         return attr_defs
 
     def get_product_presets_with_names(self):
-        """Get product type presets names.
+        """Get product base type presets names.
+
         Returns:
             dict: dict with product names and preset items
+
         """
         output = {}
         for item in self.product_base_type_presets:

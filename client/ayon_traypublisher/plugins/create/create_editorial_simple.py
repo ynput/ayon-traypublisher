@@ -93,7 +93,7 @@ CLIP_ATTR_DEFS = [
 
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
-    """Wrapper class for clip product type creators."""
+    """Wrapper class for clip product base type creators."""
     host_name = "traypublisher"
     skip_discovery = True
 
@@ -142,7 +142,7 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
 
 class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Shot product type class
+    """Shot product base type class
 
     The shot metadata instance carrier.
     """
@@ -164,7 +164,7 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Plate product type class
+    """Plate product base type class
 
     Plate representation instance.
     """
@@ -175,7 +175,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Audio product type class
+    """Audio product base type class
 
     Audio representation instance.
     """
@@ -186,7 +186,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
 
 
 class EditorialReviewInstanceCreator(EditorialClipInstanceCreatorBase):
-    """Review product type class
+    """Review product base type class
 
     Review representation instance.
     """
@@ -464,7 +464,7 @@ or updating already created. Publishing will create OTIO file.
                     product_base_type = (
                         product_base_type_preset["product_base_type"]
                     )
-                    # exclude audio product type if no audio stream
+                    # exclude audio product base type if no audio stream
                     if (
                         product_base_type == "audio"
                         and not media_data.get("audio")
@@ -593,7 +593,7 @@ or updating already created. Publishing will create OTIO file.
 
         Args:
             otio_clip (otio.Clip): otio clip object
-            product_base_type_preset (dict): single product type preset
+            product_base_type_preset (dict): single product base type preset
             instance_data (dict): instance data
             parenting_data (dict): shot instance parent data
 
@@ -607,7 +607,7 @@ or updating already created. Publishing will create OTIO file.
         )
         instance_data["label"] = label
 
-        # add file extension filter only if it is not shot product type
+        # add file extension filter only if it is not shot product base type
         if product_base_type == "shot":
             instance_data["otioClip"] = (
                 otio.adapters.write_to_string(otio_clip))
@@ -817,7 +817,7 @@ or updating already created. Publishing will create OTIO file.
         }
 
     def _get_allowed_product_base_type_presets(self, pre_create_data):
-        """Filter out allowed product type presets.
+        """Filter out allowed product base type presets.
 
         Args:
             pre_create_data (dict): precreate attributes inputs
