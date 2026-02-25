@@ -8,17 +8,11 @@ class SimpleCreatorPlugin(BaseSettingsModel):
     product_base_type: str = SettingsField(
         "", title="Product base type"
     )
-    product_type_items: list[ProductTypeItemModel] = SettingsField(
-        default_factory=list,
-        title="Product type items",
-        description=(
-            "Optional list of product types that this plugin can create."
-        )
-    )
     identifier: str = SettingsField(
         "",
         title="Identifier",
         description="Product base type is used if not filled",
+        placeholder="Use product base type name (Must be unique)",
     )
     label: str = SettingsField("", title="Label")
     icon: str = SettingsField("", title="Icon")
@@ -51,6 +45,13 @@ class SimpleCreatorPlugin(BaseSettingsModel):
     extensions: list[str] = SettingsField(
         default_factory=list,
         title="Extensions"
+    )
+    product_type_items: list[ProductTypeItemModel] = SettingsField(
+        default_factory=list,
+        title="Product type items",
+        description=(
+            "Optional list of product types that this plugin can create."
+        )
     )
 
 
