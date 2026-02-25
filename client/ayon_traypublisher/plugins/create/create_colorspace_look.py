@@ -71,11 +71,16 @@ This creator publishes color space look file (LUT).
                 self.project_name, folder_entity["id"], task_name
             )
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
+
         product_name = self.get_product_name(
             project_name=self.project_name,
             folder_entity=folder_entity,
             task_entity=task_entity,
             variant=instance_data["variant"],
+            product_type=product_type,
         )
 
         instance_data["creator_attributes"] = {}
@@ -90,8 +95,13 @@ This creator publishes color space look file (LUT).
             )
 
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         new_instance.transient_data["config_items"] = self.config_items
         new_instance.transient_data["config_data"] = self.config_data
 
