@@ -41,14 +41,6 @@ class BatchMovieCreator(TrayPublishCreator):
     # Position batch creator after simple creators
     order = 110
 
-    def apply_settings(self, project_settings):
-        creator_settings = (
-            project_settings["traypublisher"]["create"]["BatchMovieCreator"]
-        )
-        self.default_variants = creator_settings["default_variants"]
-        self.default_tasks = creator_settings["default_tasks"]
-        self.extensions = creator_settings["extensions"]
-
     def get_icon(self):
         return "fa.file"
 
