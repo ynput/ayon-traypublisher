@@ -50,11 +50,11 @@ def _convert_editorial_0_4_0(overrides):
         editorial_advanced["product_base_type_advanced_presets"] = presets
 
     editorial_simple = editorial_creators.get("editorial_simple", {})
-    if "product_base_type_presets" in editorial_advanced:
-        presets = editorial_advanced.pop("product_base_type_presets")
+    if "product_base_type_presets" in editorial_simple:
+        presets = editorial_simple.pop("product_base_type_presets")
         for preset in presets:
             preset["product_base_type"] = preset.pop("product_type")
-        editorial_advanced["product_base_type_presets"] = presets
+        editorial_simple["product_base_type_presets"] = presets
 
 
 def convert_settings_overrides(
