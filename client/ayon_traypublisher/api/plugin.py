@@ -29,6 +29,8 @@ class HiddenTrayPublishCreator(HiddenCreator):
     host_name = "traypublisher"
     settings_category = "traypublisher"
 
+    skip_discovery = True
+
     def collect_instances(self):
         instances_by_identifier = cache_and_get_instances(
             self, SHARED_DATA_KEY, list_instances
@@ -65,6 +67,8 @@ class TrayPublishCreator(Creator):
     create_allow_context_change = True
     host_name = "traypublisher"
     settings_category = "traypublisher"
+
+    skip_discovery = True
 
     def collect_instances(self):
         instances_by_identifier = cache_and_get_instances(
@@ -106,6 +110,8 @@ class SettingsCreator(TrayPublishCreator):
     allow_version_control = False
 
     extensions = []
+
+    skip_discovery = True
 
     def create(self, product_name, data, pre_create_data):
         # Pass precreate data to creator attributes

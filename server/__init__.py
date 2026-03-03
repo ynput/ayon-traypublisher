@@ -1,10 +1,15 @@
 import typing
+from typing import Any
 
 from ayon_server.addons import BaseServerAddon
 from ayon_server.actions import SimpleActionManifest
 from ayon_server.entities import FolderEntity, TaskEntity
 
-from .settings import TraypublisherSettings, DEFAULT_TRAYPUBLISHER_SETTING
+from .settings import (
+    TraypublisherSettings,
+    DEFAULT_TRAYPUBLISHER_SETTING,
+    convert_settings_overrides,
+)
 
 if typing.TYPE_CHECKING:
     from ayon_server.actions import (
@@ -86,3 +91,13 @@ class Traypublisher(BaseServerAddon):
             ])
 
         return await executor.get_launcher_action_response(args=args)
+
+    async def convert_settings_overrides(
+        self,
+        source_version: str,
+        overrides: dict[str, Any],
+    ) -> dict[str, Any]:
+        convert_settings_overrides(source_version, overrides)
+        # Use super conversion
+        return await super().convert_settings_overrides(
+            source_version, overrides)
