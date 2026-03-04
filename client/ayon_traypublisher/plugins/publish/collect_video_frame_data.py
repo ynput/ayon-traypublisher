@@ -118,7 +118,7 @@ class CollectVideoData(
 
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Video Frame Data"
-    families = ["*"]
+    families = ["collect.video.range"]
     hosts = ["traypublisher"]
     optional = True
 

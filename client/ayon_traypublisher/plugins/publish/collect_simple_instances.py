@@ -101,6 +101,7 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
                     " ayon-core in order to fix this."
                 )
 
+        self._add_video_range_family(instance)
         self.log.debug(
             (
                 "Created Simple Settings instance \"{}\""
@@ -111,6 +112,18 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
                 ", ".join(repre_names)
             )
         )
+
+    def _add_video_range_family(self, instance: pyblish.api.Instance) -> None:
+        """Add family for collecting video range if there is representation with
+        video extension.
+
+        Args:
+            instance (pyblish.api.Instance): Instance to add family to.
+        """
+        for representation in instance.data["representations"]:
+            ext = representation.get("ext")
+            if ext and f".{ext.lower()}" in transcoding.VIDEO_EXTENSIONS:
+                instance.data["families"].append("collect.video.range")
 
     def _fill_version(self, instance, instance_label):
         """Fill instance version under which will be instance integrated.
