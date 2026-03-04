@@ -55,8 +55,6 @@ class CollectCSVIngestInstancesData(
                 if "frameEnd" in repre_data:
                     frame_end = repre_data["frameEnd"]
 
-            self.log.debug(pformat(repre_data))
-
             instance.data["representations"].append(repre_data)
 
         if frame_start is not None and frame_end is not None:
