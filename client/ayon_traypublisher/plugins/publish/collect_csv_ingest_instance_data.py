@@ -22,6 +22,8 @@ class CollectCSVIngestInstancesData(
         prepared_repres_data_items = instance.data[
             "prepared_data_for_repres"]
 
+        frame_start = None
+        frame_end = None
         for prep_repre_data in prepared_repres_data_items:
             type = prep_repre_data["type"]
             colorspace = prep_repre_data["colorspace"]
@@ -44,4 +46,21 @@ class CollectCSVIngestInstancesData(
                 # thumbnails should be skipped
                 pass
 
+            if (
+                repre_data.get("tags") and
+                "review" in repre_data.get("tags", [])
+            ):
+                if "frameStart" in repre_data:
+                    frame_start = repre_data["frameStart"]
+                if "frameEnd" in repre_data:
+                    frame_end = repre_data["frameEnd"]
+
+            self.log.debug(pformat(repre_data))
+
             instance.data["representations"].append(repre_data)
+
+        if frame_start is not None and frame_end is not None:
+            instance.data["frameStart"] = frame_start
+            instance.data["frameEnd"] = frame_end
+
+        self.log.debug(pformat(instance.data))
