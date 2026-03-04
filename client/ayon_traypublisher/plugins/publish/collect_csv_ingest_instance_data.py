@@ -60,5 +60,3 @@ class CollectCSVIngestInstancesData(
         if frame_start is not None and frame_end is not None:
             instance.data["frameStart"] = frame_start
             instance.data["frameEnd"] = frame_end
-
-        self.log.debug(pformat(instance.data))
