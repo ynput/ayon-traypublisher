@@ -50,9 +50,8 @@ class CollectCSVIngestInstancesData(
                 repre_data.get("tags") and
                 "review" in repre_data.get("tags", [])
             ):
-                if "frameStart" in repre_data:
+                if "frameStart" in repre_data and "frameEnd" in repre_data:
                     frame_start = repre_data["frameStart"]
-                if "frameEnd" in repre_data:
                     frame_end = repre_data["frameEnd"]
 
             instance.data["representations"].append(repre_data)
