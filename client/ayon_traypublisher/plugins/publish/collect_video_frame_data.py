@@ -123,14 +123,10 @@ class CollectVideoData(
     optional = True
 
     @classmethod
-    def get_attr_defs_for_instance(
-        cls, create_context: "CreateContext", instance: "CreatedInstance"
-    ): 
+    def instance_matches_plugin_families(cls, instance: "CreatedInstance"):  # noqa: F821
         # Show only for instances from settings based create plugins
         identifier = f"settings_{instance.product_base_type}"
-        if instance.creator_identifier == identifier:
-            return cls.get_attribute_defs()
-        return []
+        return instance.creator_identifier == identifier
 
     def process(self, instance):
         if not self.is_active(instance.data):
