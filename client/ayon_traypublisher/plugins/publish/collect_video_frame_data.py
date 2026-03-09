@@ -125,13 +125,18 @@ class CollectVideoData(
     @classmethod
     def instance_matches_plugin_families(cls, instance: "CreatedInstance"):  # noqa: F821
         # Show only for instances from settings based create plugins
-        identifiers = {
-            f"settings_{instance.product_base_type}",
+        if instance.creator_identifier not in {
             "io.ayon.creators.traypublisher.online",
             "render_movie_batch",
             "editorial_plate",
-        }
-        return instance.creator_identifier in identifiers
+        }:
+            return True
+        if instance.data.get("settings_creator"):
+            extensions = set(instance.data["extensions"])
+            if not extensions.intersection(VIDEO_EXTENSIONS):
+                return True
+
+        return False
 
     def process(self, instance):
         if not self.is_active(instance.data):
