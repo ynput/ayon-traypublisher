@@ -124,7 +124,7 @@ class CollectVideoData(
     @classmethod
     def instance_matches_plugin_families(cls, instance: "CreatedInstance"):  # noqa: F821
         # Show only for instances from settings based create plugins
-        if instance.creator_identifier not in {
+        if instance.creator_identifier in {
             "io.ayon.creators.traypublisher.online",
             "render_movie_batch",
             "editorial_plate",
@@ -139,11 +139,6 @@ class CollectVideoData(
 
     def process(self, instance):
         if not self.is_active(instance.data):
-            return
-
-        # Exclude those that we deemed irrelevant explicitly
-        # instead of relying on `families` filtering
-        if not self.instance_matches_plugin_families(instance):
             return
 
         frame_data = self.get_frame_data_from_repre_sequence(instance)
