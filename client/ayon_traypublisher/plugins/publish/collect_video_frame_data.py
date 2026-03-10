@@ -128,8 +128,9 @@ class CollectTraypublisherVideoFrameData(
         return [
             BoolDef(
                 "collect_video_framerange",
+                label="Collect Original Video Frame Data",
                 default=True,
-                # visible=cls.optional
+                visible=cls.optional,
             )
         ]
 
