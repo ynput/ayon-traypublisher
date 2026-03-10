@@ -1,6 +1,5 @@
 from __future__ import annotations
 import os
-import logging
 import dataclasses
 from typing import Union
 
@@ -121,7 +120,7 @@ class CollectTraypublisherVideoFrameData(
 
     @classmethod
     def get_attr_defs_for_instance(
-        cls, create_context: "CreateContext", instance: "CreatedInstance"
+        cls, create_context: "CreateContext", instance: "CreatedInstance"  # noqa: F821
     ):
         if not cls.instance_supported(create_context, instance):
             return []
@@ -136,7 +135,7 @@ class CollectTraypublisherVideoFrameData(
 
     @classmethod
     def instance_supported(
-        cls, create_context: "CreateContext", instance: "CreatedInstance"
+        cls, create_context: "CreateContext", instance: "CreatedInstance"  # noqa: F821
     ):
         # Show only for instances from settings based create plugins
         if instance.creator_identifier in {
