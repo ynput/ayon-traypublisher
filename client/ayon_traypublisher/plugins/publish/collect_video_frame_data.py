@@ -159,10 +159,9 @@ class CollectTraypublisherVideoFrameData(
     def process(self, context):
         for instance in context:
             data = self.get_attr_values_from_data(instance.data)
-            if not data or not data.get("collect_video_framerange"):
-                continue
-            # add the collector to collect video frame data
-            instance.data["families"].append("collect.video.framerange")
+            if data.get("collect_video_framerange"):
+                # add the collector to collect video frame data
+                instance.data["families"].append("collect.video.framerange")
 
 
 class CollectVideoData(pyblish.api.InstancePlugin):
