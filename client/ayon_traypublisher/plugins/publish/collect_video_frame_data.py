@@ -175,7 +175,6 @@ class CollectVideoData(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Video Frame Data"
     families = ["collect.video.framerange"]
-    hosts = ["traypublisher"]
 
     def process(self, instance):
         frame_data = self.get_frame_data_from_repre_sequence(instance)
