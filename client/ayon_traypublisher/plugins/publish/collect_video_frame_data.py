@@ -14,7 +14,7 @@ import pyblish.api
 
 def get_video_info_metadata(
     path_to_file,
-    logger=None,
+    logger,
 ):
     """Get flattened metadata from video file using ffprobe.
 
@@ -22,8 +22,6 @@ def get_video_info_metadata(
         path_to_file (str): Path to image file.
         logger (logging.Logger): Logger used for logging.
     """
-    if logger is None:
-        logger = logging.getLogger(__name__)
 
     def _ffprobe_metadata_conversion(metadata):
         """Convert ffprobe metadata unified format."""
@@ -106,8 +104,9 @@ class VideoData:
     fps: float
 
 
-class CollectVideoFamilies(pyblish.api.ContextPlugin,
-                           AYONPyblishPluginMixin):
+class CollectTraypublisherVideoFrameData(
+    pyblish.api.ContextPlugin, AYONPyblishPluginMixin
+):
     """Collect video families."""
 
     label = "Collect Video Families"
@@ -130,8 +129,9 @@ class CollectVideoFamilies(pyblish.api.ContextPlugin,
         ]
 
     @classmethod
-    def instance_supported(cls, create_context: "CreateContext", instance: "CreatedInstance"):
-
+    def instance_supported(
+        cls, create_context: "CreateContext", instance: "CreatedInstance"
+    ):
         # Show only for instances from settings based create plugins
         if instance.creator_identifier in {
             "io.ayon.creators.traypublisher.online",
@@ -139,8 +139,10 @@ class CollectVideoFamilies(pyblish.api.ContextPlugin,
             "editorial_plate",
         }:
             return True
+
         if not instance.data.get("settings_creator"):
             return False
+
         plugin = create_context.creators[instance.creator_identifier]
         extensions = {f".{ext.lower().lstrip('.')}" for ext in plugin.extensions}
         return bool(extensions & VIDEO_EXTENSIONS)
@@ -216,7 +218,7 @@ class CollectVideoData(pyblish.api.InstancePlugin):
         }
 
     def get_video_data(self, video_filepath: str) -> VideoData:
-        info = get_video_info_metadata(video_filepath, logger=self.log)
+        info = get_video_info_metadata(video_filepath, self.log)
         num_frames: int = int(info.get("nb_frames", 0))
         # TODO: Should this fall back to folder/task entity fps instead?
         fps: float = info.get("framerate", 25.0)
