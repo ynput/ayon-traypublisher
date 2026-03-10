@@ -4,9 +4,10 @@ import logging
 import dataclasses
 from typing import Union
 
-from ayon_core.pipeline import OptionalPyblishPluginMixin
 from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
-from ayon_core.lib import get_ffprobe_data
+from ayon_core.lib import get_ffprobe_data, BoolDef
+
+from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 
 import pyblish.api
 
@@ -105,10 +106,55 @@ class VideoData:
     fps: float
 
 
-class CollectVideoData(
-    pyblish.api.InstancePlugin,
-    OptionalPyblishPluginMixin
-):
+class CollectVideoFamilies(pyblish.api.ContextPlugin,
+                           AYONPyblishPluginMixin):
+    """Collect video families."""
+
+    label = "Collect Video Families"
+    order = pyblish.api.CollectorOrder - 0.25
+    hosts = ["traypublisher"]
+    optional = True
+
+    @classmethod
+    def get_attr_defs_for_instance(
+        cls, create_context: "CreateContext", instance: "CreatedInstance"
+    ):
+        if not cls.instance_supported(create_context, instance):
+            return []
+        return [
+            BoolDef(
+                "collect_video_framerange",
+                default=True,
+                # visible=cls.optional
+            )
+        ]
+
+    @classmethod
+    def instance_supported(cls, create_context: "CreateContext", instance: "CreatedInstance"):
+
+        # Show only for instances from settings based create plugins
+        if instance.creator_identifier in {
+            "io.ayon.creators.traypublisher.online",
+            "render_movie_batch",
+            "editorial_plate",
+        }:
+            return True
+        if not instance.data.get("settings_creator"):
+            return False
+        plugin = create_context.creators[instance.creator_identifier]
+        extensions = {f".{ext.lower().lstrip('.')}" for ext in plugin.extensions}
+        return bool(extensions & VIDEO_EXTENSIONS)
+
+    def process(self, context):
+        for instance in context:
+            data = self.get_attr_values_from_data(instance.data)
+            if not data or not data.get("collect_video_framerange"):
+                continue
+            # add the collector to collect video frame data
+            instance.data["families"].append("collect.video.framerange")
+
+
+class CollectVideoData(pyblish.api.InstancePlugin):
     """Collect Original Video Frame Data
 
     If the representation includes video files then set `frameStart` and
@@ -118,29 +164,10 @@ class CollectVideoData(
 
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Video Frame Data"
+    families = ["collect.video.framerange"]
     hosts = ["traypublisher"]
-    optional = True
-
-    @classmethod
-    def instance_matches_plugin_families(cls, instance: "CreatedInstance"):  # noqa: F821
-        # Show only for instances from settings based create plugins
-        if instance.creator_identifier in {
-            "io.ayon.creators.traypublisher.online",
-            "render_movie_batch",
-            "editorial_plate",
-        }:
-            return True
-        if instance.data.get("settings_creator"):
-            extensions = set(instance.data["extensions"])
-            if not extensions.intersection(VIDEO_EXTENSIONS):
-                return True
-
-        return False
 
     def process(self, instance):
-        if not self.is_active(instance.data):
-            return
-
         frame_data = self.get_frame_data_from_repre_sequence(instance)
         if not frame_data:
             return
