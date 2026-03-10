@@ -11,6 +11,11 @@ from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 
 import pyblish.api
 
+# Remove dot from extensions
+_VIDEO_EXTENSIONS = {
+    ext.lstrip(".")
+    for ext in VIDEO_EXTENSIONS
+}
 
 def get_video_info_metadata(
     path_to_file,
@@ -144,8 +149,11 @@ class CollectTraypublisherVideoFrameData(
             return False
 
         plugin = create_context.creators[instance.creator_identifier]
-        extensions = {f".{ext.lower().lstrip('.')}" for ext in plugin.extensions}
-        return bool(extensions & VIDEO_EXTENSIONS)
+        extensions = {
+            ext.lower().lstrip(".")
+            for ext in plugin.extensions
+        }
+        return bool(extensions & _VIDEO_EXTENSIONS)
 
     def process(self, context):
         for instance in context:
@@ -191,7 +199,7 @@ class CollectVideoData(pyblish.api.InstancePlugin):
             return {}
 
         extension: str = first_repre["ext"]
-        if f".{extension}" not in VIDEO_EXTENSIONS:
+        if extension not in _VIDEO_EXTENSIONS:
             self.log.debug(
                 f"Representation extension '{extension}' is not a video"
                 " extension. Skipping collecting of video data.")
