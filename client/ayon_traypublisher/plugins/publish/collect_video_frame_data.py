@@ -118,7 +118,6 @@ class CollectVideoData(
 
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Video Frame Data"
-    families = ["collect.video.range"]
     hosts = ["traypublisher"]
     optional = True
 
@@ -140,6 +139,11 @@ class CollectVideoData(
 
     def process(self, instance):
         if not self.is_active(instance.data):
+            return
+
+        # Exclude those that we deemed irrelevant explicitly
+        # instead of relying on `families` filtering
+        if not self.instance_matches_plugin_families(instance):
             return
 
         frame_data = self.get_frame_data_from_repre_sequence(instance)
