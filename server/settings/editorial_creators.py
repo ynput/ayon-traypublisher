@@ -274,7 +274,7 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     )
     product_base_type_advanced_presets: list[ProductBaseTypeAdvancedPresetItem] = (
         SettingsField(
-            title="Product type presets",
+            title="Product base type presets",
             default_factory=list
         )
     )
@@ -287,7 +287,7 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
             if product_name in product_names:
                 raise BadRequestException(
                     "Duplicate product preset: \n"
-                    f" > Product type: {item.product_base_type} \n"
+                    f" > Product base type: {item.product_base_type} \n"
                     f" > Variant: {item.variant}"
                 )
             product_names.append(product_name)
