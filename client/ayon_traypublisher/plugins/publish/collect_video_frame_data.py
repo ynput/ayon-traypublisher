@@ -7,6 +7,10 @@ from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
 from ayon_core.lib import get_ffprobe_data, BoolDef
 
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.context_tools import (
+    get_current_task_entity,
+    get_current_folder_entity
+)
 
 import pyblish.api
 
@@ -181,10 +185,19 @@ class CollectVideoData(pyblish.api.InstancePlugin):
             return
 
         for key, value in frame_data.items():
-            instance.data[key] = value
-            self.log.debug(f"Collected video data '{key}': {value} ")
+            if key not in instance.data:
+                instance.data[key] = value
+                self.log.debug(f"Collected video data '{key}': {value} ")
 
-    def get_frame_data_from_repre_sequence(self, instance):
+    def get_frame_data_from_repre_sequence(self, instance: pyblish.api.Instance) -> dict:
+        """Get frame data from a representation sequence.
+
+        Args:
+            instance (pyblish.api.Instance): The instance to extract frame data from.
+
+        Returns:
+            dict: A dictionary containing the frame data.
+        """
         repres = instance.data.get("representations")
         if not repres:
             return {}
@@ -214,6 +227,13 @@ class CollectVideoData(pyblish.api.InstancePlugin):
             video_filename: str = video_filename[0]
         video_filepath = os.path.join(first_repre["stagingDir"],
                                       video_filename)
+        if not os.path.isfile(video_filepath):
+            self.log.debug(
+                f"Video file '{video_filepath}' does not exist."
+                " Skipping collecting of video data."
+            )
+            return {}
+
         video_data = self.get_video_data(video_filepath)
         return {
             "frameStart": video_data.frame_start,
@@ -224,10 +244,19 @@ class CollectVideoData(pyblish.api.InstancePlugin):
         }
 
     def get_video_data(self, video_filepath: str) -> VideoData:
+        """Get video data from a video file.
+
+        Args:
+            video_filepath (str): video filepath to extract data from
+
+        Returns:
+            VideoData: Video data extracted from the video file.
+        """
         info = get_video_info_metadata(video_filepath, self.log)
         num_frames: int = int(info.get("nb_frames", 0))
-        # TODO: Should this fall back to folder/task entity fps instead?
-        fps: float = info.get("framerate", 25.0)
+        fps: float = info.get("framerate")
+        if not fps:
+            fps = self._get_current_fps_data()
         timecode: Union[str, None] = info.get("timecode")
 
         # TODO: Should this align with the folder/task entity frame start
@@ -245,3 +274,18 @@ class CollectVideoData(pyblish.api.InstancePlugin):
             #width=info["width"],
             #height=info["height"],
         )
+
+    def _get_current_fps_data(self) -> float:
+        """Get the fps data from the current task or folder entity.
+
+        Returns:
+            float: The frames per second (fps) value.
+        """
+        task_entity = get_current_task_entity(fields={"attrib"})
+        task_attributes = task_entity["attrib"]
+        fps = task_attributes.get("fps")
+        if not fps:
+            folder_entity = get_current_folder_entity(fields={"attrib"})
+            folder_attributes = folder_entity["attrib"]
+            fps = folder_attributes.get("fps")
+        return float(fps)
