@@ -473,13 +473,19 @@ configuration in project settings.
 
         return folder_creation_config["folder_create_type"]
 
-    def _compute_parents_data(self, project_name: str, product_item: ProductItem) -> list:
+    def _compute_parents_data(
+        self,
+        project_name: str,
+        product_item: ProductItem,
+        preset_data: dict[str, Any]
+    ) -> list:
         """ Compute parent data when new hierarchy has to be created during the
             publishing process.
 
         Args:
             project_name (str): The project name.
             product_item (ProductItem): The product item to inspect.
+            preset_data (dict): The preset data with folder creation settings.
 
         Returns:
             list. The parent list if any
@@ -519,7 +525,8 @@ configuration in project settings.
 
             # Define folder type from settings.
             else:
-                folder_type = self._get_folder_type_from_regex_settings(name)
+                folder_type = self._get_folder_type_from_regex_settings(
+                    name, preset_data["folder_creation_config"])
 
             item = {
                 "entity_name": name,
@@ -636,7 +643,8 @@ configuration in project settings.
                 product_item.task_type = None
                 product_item.parents = self._compute_parents_data(
                     project_name,
-                    product_item
+                    product_item,
+                    preset_data,
                 )
                 continue
 
