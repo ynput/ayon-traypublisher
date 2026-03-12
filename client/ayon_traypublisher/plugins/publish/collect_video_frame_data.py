@@ -152,6 +152,7 @@ class CollectTraypublisherVideoFrameData(
         if not instance.data.get("settings_creator"):
             return False
 
+        # Get extensions from settings creator
         plugin = create_context.creators[instance.creator_identifier]
         extensions = {
             ext.lower().lstrip(".")
@@ -180,16 +181,16 @@ class CollectVideoData(pyblish.api.InstancePlugin):
     families = ["collect.video.framerange"]
 
     def process(self, instance):
-        frame_data = self.get_frame_data_from_repre_sequence(instance)
+        frame_data = self.get_frame_data_from_representations(instance)
         if not frame_data:
             return
 
         for key, value in frame_data.items():
             if key not in instance.data:
                 instance.data[key] = value
-                self.log.debug(f"Collected video data '{key}': {value} ")
+                self.log.debug(f"Collected video data '{key}': {value}")
 
-    def get_frame_data_from_repre_sequence(self, instance: pyblish.api.Instance) -> dict:
+    def get_frame_data_from_representations(self, instance: pyblish.api.Instance) -> dict:
         """Get frame data from a representation sequence.
 
         Args:
@@ -202,62 +203,76 @@ class CollectVideoData(pyblish.api.InstancePlugin):
         if not repres:
             return {}
 
-        first_repre = repres[0]
-        if "ext" not in first_repre:
-            self.log.warning(
-                "Cannot find file extension in representation data"
-            )
-            return {}
-
-        extension: str = first_repre["ext"]
-        if extension not in _VIDEO_EXTENSIONS:
-            self.log.debug(
-                f"Representation extension '{extension}' is not a video"
-                " extension. Skipping collecting of video data.")
-            return {}
-
-        video_filename = first_repre["files"]
-        if isinstance(video_filename, list):
-            if len(video_filename) > 1:
+        # Iterate through all representations to find a valid video
+        for repre in repres:
+            if "name" not in repre:
                 self.log.debug(
-                    "More than one video file found."
-                    " Skipping collecting of video data."
+                    "Cannot find file extension in representation data"
                 )
-                return {}
-            video_filename: str = video_filename[0]
-        video_filepath = os.path.join(first_repre["stagingDir"],
-                                      video_filename)
-        if not os.path.isfile(video_filepath):
-            self.log.debug(
-                f"Video file '{video_filepath}' does not exist."
-                " Skipping collecting of video data."
-            )
-            return {}
+                continue
 
-        video_data = self.get_video_data(video_filepath)
-        return {
-            "frameStart": video_data.frame_start,
-            "frameEnd": video_data.frame_end,
-            "handleStart": 0,
-            "handleEnd": 0,
-            "fps": video_data.fps
-        }
+            extension: str = repre["ext"]
+            if extension not in _VIDEO_EXTENSIONS:
+                self.log.debug(
+                    f"Representation extension '{extension}' is not a video"
+                    " extension. Skipping this representation.")
+                continue
 
-    def get_video_data(self, video_filepath: str) -> VideoData:
+            video_filename = repre["files"]
+            if isinstance(video_filename, list):
+                if len(video_filename) > 1:
+                    self.log.debug(
+                        "More than one video file found in representation."
+                        " Skipping this representation."
+                    )
+                    continue
+                video_filename: str = video_filename[0]
+            video_filepath = os.path.join(repre["stagingDir"],
+                                          video_filename)
+            if not os.path.isfile(video_filepath):
+                self.log.debug(
+                    f"Video file '{video_filepath}' does not exist."
+                    " Skipping this representation."
+                )
+                continue
+
+            video_data = self.get_video_data(video_filepath)
+            if video_data is None:
+                continue
+
+            return {
+                "frameStart": video_data.frame_start,
+                "frameEnd": video_data.frame_end,
+                "handleStart": 0,
+                "handleEnd": 0,
+                "fps": video_data.fps
+            }
+
+        # No valid video representation found
+        return {}
+
+    def get_video_data(self, video_filepath: str) -> VideoData | None:
         """Get video data from a video file.
 
         Args:
             video_filepath (str): video filepath to extract data from
 
         Returns:
-            VideoData: Video data extracted from the video file.
+            VideoData | None: Video data extracted from the video file.
+                If critical video data (fps) is not found, returns None.
         """
         info = get_video_info_metadata(video_filepath, self.log)
         num_frames: int = int(info.get("nb_frames", 0))
         fps: float = info.get("framerate")
-        if not fps:
-            fps = self._get_current_fps_data()
         timecode: Union[str, None] = info.get("timecode")
+
+        # Skip if fps is not available - it's essential for frame calculations
+        if fps is None:
+            self.log.warning(
+                f"Could not extract framerate from '{video_filepath}'."
+                " Skipping collecting of video data."
+            )
+            return None
 
         # TODO: Should this align with the folder/task entity frame start
         #  by default instead?
@@ -274,18 +289,3 @@ class CollectVideoData(pyblish.api.InstancePlugin):
             #width=info["width"],
             #height=info["height"],
         )
-
-    def _get_current_fps_data(self) -> float:
-        """Get the fps data from the current task or folder entity.
-
-        Returns:
-            float: The frames per second (fps) value.
-        """
-        task_entity = get_current_task_entity(fields={"attrib"})
-        task_attributes = task_entity["attrib"]
-        fps = task_attributes.get("fps")
-        if not fps:
-            folder_entity = get_current_folder_entity(fields={"attrib"})
-            folder_attributes = folder_entity["attrib"]
-            fps = folder_attributes.get("fps")
-        return float(fps)
