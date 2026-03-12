@@ -7,10 +7,6 @@ from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
 from ayon_core.lib import get_ffprobe_data, BoolDef
 
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
-from ayon_core.pipeline.context_tools import (
-    get_current_task_entity,
-    get_current_folder_entity
-)
 
 import pyblish.api
 
