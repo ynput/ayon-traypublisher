@@ -201,12 +201,6 @@ class CollectVideoData(pyblish.api.InstancePlugin):
 
         # Iterate through all representations to find a valid video
         for repre in repres:
-            if "name" not in repre:
-                self.log.debug(
-                    "Cannot find file extension in representation data"
-                )
-                continue
-
             extension: str = repre["ext"]
             if extension not in _VIDEO_EXTENSIONS:
                 self.log.debug(
