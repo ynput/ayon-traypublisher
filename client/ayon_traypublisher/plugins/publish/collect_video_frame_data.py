@@ -177,6 +177,16 @@ class CollectVideoData(pyblish.api.InstancePlugin):
     families = ["collect.video.framerange"]
 
     def process(self, instance):
+        if all(
+            key in instance.data 
+            for key in ("frameStart", "frameEnd", "fps")
+        ):
+            self.log.debug(
+                "Skipping video frame range collection because"
+                " instance already has frame range data."
+            )
+            return
+
         frame_data = self.get_frame_data_from_representations(instance)
         if not frame_data:
             return
