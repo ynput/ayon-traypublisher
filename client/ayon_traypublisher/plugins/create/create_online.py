@@ -20,8 +20,8 @@ class OnlineCreator(TrayPublishCreator):
 
     identifier = "io.ayon.creators.traypublisher.online"
     label = "Online"
-    product_type = "online"
     product_base_type = "online"
+    product_type = product_base_type
     description = "Publish file retaining its original file name"
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
                   ".dpx", ".tif", ".png", ".jpg"]
@@ -55,9 +55,17 @@ class OnlineCreator(TrayPublishCreator):
         # Pass pre-create attributes to instance creator attributes
         instance_data["creator_attributes"] = pre_create_data
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         self._store_new_instance(new_instance)
 
     def get_instance_attr_defs(self):

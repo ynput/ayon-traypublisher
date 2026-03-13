@@ -2,6 +2,7 @@ import copy
 import os
 import re
 import collections
+from typing import Any, Optional
 
 import ayon_api
 
@@ -32,22 +33,14 @@ class BatchMovieCreator(TrayPublishCreator):
     """
     identifier = "render_movie_batch"
     label = "Batch Movies"
-    product_type = "render"
     product_base_type = "render"
+    product_type = product_base_type
     description = "Publish batch of video files"
 
     create_allow_context_change = False
     version_regex = re.compile(r"^(.+)_v([0-9]+)$")
     # Position batch creator after simple creators
     order = 110
-
-    def apply_settings(self, project_settings):
-        creator_settings = (
-            project_settings["traypublisher"]["create"]["BatchMovieCreator"]
-        )
-        self.default_variants = creator_settings["default_variants"]
-        self.default_tasks = creator_settings["default_tasks"]
-        self.extensions = creator_settings["extensions"]
 
     def get_icon(self):
         return "fa.file"
@@ -102,7 +95,9 @@ class BatchMovieCreator(TrayPublishCreator):
                         task_entity = task_entities_by_name[_name]
                         task_name = task_entity["name"]
                         break
-
+                product_type = instance_data.get("productType")
+                if not product_type:
+                    product_type = self.product_base_type
                 product_name = self._get_product_name(
                     self.project_name,
                     project_settings,
@@ -110,6 +105,7 @@ class BatchMovieCreator(TrayPublishCreator):
                     folder_entity,
                     task_entity,
                     data["variant"],
+                    product_type,
                 )
 
                 instance_data["folderPath"] = folder_entity["path"]
@@ -117,68 +113,50 @@ class BatchMovieCreator(TrayPublishCreator):
 
                 # Create new instance
                 new_instance = CreatedInstance(
+                    product_base_type=self.product_base_type,
+                    product_type=product_type,
+                    product_name=product_name,
                     data=instance_data,
                     creator=self,
-                    product_type=self.product_base_type,
-                    product_name=product_name,
                 )
                 self._store_new_instance(new_instance)
 
     def _get_product_name(
         self,
-        project_name,
-        project_settings,
-        project_entity,
-        folder_entity,
-        task_entity,
-        variant,
-    ):
+        project_name: str,
+        project_settings: dict[str, Any],
+        project_entity: dict[str, Any],
+        folder_entity: dict[str, Any],
+        task_entity: Optional[dict[str, Any]],
+        variant: str,
+        product_type: str,
+    ) -> str:
         """Create product name according to standard template process"""
-        host_name = self.create_context.host_name
-        get_product_name_kwargs = dict(
+        kwargs = dict(
             project_name=project_name,
-            product_type=self.product_type,
+            project_entity=project_entity,
+            folder_entity=folder_entity,
+            task_entity=task_entity,
+            product_base_type=self.product_base_type,
+            product_type=product_type,
             variant=variant,
-            host_name=host_name,
+            host_name=self.create_context.host_name,
+            project_settings=project_settings,
         )
-        if getattr(get_product_name, "use_entities", False):
-            get_product_name_kwargs.update({
-                "folder_entity": folder_entity,
-                "task_entity": task_entity,
-                "project_entity": project_entity,
-                "project_settings": project_settings,
-                "product_base_type": self.product_base_type,
-            })
-        else:
-            task_name = task_type = None
-            if task_entity:
-                task_name = task_entity["name"]
-                task_type = task_entity["type"]
-            get_product_name_kwargs.update({
-                "task_name": task_name,
-                "task_type": task_type,
-            })
         try:
-            product_name = get_product_name(**get_product_name_kwargs)
+            product_name = get_product_name(**kwargs)
         except TaskNotSetError:
             # Create instance with fake task
             # - instance will be marked as invalid so it can't be published
             #   but user have ability to change it
             # NOTE: This expect that there is not task 'Undefined' on folder
+            kwargs["task_entity"] = {
+                "type": "Undefined",
+                "name": "Undefined",
+                "label": "Undefined",
+            }
 
-            if getattr(get_product_name, "use_entities", False):
-                get_product_name_kwargs["task_entity"] = {
-                    "type": "Undefined",
-                    "name": "Undefined",
-                    "label": "Undefined",
-                }
-            else:
-                get_product_name_kwargs.update({
-                    "task_name": "Undefined",
-                    "task_type": "Undefined",
-                })
-
-            product_name = get_product_name(**get_product_name_kwargs)
+            product_name = get_product_name(**kwargs)
 
         return product_name
 
@@ -209,7 +187,7 @@ class BatchMovieCreator(TrayPublishCreator):
             )
         ]
 
-    def get_detail_description(self):
+    def get_detail_description(self) -> str:
         return """# Publish batch of .mov to multiple folders.
 
         File names must then contain only folder name, or folder name + version.

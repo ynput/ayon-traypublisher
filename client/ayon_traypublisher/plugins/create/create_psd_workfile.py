@@ -23,8 +23,8 @@ class PSDWorkfileCreator(TrayPublishCreator):
     description = (
         "Creates additional image publish instances for provided workfile."
     )
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     settings_category = "traypublisher"
 
     default_variants = ["Main"]
@@ -54,7 +54,11 @@ class PSDWorkfileCreator(TrayPublishCreator):
         instance_data["default_variants"] = self.default_variants
 
         workfile_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_base_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
 
         self._store_new_instance(workfile_instance)
@@ -69,7 +73,7 @@ class PSDWorkfileCreator(TrayPublishCreator):
         if not image_creator:
             raise CreatorError("Image creator not found")
 
-        image_creator.create(None, instance_data)
+        image_creator.create(instance_data)
 
     def _get_hidden_creator(self, identifier):
         creator = self.create_context.creators.get(identifier)
@@ -115,10 +119,10 @@ class ImageComboCreator(HiddenTrayPublishCreator):
     identifier = "io.ayon.creators.traypublisher.psd_workfile_image.image"
     label = "Image"
     host_name = "traypublisher"
-    product_type = "image"
     product_base_type = "image"
+    product_type = product_base_type
 
-    def create(self, _product_name, instance_data):
+    def create(self, instance_data):
         project_entity = self.create_context.get_current_project_entity()
         folder_path: str = instance_data["folderPath"]
         task_name: Optional[str] = instance_data.get("task")
@@ -135,17 +139,23 @@ class ImageComboCreator(HiddenTrayPublishCreator):
             instance_data.get("variant") or
             next(iter(instance_data["default_variants"]), None)
         )
-
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         product_name = self.get_product_name(
             project_name=project_name,
             project_entity=project_entity,
             folder_entity=folder_entity,
             task_entity=task_entity,
+            variant=variant,
             host_name=host_name,
-            variant=variant
         )
         new_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_type=product_type,
+            product_base_type=self.product_base_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
 
         self._store_new_instance(new_instance)

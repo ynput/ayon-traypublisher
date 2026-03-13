@@ -1,4 +1,5 @@
 from pydantic import validator
+
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
@@ -7,6 +8,19 @@ from ayon_server.settings import (
 )
 from ayon_server.settings.validators import ensure_unique_names
 from ayon_server.exceptions import BadRequestException
+
+
+class ProductTypeItemModel(BaseSettingsModel):
+    _layout = "compact"
+    product_type: str = SettingsField(
+        title="Product type",
+        description="Product type name",
+    )
+    label: str = SettingsField(
+        "",
+        title="Label",
+        description="Label to display in UI for the product type",
+    )
 
 
 class BatchMovieCreatorPlugin(BaseSettingsModel):
@@ -199,7 +213,7 @@ class FolderCreationConfigModel(BaseSettingsModel):
 class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
     """Creates the workfile and image publish instances together.
 
-    For .psd which could be both workfile and image product type.
+    For .psd which could be both workfile and image product base type.
     """
     enabled: bool = SettingsField(
         title="Enabled",
@@ -262,6 +276,13 @@ class TextureCreatorPluginModel(BaseSettingsModel):
         default_factory=list,
         description=(
             "List of file extensions that are allowed as textures."
+        )
+    )
+    product_type_items: list[ProductTypeItemModel] = SettingsField(
+        default_factory=list,
+        title="Product type items",
+        description=(
+            "Optional list of product types that this plugin can create."
         )
     )
 
