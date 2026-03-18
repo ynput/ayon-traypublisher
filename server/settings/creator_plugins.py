@@ -32,14 +32,16 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
         title="Default variants",
         default_factory=list
     )
-
     default_tasks: list[str] = SettingsField(
         title="Default tasks",
         default_factory=list
     )
-
     extensions: list[str] = SettingsField(
         title="Extensions",
+        default_factory=list
+    )
+    product_types: list[str] = SettingsField(
+        title="Product types",
         default_factory=list
     )
 
@@ -311,10 +313,11 @@ DEFAULT_CREATORS = {
         "default_variants": ["Main"],
         "default_tasks": ["Compositing"],
         "extensions": [".mov"],
+        "product_types": [],
     },
     "PSDWorkfileCreator": {
         "enabled": False,
-        "default_variants": ["Main"]
+        "default_variants": ["Main"],
     },
     "IngestCSV": {
         "enabled": True,

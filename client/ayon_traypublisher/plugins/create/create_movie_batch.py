@@ -9,6 +9,7 @@ import ayon_api
 from ayon_core.lib import (
     FileDef,
     BoolDef,
+    EnumDef,
 )
 from ayon_core.pipeline import (
     CreatedInstance,
@@ -41,6 +42,7 @@ class BatchMovieCreator(TrayPublishCreator):
     version_regex = re.compile(r"^(.+)_v([0-9]+)$")
     # Position batch creator after simple creators
     order = 110
+    product_types = []
 
     def get_icon(self):
         return "fa.file"
@@ -170,6 +172,10 @@ class BatchMovieCreator(TrayPublishCreator):
         ]
 
     def get_pre_create_attr_defs(self):
+        product_types = self.product_types
+        if not product_types:
+            product_types = ["render"]
+
         # Use same attributes as for instance attributes
         return [
             FileDef(
@@ -184,7 +190,12 @@ class BatchMovieCreator(TrayPublishCreator):
                 "add_review_family",
                 default=True,
                 label="Review"
-            )
+            ),
+            EnumDef(
+                "product_type",
+                items=product_types,
+                label="Product type",
+            ),
         ]
 
     def get_detail_description(self) -> str:
