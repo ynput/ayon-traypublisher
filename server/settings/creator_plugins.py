@@ -223,7 +223,15 @@ class PSDWorkfileCreatorPluginModel(BaseSettingsModel):
     )
     default_variants: list[str] = SettingsField(
         title="Default variants",
-        default_factory=list
+        default_factory=list,
+    )
+    workfile_product_types: list[str] = SettingsField(
+        title="Workfile product types",
+        default_factory=list,
+    )
+    image_product_types: list[str] = SettingsField(
+        title="Image  product types",
+        default_factory=list,
     )
 
 
@@ -318,6 +326,8 @@ DEFAULT_CREATORS = {
     "PSDWorkfileCreator": {
         "enabled": False,
         "default_variants": ["Main"],
+        "workfile_product_types": [],
+        "image_product_types": [],
     },
     "IngestCSV": {
         "enabled": True,
