@@ -120,6 +120,12 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
         return new_instance
 
+    def collect_instances(self):
+        super().collect_instances()
+        for instance in self.create_context.instances:
+            if instance.creator_identifier == self.identifier:
+                instance.transient_data["has_promised_context"] = True
+
     def get_attr_defs_for_instance(self, instance):
         parent_instance = instance.creator_attributes.get("parent_instance")
         return [
@@ -603,6 +609,7 @@ or updating already created. Publishing will create OTIO file.
                 "instance_label": label,
                 "instance_id": c_instance.data["instance_id"]
             })
+            c_instance.transient_data["has_promised_context"] = True
         else:
             # add review family if defined
             instance_data.update({
@@ -619,6 +626,7 @@ or updating already created. Publishing will create OTIO file.
                 creator_identifier]
             c_instance = editorial_clip_creator.create(
                 instance_data)
+            c_instance.transient_data["has_promised_context"] = True
 
         return c_instance
 
@@ -741,8 +749,9 @@ or updating already created. Publishing will create OTIO file.
         }
         # update base instance data with context data
         # and also update creator attributes with context data
-        creator_attributes["folderPath"] = shot_metadata.pop("folderPath")
-        base_instance_data["folderPath"] = parent_folder_path
+        shot_target_folder_path = shot_metadata.pop("folderPath")
+        creator_attributes["folderPath"] = shot_target_folder_path
+        base_instance_data["folderPath"] = shot_target_folder_path
 
         # add creator attributes to shared instance data
         base_instance_data["creator_attributes"] = creator_attributes
