@@ -254,7 +254,7 @@ or updating already created. Publishing will create OTIO file.
 
         product_base_types = {
             item["product_base_type"]
-            for item in self.productbase_type_presets
+            for item in self.product_base_type_presets
         }
         clip_instance_properties = {
             k: v
