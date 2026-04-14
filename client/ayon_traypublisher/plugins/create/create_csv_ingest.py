@@ -198,12 +198,13 @@ class ProductItem:
     @property
     def unique_name(self) -> str:
         if self._unique_name is None:
+            product_part = (
+                f"{self.variant}{self.product_base_type}{self.version}"
+            )
             self._unique_name = "/".join([
                 self.folder_path,
                 self.task_name,
-                f"{self.variant}{self.product_type}{self.version}".replace(
-                    " ", ""
-                ).lower()
+                product_part.replace(" ", "").lower()
             ])
         return self._unique_name
 
@@ -212,7 +213,7 @@ class ProductItem:
         if self._pre_product_name is None:
             self._pre_product_name = (
                 f"{self.task_name}{self.variant}"
-                f"{self.product_type}{self.version}"
+                f"{self.product_base_type}{self.version}"
             ).replace(" ", "").lower()
         return self._pre_product_name
 
@@ -261,8 +262,8 @@ class IngestCSV(TrayPublishCreator):
     icon = "fa.file"
 
     label = "CSV Ingest"
-    product_type = "csv_ingest_file"
     product_base_type = "csv_ingest_file"
+    product_type = product_base_type
     identifier = "io.ayon.creators.traypublisher.csv_ingest"
 
     default_variants = ["Main"]
@@ -415,7 +416,7 @@ configuration in project settings.
 
         csv_instance = CreatedInstance(
             product_base_type=self.product_base_type,
-            product_type=self.product_type,
+            product_type=self.product_base_type,
             product_name=product_name,
             data=instance_data,
             creator=self
