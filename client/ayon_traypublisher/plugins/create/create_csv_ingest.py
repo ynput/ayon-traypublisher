@@ -664,7 +664,7 @@ configuration in project settings.
             else:
                 product_item.task_type = task_entity["taskType"]
 
-        if missing_tasks and not folder_creation_config["enabled"]:
+        if not folder_creation_config["enabled"] and missing_tasks:
             ending = "" if len(missing_tasks) == 1 else "s"
             joined_paths = "\n".join(sorted(missing_tasks))
             raise CreatorError(
