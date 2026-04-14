@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 """Package declaring AYON addon 'traypublisher' version."""
-__version__ = "0.3.13+dev"
+__version__ = "0.4.0"
