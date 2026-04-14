@@ -11,7 +11,7 @@ class CollectShotInstance(pyblish.api.InstancePlugin):
     """
 
     label = "Collect Shot Instances"
-    order = pyblish.api.CollectorOrder - 0.09
+    order = pyblish.api.CollectorOrder - 0.45
 
     hosts = ["traypublisher"]
     families = ["shot"]
