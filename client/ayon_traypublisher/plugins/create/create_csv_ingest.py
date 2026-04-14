@@ -667,10 +667,11 @@ configuration in project settings.
             )
             if task_entity is None:
                 missing_tasks.add(f"{folder_path}/{task_name}")
+                product_item.has_promised_context = True
             else:
                 product_item.task_type = task_entity["taskType"]
 
-        if missing_tasks:
+        if not folder_creation_config["enabled"] and missing_tasks:
             ending = "" if len(missing_tasks) == 1 else "s"
             joined_paths = "\n".join(sorted(missing_tasks))
             raise CreatorError(
