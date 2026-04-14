@@ -8,7 +8,7 @@ class CollectEditorialInstance(pyblish.api.InstancePlugin):
     """Collect data for instances created by settings creators."""
 
     label = "Collect Editorial Instances"
-    order = pyblish.api.CollectorOrder - 0.1
+    order = pyblish.api.CollectorOrder - 0.46
 
     hosts = ["traypublisher"]
     families = ["editorial"]

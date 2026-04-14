@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import copy
 import inspect
 from typing import Optional
 
-from ayon_core.lib import FileDef, BoolDef
+from ayon_core.lib import FileDef, BoolDef, EnumDef
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError,
@@ -23,11 +24,13 @@ class PSDWorkfileCreator(TrayPublishCreator):
     description = (
         "Creates additional image publish instances for provided workfile."
     )
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     settings_category = "traypublisher"
 
     default_variants = ["Main"]
+    workfile_product_types = []
+    image_product_types = []
 
     def get_detail_description(self):
         return inspect.cleandoc("""# Workfile + Image
@@ -51,25 +54,39 @@ class PSDWorkfileCreator(TrayPublishCreator):
             "filepath": repr_file,
         }
 
+        workfile_product_type = pre_create_data.get("workfile_product_type")
+        if not workfile_product_type:
+            workfile_product_type = "workfile"
+        image_product_type = pre_create_data.get("image_product_type")
+        if not image_product_type:
+            image_product_type = "image"
+
         instance_data["default_variants"] = self.default_variants
 
         workfile_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=workfile_product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
 
         self._store_new_instance(workfile_instance)
 
-        add_review_family = pre_create_data.get("add_review_family", False)
-        instance_data["creator_attributes"]["add_review_family"] = (
-            add_review_family
-        )
         image_creator = self._get_hidden_creator(
             "io.ayon.creators.traypublisher.psd_workfile_image.image"
         )
         if not image_creator:
             raise CreatorError("Image creator not found")
 
-        image_creator.create(None, instance_data)
+        add_review_family = pre_create_data.get("add_review_family", False)
+        image_instance_data = copy.deepcopy(instance_data)
+        image_instance_data["creator_attributes"]["add_review_family"] = (
+            add_review_family
+        )
+        image_instance_data["productType"] = image_product_type
+
+        image_creator.create(image_instance_data)
 
     def _get_hidden_creator(self, identifier):
         creator = self.create_context.creators.get(identifier)
@@ -80,6 +97,13 @@ class PSDWorkfileCreator(TrayPublishCreator):
         return creator
 
     def get_pre_create_attr_defs(self):
+        workfile_product_types = self.workfile_product_types
+        image_product_types = self.image_product_types
+        if not workfile_product_types:
+            workfile_product_types = ["workfile"]
+        if not image_product_types:
+            image_product_types = ["image"]
+
         return [
             FileDef(
                 "filepath",
@@ -93,6 +117,16 @@ class PSDWorkfileCreator(TrayPublishCreator):
                 "add_review_family",
                 default=True,
                 label="Review"
+            ),
+            EnumDef(
+                "workfile_product_type",
+                label="Workfile product type",
+                items=workfile_product_types,
+            ),
+            EnumDef(
+                "image_product_type",
+                label="Image product type",
+                items=image_product_types,
             ),
         ]
 
@@ -115,10 +149,10 @@ class ImageComboCreator(HiddenTrayPublishCreator):
     identifier = "io.ayon.creators.traypublisher.psd_workfile_image.image"
     label = "Image"
     host_name = "traypublisher"
-    product_type = "image"
     product_base_type = "image"
+    product_type = product_base_type
 
-    def create(self, _product_name, instance_data):
+    def create(self, instance_data):
         project_entity = self.create_context.get_current_project_entity()
         folder_path: str = instance_data["folderPath"]
         task_name: Optional[str] = instance_data.get("task")
@@ -135,17 +169,23 @@ class ImageComboCreator(HiddenTrayPublishCreator):
             instance_data.get("variant") or
             next(iter(instance_data["default_variants"]), None)
         )
-
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         product_name = self.get_product_name(
             project_name=project_name,
             project_entity=project_entity,
             folder_entity=folder_entity,
             task_entity=task_entity,
+            variant=variant,
             host_name=host_name,
-            variant=variant
         )
         new_instance = CreatedInstance(
-            self.product_type, product_name, instance_data, self
+            product_type=product_type,
+            product_base_type=self.product_base_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
         )
 
         self._store_new_instance(new_instance)

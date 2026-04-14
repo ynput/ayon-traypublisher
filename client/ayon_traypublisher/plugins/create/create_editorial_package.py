@@ -16,14 +16,14 @@ class EditorialPackageCreator(TrayPublishCreator):
     """Creates instance for OTIO file from published folder.
 
     Folder contains OTIO file and exported .mov files. Process should publish
-    whole folder as single `editorial_pkg` product type and (possibly) convert
-    .mov files into different format and copy them into `publish` `resources`
-    subfolder.
+    whole folder as single `editorial_pkg` product base type and (possibly)
+    convert     .mov files into different format and copy them into `publish`
+    `resources` subfolder.
     """
     identifier = "editorial_pkg"
     label = "Editorial package"
-    product_type = "editorial_pkg"
     product_base_type = "editorial_pkg"
+    product_type = product_base_type
     description = "Publish folder with OTIO file and resources"
 
     # Position batch creator after simple creators
@@ -53,9 +53,17 @@ class EditorialPackageCreator(TrayPublishCreator):
             "conversion_enabled": pre_create_data["conversion_enabled"]
         }
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         self._store_new_instance(new_instance)
 
     def get_pre_create_attr_defs(self):
@@ -91,7 +99,7 @@ class EditorialPackageCreator(TrayPublishCreator):
         return """# Publish folder with OTIO file and video clips
 
         Folder contains OTIO file and exported .mov files. Process should
-        publish whole folder as single `editorial_pkg` product type and
+        publish whole folder as single `editorial_pkg` product base type and
         (possibly) convert .mov files into different format and copy them into
         `publish` `resources` subfolder.
         """

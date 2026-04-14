@@ -113,6 +113,15 @@ class SettingsCreator(TrayPublishCreator):
 
     skip_discovery = True
 
+    def apply_settings(self, project_settings):
+        # Ignore apply settings, only convert product type items
+        self.product_type_items = self._convert_product_type_items(
+            self.product_type_items
+        )
+        for item in self.product_type_items:
+            if not item.label and self.label:
+                item.label = f"{self.label} ({item.product_type})"
+
     def create(self, product_name, data, pre_create_data):
         # Pass precreate data to creator attributes
         thumbnail_path = pre_create_data.pop(PRE_CREATE_THUMBNAIL_KEY, None)
@@ -131,9 +140,16 @@ class SettingsCreator(TrayPublishCreator):
         data["creator_attributes"] = pre_create_data
         data["settings_creator"] = True
 
+        product_type = data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         # Create new instance
         new_instance = CreatedInstance(
-            self.product_type, product_name, data, self
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=data,
+            creator=self,
         )
 
         self._store_new_instance(new_instance)
@@ -320,18 +336,19 @@ class SettingsCreator(TrayPublishCreator):
     @classmethod
     def from_settings(cls, item_data):
         identifier = item_data["identifier"]
-        product_type = item_data["product_type"]
+        product_base_type = item_data["product_base_type"]
         if not identifier:
-            identifier = f"settings_{product_type}"
+            identifier = f"settings_{product_base_type}"
         return type(
             f"{cls.__name__}{identifier}",
             (cls, ),
             {
-                "product_base_type": product_type,
-                "product_type": product_type,
+                "product_base_type": product_base_type,
+                "product_type": product_base_type,
                 "identifier": identifier,
                 "label": item_data["label"].strip(),
                 "icon": item_data["icon"],
+                "product_type_items": item_data["product_type_items"],
                 "description": item_data["description"],
                 "detailed_description": item_data["detailed_description"],
                 "extensions": item_data["extensions"],

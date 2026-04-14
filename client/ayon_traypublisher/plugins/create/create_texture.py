@@ -26,8 +26,8 @@ class TextureCreator(TrayPublishCreator):
 
     identifier = "io.ayon.creators.traypublisher.texture"
     label = "Texture"
-    product_type = "texture"
     product_base_type = "texture"
+    product_type = product_base_type
     icon = "fa.file"
     description = "Texture files or UDIM sequences"
 
@@ -174,8 +174,16 @@ class TextureCreator(TrayPublishCreator):
         instance_data.setdefault("families", []).append("texture_creator")
 
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
+        new_instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         self._store_new_instance(new_instance)
 
     def _get_udim_attr_def(self) -> BoolDef:
