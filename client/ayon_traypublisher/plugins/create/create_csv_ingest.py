@@ -289,6 +289,12 @@ configuration in project settings.
             )
         ]
 
+    def collect_instances(self):
+        super().collect_instances()
+        for instance in self.create_context.instances:
+            if instance.creator_identifier == self.identifier:
+                instance.transient_data["has_promised_context"] = True
+
     def get_pre_create_attr_defs(self):
         """Creating pre-create attributes at creator plugin.
 
