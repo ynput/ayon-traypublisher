@@ -7,12 +7,15 @@ exists under selected folder.
 """
 from pathlib import Path
 
-from ayon_core.lib.attribute_definitions import FileDef, BoolDef
+from ayon_core.lib.attribute_definitions import FileDef
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError
 )
-from ayon_traypublisher.api.plugin import TrayPublishCreator
+from ayon_traypublisher.api.plugin import (
+    TrayPublishCreator,
+    REVIEW_EXTENSIONS
+)
 
 
 class OnlineCreator(TrayPublishCreator):
@@ -81,10 +84,14 @@ class OnlineCreator(TrayPublishCreator):
                 single_item=True,
                 label="Representation",
             ),
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=REVIEW_EXTENSIONS,
+                allow_sequences=True,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item"
             )
         ]
 
