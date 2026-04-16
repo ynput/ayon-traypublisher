@@ -42,7 +42,7 @@ class OnlineCreator(TrayPublishCreator):
         return "fa.file"
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("representation_file")
+        repr_file = pre_create_data.get("representation_files")
         if not repr_file:
             raise CreatorError("No files specified")
 
