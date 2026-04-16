@@ -77,7 +77,7 @@ class OnlineCreator(TrayPublishCreator):
     def get_pre_create_attr_defs(self):
         return [
             FileDef(
-                "representation_file",
+                "representation_files",
                 folders=False,
                 extensions=self.extensions,
                 allow_sequences=True,

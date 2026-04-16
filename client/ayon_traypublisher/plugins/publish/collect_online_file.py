@@ -14,8 +14,3 @@ class CollectOnlineFile(pyblish.api.InstancePlugin):
             return
 
         instance.data["families"].append("simple.instance")
-
-        creator_attributes = instance.data["creator_attributes"]
-        filepath_item = creator_attributes.pop("representation_file")
-        # Pass the item as 'representation_files' for simple instances collector
-        creator_attributes["representation_files"] = [filepath_item]
