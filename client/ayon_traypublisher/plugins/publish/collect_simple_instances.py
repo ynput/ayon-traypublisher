@@ -23,7 +23,7 @@ class CollectSettingsSimpleInstances(pyblish.api.ContextPlugin):
 
     def process(self, context):
         for instance in context:
-            if instance.data.get("setting_creator"):
+            if instance.data.get("settings_creator"):
                 instance.data["families"].append("simple.instance")
 
 
