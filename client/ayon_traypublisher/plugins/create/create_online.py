@@ -7,12 +7,15 @@ exists under selected folder.
 """
 from pathlib import Path
 
-from ayon_core.lib.attribute_definitions import FileDef, BoolDef
+from ayon_core.lib.attribute_definitions import FileDef
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError
 )
-from ayon_traypublisher.api.plugin import TrayPublishCreator
+from ayon_traypublisher.api.plugin import (
+    TrayPublishCreator,
+    REVIEW_EXTENSIONS
+)
 
 
 class OnlineCreator(TrayPublishCreator):
@@ -39,7 +42,7 @@ class OnlineCreator(TrayPublishCreator):
         return "fa.file"
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("representation_file")
+        repr_file = pre_create_data.get("representation_files")
         if not repr_file:
             raise CreatorError("No files specified")
 
@@ -74,17 +77,21 @@ class OnlineCreator(TrayPublishCreator):
     def get_pre_create_attr_defs(self):
         return [
             FileDef(
-                "representation_file",
+                "representation_files",
                 folders=False,
                 extensions=self.extensions,
                 allow_sequences=True,
                 single_item=True,
                 label="Representation",
             ),
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=REVIEW_EXTENSIONS,
+                allow_sequences=True,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item"
             )
         ]
 
