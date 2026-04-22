@@ -15,10 +15,15 @@ from ayon_core.resources import get_ayon_icon_filepath
 from ayon_core.lib import AYONSettingsRegistry
 from ayon_core.lib.events import QueuedEventSystem
 from ayon_core.tools.common_models import ProjectsModel
-from ayon_core.tools.utils import PlaceholderLineEdit
+from ayon_core.tools.utils import ProjectsWidget, PlaceholderLineEdit
 
-from .projects_widget import TrayPublisherProjectsWidget
 from .bundles_info import BundlesInfo
+
+
+class TrayPublisherProjectsWidget(ProjectsWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._projects_view.setObjectName("ChooseProjectView")
 
 
 class ChooseProjectController:
