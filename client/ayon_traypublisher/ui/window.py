@@ -167,6 +167,7 @@ class ChooseProjectWindow(QtWidgets.QDialog):
         main_layout.addWidget(content_widget, 1)
 
         projects_widget.double_clicked.connect(self._on_double_click)
+        projects_widget.refreshed.connect(self._on_refresh)
         confirm_btn.clicked.connect(self._on_confirm_click)
         cancel_btn.clicked.connect(self._on_cancel_click)
         txt_filter.textChanged.connect(self._on_text_changed)
@@ -197,6 +198,7 @@ class ChooseProjectWindow(QtWidgets.QDialog):
     def _refresh_projects(self):
         self._projects_widget.refresh()
 
+    def _on_refresh(self):
         project_name = self._controller.get_last_user_project_name()
         if project_name:
             self._projects_widget.set_selected_project(project_name)
