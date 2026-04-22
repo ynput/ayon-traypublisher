@@ -21,11 +21,6 @@ from .projects_widget import TrayPublisherProjectsWidget
 from .bundles_info import BundlesInfo
 
 
-class TrayPublisherRegistry(AYONSettingsRegistry):
-    def __init__(self):
-        super().__init__("traypublisher")
-
-
 class ChooseProjectController:
     def __init__(self):
         self._event_system = QueuedEventSystem()
