@@ -6,6 +6,7 @@ from ayon_core.tools.utils import (
 )
 
 class TrayPublisherProjectsWidget(QtWidgets.QWidget):
+    refreshed = QtCore.Signal()
     double_clicked = QtCore.Signal()
 
     def __init__(self, controller, parent):
@@ -28,6 +29,9 @@ class TrayPublisherProjectsWidget(QtWidgets.QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(projects_view, 1)
 
+        if hasattr(projects_model, "refreshed"):
+            projects_model.refreshed.connect(self.refreshed)
+
         self._projects_view = projects_view
         self._projects_model = projects_model
         self._projects_proxy = projects_proxy
@@ -38,6 +42,8 @@ class TrayPublisherProjectsWidget(QtWidgets.QWidget):
         self._projects_model.refresh()
         # Sort projects after refresh
         self._projects_proxy.sort(0)
+        if not hasattr(self._projects_model, "refreshed"):
+            self.refreshed.emit()
 
     def set_name_filter(self, text):
         self._projects_proxy.setFilterFixedString(text)
