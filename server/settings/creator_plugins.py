@@ -80,6 +80,10 @@ class ColumnItemModel(BaseSettingsModel):
 
 class ColumnConfigModel(BaseSettingsModel):
     """Column configuration model"""
+    prevalidate_with_report_output: bool = SettingsField(
+        title="Prevalidate with Report",
+        default=False
+    )
 
     csv_delimiter: str = SettingsField(
         title="CSV delimiter",
@@ -335,6 +339,7 @@ DEFAULT_CREATORS = {
             {
                 "name": "Default",
                 "columns_config": {
+                    "prevalidate_with_report_output": False,
                     "csv_delimiter": ",",
                     "columns": [
                         {

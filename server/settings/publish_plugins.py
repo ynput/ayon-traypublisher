@@ -56,7 +56,26 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
     )
 
 
+def _csv_prevalidators_enum() -> list:
+    return [
+        {"label": "Duplicate versions", "value": "duplicate_versions"},
+        {"label": "Missing colorspace", "value": "missing_colorspace"}
+    ]
+
+
+class CollectCSVIngestPrevalidationReportModel(BaseSettingsModel):
+    validators: list[str] = SettingsField(
+        default_factory=list,
+        title="Validators",
+        enum_resolver=_csv_prevalidators_enum,
+    )
+
+
 class TrayPublisherPublishPlugins(BaseSettingsModel):
+    CollectCSVIngestPrevalidationReport: CollectCSVIngestPrevalidationReportModel = SettingsField(  # noqa
+        default_factory=CollectCSVIngestPrevalidationReportModel,
+        title="Collect CSV Ingest Prevalidation Report",
+    )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect Original Sequence Frame Data",
@@ -79,6 +98,9 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
+    "CollectCSVIngestPrevalidationReport": {
+        "validators": ["duplicate_versions"]
+    },
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
