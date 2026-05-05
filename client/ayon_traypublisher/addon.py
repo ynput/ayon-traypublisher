@@ -96,6 +96,11 @@ class TrayPublishAddon(
             type=str,
             required=True
         ).option(
+            "--preset-name",
+            help="Name of the preset to use for the CSV ingest",
+            type=str,
+            required=True
+        ).option(
             "--project",
             help="Project name in which the context will be used",
             type=str,
@@ -172,6 +177,7 @@ class TrayPublishAddon(
     def _cli_ingest_csv(
         self,
         filepath,
+        preset_name,
         project,
         folder_path,
         task,
@@ -192,12 +198,16 @@ class TrayPublishAddon(
             if con.is_service_user():
                 con.set_default_service_username(username)
 
+        if not preset_name:
+            raise ValueError("preset_name is required")
+
         # use Path to check if csv_filepath exists
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File {filepath} does not exist.")
 
         csvpublish(
             filepath,
+            preset_name,
             project,
             folder_path,
             task,
