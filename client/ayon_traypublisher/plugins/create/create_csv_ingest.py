@@ -668,6 +668,12 @@ configuration in project settings.
             if task_entity is None:
                 missing_tasks.add(f"{folder_path}/{task_name}")
                 product_item.has_promised_context = True
+                product_item.task_type = None
+                product_item.parents = self._compute_parents_data(
+                    project_name,
+                    product_item,
+                    preset_data,
+                )
             else:
                 product_item.task_type = task_entity["taskType"]
 
