@@ -58,15 +58,14 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 def _csv_prevalidators_enum() -> list:
     return [
-        {"label": "Duplicate versions", "value": "duplicate_versions"},
-        {"label": "Missing colorspace", "value": "missing_colorspace"}
+        {"label": "Duplicate versions", "value": "duplicate_versions"}
     ]
 
 
 class CollectCSVIngestPrevalidationReportModel(BaseSettingsModel):
     validators: list[str] = SettingsField(
         default_factory=list,
-        title="Validators",
+        title="Prevalidators",
         enum_resolver=_csv_prevalidators_enum,
     )
 
