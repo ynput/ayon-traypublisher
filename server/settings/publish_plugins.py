@@ -56,24 +56,9 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
     )
 
 
-def _csv_prevalidators_enum() -> list:
-    return [
-        {"label": "Existing versions", "value": "existing_versions"},
-        {"label": "Wrong framerange", "value": "wrong_framerange"}
-    ]
-
-
-class CollectCSVIngestPrevalidationReportModel(BaseSettingsModel):
-    validators: list[str] = SettingsField(
-        default_factory=list,
-        title="Prevalidators",
-        enum_resolver=_csv_prevalidators_enum,
-    )
-
-
 class TrayPublisherPublishPlugins(BaseSettingsModel):
-    CollectCSVIngestPrevalidationReport: CollectCSVIngestPrevalidationReportModel = SettingsField(  # noqa
-        default_factory=CollectCSVIngestPrevalidationReportModel,
+    CollectCSVIngestPrevalidationReport: ValidatePluginModel = SettingsField(
+        default_factory=ValidatePluginModel,
         title="Collect CSV Ingest Prevalidation Report",
     )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
@@ -99,7 +84,9 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 DEFAULT_PUBLISH_PLUGINS = {
     "CollectCSVIngestPrevalidationReport": {
-        "validators": ["existing_versions", "wrong_framerange"]
+        "enabled": True,
+        "optional": True,
+        "active": True
     },
     "CollectSequenceFrameData": {
         "enabled": True,
