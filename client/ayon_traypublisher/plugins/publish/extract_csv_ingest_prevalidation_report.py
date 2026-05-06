@@ -39,8 +39,8 @@ class ExtractCSVPrevalidationReport(publish.Extractor):
                 # write rows into a simple text file as markdown
                 f.write("## {}\n".format(label))
                 for row in rows:
-                    f.write(", ".join(row) + "\n")
-                f.write("\n")
+                    f.write("- " + row + "\n")
+                f.write("\n\n")
 
 
         self.log.info("CSV report saved: {}".format(csv_report_filepath))

@@ -48,8 +48,8 @@ class ExtractEditorialPckgOutputDefModel(BaseSettingsModel):
 
 class ExtractEditorialPckgConversionModel(BaseSettingsModel):
     """Set output definition if resource files should be converted."""
-    conversion_enabled: bool = SettingsField(True,
-                                             title="Conversion enabled")
+    conversion_enabled: bool = SettingsField(
+        True, title="Conversion enabled")
     output: ExtractEditorialPckgOutputDefModel = SettingsField(
         default_factory=ExtractEditorialPckgOutputDefModel,
         title="Output Definitions",
@@ -58,7 +58,8 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 def _csv_prevalidators_enum() -> list:
     return [
-        {"label": "Duplicate versions", "value": "duplicate_versions"}
+        {"label": "Existing versions", "value": "existing_versions"},
+        {"label": "Wrong framerange", "value": "wrong_framerange"}
     ]
 
 
@@ -98,7 +99,7 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 DEFAULT_PUBLISH_PLUGINS = {
     "CollectCSVIngestPrevalidationReport": {
-        "validators": ["duplicate_versions"]
+        "validators": ["existing_versions", "wrong_framerange"]
     },
     "CollectSequenceFrameData": {
         "enabled": True,
