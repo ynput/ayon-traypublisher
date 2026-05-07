@@ -12,7 +12,7 @@ from ayon_traypublisher.api import TrayPublisherHost
 
 def csvpublish(
     filepath,
-    preset_name,
+    preset,
     project_name,
     folder_path,
     task_name=None,
@@ -22,7 +22,7 @@ def csvpublish(
 
     Args:
         filepath (str): Path to CSV file.
-        preset_name (str): Name of the preset to use.
+        preset (str): Name of the preset to use.
         project_name (str): Project name.
         folder_path (str): Folder path.
         task_name (Optional[str]): Task name.
@@ -39,7 +39,7 @@ def csvpublish(
     file_field = FileDefItem.from_paths([filepath], False).pop().to_dict()
     precreate_data = {
         "csv_filepath_data": file_field,
-        "preset": preset_name,
+        "preset": preset,
     }
 
     # create context initialization
