@@ -9,8 +9,26 @@ from ayon_core.lib import transcoding
 from ayon_core.pipeline import PublishError
 
 
-class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
-    """Collect data for instances created by settings creators.
+class CollectSettingsSimpleInstances(pyblish.api.ContextPlugin):
+    """Mark instances created by settings creators with the simple.instance family.
+
+    This context plugin identifies instances that were created by settings
+    creators and tags them with the "simple.instance" family for further
+    processing by downstream plugins.
+    """
+
+    label = "Collect Settings Simple Instances"
+    order = pyblish.api.CollectorOrder - 0.495
+    hosts = ["traypublisher"]
+
+    def process(self, context):
+        for instance in context:
+            if instance.data.get("settings_creator"):
+                instance.data["families"].append("simple.instance")
+
+
+class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
+    """Collect data for instances which have "simple.instance" as families.
 
     Plugin create representations for simple instances based
     on 'representation_files' attribute stored on instance data.
@@ -31,15 +49,12 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
     each created representation has it's own staging dir.
     """
 
-    label = "Collect Settings Simple Instances"
+    label = "Collect Simple Instance Representations"
     order = pyblish.api.CollectorOrder - 0.49
-
+    families = ["simple.instance"]
     hosts = ["traypublisher"]
 
     def process(self, instance):
-        if not instance.data.get("settings_creator"):
-            return
-
         instance_label = instance.data["name"]
         # Create instance's staging dir in temp
         tmp_folder = tempfile.mkdtemp(prefix="traypublisher_")

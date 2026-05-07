@@ -1,11 +1,19 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
+from .creator_plugins import ProductTypeItemModel
+
 
 class SimpleCreatorPlugin(BaseSettingsModel):
     _layout = "expanded"
-    product_type: str = SettingsField("", title="Product type")
-    # TODO add placeholder
-    identifier: str = SettingsField("", title="Identifier")
+    product_base_type: str = SettingsField(
+        "", title="Product base type"
+    )
+    identifier: str = SettingsField(
+        "",
+        title="Identifier",
+        description="Product base type is used if not filled",
+        placeholder="Use product base type name (Must be unique)",
+    )
     label: str = SettingsField("", title="Label")
     icon: str = SettingsField("", title="Icon")
     default_variants: list[str] = SettingsField(
@@ -38,12 +46,20 @@ class SimpleCreatorPlugin(BaseSettingsModel):
         default_factory=list,
         title="Extensions"
     )
+    product_type_items: list[ProductTypeItemModel] = SettingsField(
+        default_factory=list,
+        title="Product type items",
+        description=(
+            "Optional list of product types that this plugin can create."
+        )
+    )
 
 
 DEFAULT_SIMPLE_CREATORS = [
     {
-        "product_type": "workfile",
+        "product_base_type": "workfile",
         "identifier": "",
+        "product_type_items": [],
         "label": "Workfile",
         "icon": "fa.file",
         "default_variants": [
@@ -76,8 +92,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "model",
+        "product_base_type": "model",
         "identifier": "",
+        "product_type_items": [],
         "label": "Model",
         "icon": "fa.cubes",
         "default_variants": [
@@ -104,8 +121,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "pointcache",
+        "product_base_type": "pointcache",
         "identifier": "",
+        "product_type_items": [],
         "label": "Pointcache",
         "icon": "fa.gears",
         "default_variants": [
@@ -124,8 +142,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "plate",
+        "product_base_type": "plate",
         "identifier": "",
+        "product_type_items": [],
         "label": "Plate",
         "icon": "mdi.camera-image",
         "default_variants": [
@@ -155,8 +174,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "render",
+        "product_base_type": "render",
         "identifier": "",
+        "product_type_items": [],
         "label": "Render",
         "icon": "mdi.folder-multiple-image",
         "default_variants": [],
@@ -181,8 +201,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "camera",
+        "product_base_type": "camera",
         "identifier": "",
+        "product_type_items": [],
         "label": "Camera",
         "icon": "fa.video-camera",
         "default_variants": [],
@@ -201,8 +222,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "image",
+        "product_base_type": "image",
         "identifier": "",
+        "product_type_items": [],
         "label": "Image",
         "icon": "fa.image",
         "default_variants": [
@@ -232,8 +254,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "vdbcache",
+        "product_base_type": "vdbcache",
         "identifier": "",
+        "product_type_items": [],
         "label": "VDB Volumes",
         "icon": "fa.cloud",
         "default_variants": [],
@@ -247,8 +270,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "matchmove",
+        "product_base_type": "matchmove",
         "identifier": "",
+        "product_type_items": [],
         "label": "Matchmove",
         "icon": "fa.empire",
         "default_variants": [
@@ -264,8 +288,9 @@ DEFAULT_SIMPLE_CREATORS = [
         "extensions": []
     },
     {
-        "product_type": "rig",
+        "product_base_type": "rig",
         "identifier": "",
+        "product_type_items": [],
         "label": "Rig",
         "icon": "fa.wheelchair",
         "default_variants": [],
@@ -282,8 +307,9 @@ DEFAULT_SIMPLE_CREATORS = [
         ]
     },
     {
-        "product_type": "simpleUnrealTexture",
+        "product_base_type": "simpleUnrealTexture",
         "identifier": "",
+        "product_type_items": [],
         "label": "Simple UE texture",
         "icon": "fa.image",
         "default_variants": [],
@@ -295,8 +321,9 @@ DEFAULT_SIMPLE_CREATORS = [
         "extensions": []
     },
     {
-        "product_type": "audio",
+        "product_base_type": "audio",
         "identifier": "",
+        "product_type_items": [],
         "label": "Audio ",
         "icon": "fa5s.file-audio",
         "default_variants": [

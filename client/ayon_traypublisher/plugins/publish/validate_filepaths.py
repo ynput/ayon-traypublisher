@@ -28,23 +28,23 @@ class ValidateFilePath(pyblish.api.InstancePlugin):
             ))
             return
 
-        product_type = instance.data["productType"]
+        product_base_type = instance.data["productBaseType"]
         label = instance.data["name"]
         filepaths = instance.data["sourceFilepaths"]
+        error_title = "File not filled"
         if not filepaths:
-            raise PublishValidationError(
-                (
-                    "Source filepaths of '{}' instance \"{}\" are not filled"
-                ).format(product_type, label),
-                "File not filled",
-                (
-                    "## Files were not filled"
-                    "\nThis mean that you didn't enter any files into required"
-                    " file input."
-                    "\n- Please refresh publishing and check instance"
-                    " <b>{}</b>"
-                ).format(label)
+            message = (
+                f"Source filepaths of '{product_base_type}'"
+                f" instance \"{label}\" are not filled"
             )
+            description = (
+                "## Files were not filled"
+                "\nThis mean that you didn't enter any files into required"
+                " file input."
+                "\n- Please refresh publishing and check instance"
+                f" <b>{label}</b>"
+            )
+            raise PublishValidationError(message, error_title, description)
 
         not_found_files = [
             filepath
@@ -52,17 +52,16 @@ class ValidateFilePath(pyblish.api.InstancePlugin):
             if not os.path.exists(filepath)
         ]
         if not_found_files:
-            joined_paths = "\n".join([
-                "- {}".format(filepath)
+            joined_paths = "\n".join(
+                f"- {filepath}"
                 for filepath in not_found_files
-            ])
-            raise PublishValidationError(
-                (
-                    "Filepath of '{}' instance \"{}\" does not exist:\n{}"
-                ).format(product_type, label, joined_paths),
-                "File not found",
-                (
-                    "## Files were not found\nFiles\n{}"
-                    "\n\nCheck if the path is still available."
-                ).format(joined_paths)
             )
+            message = (
+                f"Filepath of '{product_base_type}' instance \"{label}\""
+                f" does not exist:\n{joined_paths}"
+            )
+            description = (
+                f"## Files were not found\nFiles\n{joined_paths}"
+                "\n\nCheck if the path is still available."
+            )
+            raise PublishValidationError(message, error_title, description)

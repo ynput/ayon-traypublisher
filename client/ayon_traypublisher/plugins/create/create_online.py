@@ -7,12 +7,15 @@ exists under selected folder.
 """
 from pathlib import Path
 
-from ayon_core.lib.attribute_definitions import FileDef, BoolDef
+from ayon_core.lib.attribute_definitions import FileDef
 from ayon_core.pipeline import (
     CreatedInstance,
     CreatorError
 )
-from ayon_traypublisher.api.plugin import TrayPublishCreator
+from ayon_traypublisher.api.plugin import (
+    TrayPublishCreator,
+    REVIEW_EXTENSIONS
+)
 
 
 class OnlineCreator(TrayPublishCreator):
@@ -20,8 +23,8 @@ class OnlineCreator(TrayPublishCreator):
 
     identifier = "io.ayon.creators.traypublisher.online"
     label = "Online"
-    product_type = "online"
     product_base_type = "online"
+    product_type = product_base_type
     description = "Publish file retaining its original file name"
     extensions = [".mov", ".mp4", ".mxf", ".m4v", ".mpg", ".exr",
                   ".dpx", ".tif", ".png", ".jpg"]
@@ -39,7 +42,7 @@ class OnlineCreator(TrayPublishCreator):
         return "fa.file"
 
     def create(self, product_name, instance_data, pre_create_data):
-        repr_file = pre_create_data.get("representation_file")
+        repr_file = pre_create_data.get("representation_files")
         if not repr_file:
             raise CreatorError("No files specified")
 
@@ -55,9 +58,17 @@ class OnlineCreator(TrayPublishCreator):
         # Pass pre-create attributes to instance creator attributes
         instance_data["creator_attributes"] = pre_create_data
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         # Create new instance
-        new_instance = CreatedInstance(self.product_type, product_name,
-                                       instance_data, self)
+        new_instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         self._store_new_instance(new_instance)
 
     def get_instance_attr_defs(self):
@@ -66,17 +77,21 @@ class OnlineCreator(TrayPublishCreator):
     def get_pre_create_attr_defs(self):
         return [
             FileDef(
-                "representation_file",
+                "representation_files",
                 folders=False,
                 extensions=self.extensions,
                 allow_sequences=True,
                 single_item=True,
                 label="Representation",
             ),
-            BoolDef(
-                "add_review_family",
-                default=True,
-                label="Review"
+            FileDef(
+                "reviewable",
+                folders=False,
+                extensions=REVIEW_EXTENSIONS,
+                allow_sequences=True,
+                single_item=True,
+                label="Reviewable representations",
+                extensions_label="Single reviewable item"
             )
         ]
 

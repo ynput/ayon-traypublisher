@@ -41,7 +41,7 @@ class CollectPSDWorkfile(
 
         file_url = os.path.join(filepath_def["directory"], file_name)
         add_review_family = creator_attributes.get("add_review_family", False)
-        if instance.data["productType"] == "image" and add_review_family:
+        if instance.data["productBaseType"] == "image" and add_review_family:
             repre["tags"].append("review")
             instance.data["families"].append("review")
             if not instance.data.get("thumbnailSource"):
