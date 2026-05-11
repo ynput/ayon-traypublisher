@@ -1,8 +1,8 @@
-from pprint import pformat
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
 )
+
 
 class CollectCSVIngestPrevalidationReport(
     OptionalPyblishPluginMixin,
