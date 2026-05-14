@@ -66,8 +66,13 @@ class _LaunchContext:
         os.environ["AYON_PROJECT_NAME"] = self._project_name
         if self._folder_path:
             os.environ["AYON_FOLDER_PATH"] = self._folder_path
+        else:
+            os.environ.pop("AYON_FOLDER_PATH", None)
+
         if self._task_name:
             os.environ["AYON_TASK_NAME"] = self._task_name
+        else:
+            os.environ.pop("AYON_TASK_NAME", None)
 
         ensure_addons_are_process_ready(
             addon_name=self._addon.name,
