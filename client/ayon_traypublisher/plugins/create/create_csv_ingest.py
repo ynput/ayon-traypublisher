@@ -6,16 +6,16 @@ import os
 import re
 from copy import copy, deepcopy
 from io import StringIO
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import ayon_api
 import clique
-from ayon_traypublisher.api.plugin import TrayPublishCreator
-
 from ayon_core.lib import BoolDef, EnumDef, FileDef, Logger
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import CreatorError, get_product_name
+from ayon_traypublisher.api.plugin import TrayPublishCreator
 
 log = Logger.get_logger(__name__)
 
@@ -1137,6 +1137,12 @@ configuration in project settings.
                 # review family needs to be added for ExtractReview plugin
                 families.append("review")
 
+            add_to_list_name: str | None = None
+            add_to_list_tags: list[str] = []
+            if preset_data["list_config"]["populate_to_list"]:
+                add_to_list_tags = preset_data["list_config"]["list_tags"]
+                add_to_list_name = Path(filename).stem
+
             instance_data = {
                 "name": product_item.instance_name,
                 "label": label,
@@ -1145,7 +1151,7 @@ configuration in project settings.
                 "folder_type": folder_type,
                 "families": families,
                 "variant": product_item.variant,
-                "source": "csv",
+                "source": Path(csv_dir, filename).as_posix(),
                 "frameStart": first_repre_item.frame_start,
                 "frameEnd": first_repre_item.frame_end,
                 "handleStart": first_repre_item.handle_start,
@@ -1153,6 +1159,8 @@ configuration in project settings.
                 "fps": first_repre_item.fps,
                 "version": version,
                 "comment": version_comment,
+                "addToListName": add_to_list_name,
+                "addToListTags": add_to_list_tags,
                 "prepared_data_for_repres": [],
             }
             if instance_tasks:
