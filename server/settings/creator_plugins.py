@@ -104,6 +104,10 @@ class ListConfigModel(BaseSettingsModel):
         title="Populate to list",
         default=False
     )
+    list_tags: list[str] = SettingsField(
+        title="List tags",
+        default_factory=list
+    )
 
 
 class RepresentationItemModel(BaseSettingsModel):
@@ -548,6 +552,7 @@ DEFAULT_CREATORS = {
                 },
                 "list_config": {
                     "populate_to_list": False,
+                    "list_tags": [],
                 },
             }
         ]
