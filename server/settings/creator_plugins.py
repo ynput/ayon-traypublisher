@@ -97,6 +97,15 @@ class ColumnConfigModel(BaseSettingsModel):
         return value
 
 
+class ListConfigModel(BaseSettingsModel):
+    """List configuration model."""
+
+    populate_to_list: bool = SettingsField(
+        title="Populate to list",
+        default=False
+    )
+
+
 class RepresentationItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go.
 
@@ -245,15 +254,17 @@ class IngestCSVPresetModel(BaseSettingsModel):
         title="Columns config",
         default_factory=ColumnConfigModel
     )
-
     representations_config: RepresentationConfigModel = SettingsField(
         title="Representations config",
         default_factory=RepresentationConfigModel
     )
-
     folder_creation_config: FolderCreationConfigModel = SettingsField(
         title="Folder creation config",
         default_factory=FolderCreationConfigModel
+    )
+    list_config: ListConfigModel = SettingsField(
+        title="List config",
+        default_factory=ListConfigModel
     )
 
 
@@ -534,7 +545,10 @@ DEFAULT_CREATORS = {
                     "folder_create_type": "Folder",
                     "task_type_regexes": [],
                     "task_create_type": "Generic",
-                }
+                },
+                "list_config": {
+                    "populate_to_list": False,
+                },
             }
         ]
     },
