@@ -97,6 +97,13 @@ class ColumnConfigModel(BaseSettingsModel):
         return value
 
 
+def list_type_enum():
+    return [
+        {"label": "Generic", "value": "generic"},
+        {"label": "Review Session", "value": "review-session"},
+    ]
+
+
 class ListProfileModel(BaseSettingsModel):
     """List profile model."""
 
@@ -142,10 +149,12 @@ class ListProfileModel(BaseSettingsModel):
         title="Parent folders",
         description="Folder hierarchy formed from top to bottom.",
     )
-    is_review_list: bool = SettingsField(
-        False,
-        title="Is review list",
-        description="",
+    list_type: str = SettingsField(
+        "generic",
+        title="List type",
+        description="Define what type of list this profile represents.",
+        enum_resolver=list_type_enum,
+
     )
 
 
