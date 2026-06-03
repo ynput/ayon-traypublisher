@@ -97,15 +97,67 @@ class ColumnConfigModel(BaseSettingsModel):
         return value
 
 
+class ListProfileModel(BaseSettingsModel):
+    """List profile model."""
+
+    _layout = "expanded"
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task Types",
+        enum_resolver=task_types_enum,
+        description=(
+            "The current create context task type to filter against. This"
+            " allows to filter the profile to only be valid if currently "
+            " creating from within that task type."
+        ),
+        section="Filter",
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names",
+        description="The task names to match this profile to.",
+    )
+    product_base_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Product base types",
+        description=(
+            "The product base types to match this profile to. When matched,"
+            " the settings below would apply to the instance as default"
+            " attributes."
+        )
+    )
+    product_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Product names",
+        description="The product names to match this profile to.",
+    )
+    name_template: str = SettingsField(
+        "",
+        title="Name template",
+        description="Anatomy formattable template for the name.",
+        section="List configuration",
+    )
+    parent_folders: list[str] = SettingsField(
+        default_factory=list,
+        title="Parent folders",
+        description="Folder hierarchy formed from top to bottom.",
+    )
+    is_review_list: bool = SettingsField(
+        False,
+        title="Is review list",
+        description="",
+    )
+
+
 class ListConfigModel(BaseSettingsModel):
     """List configuration model."""
 
-    populate_to_list: bool = SettingsField(
-        title="Populate to list",
+    enabled: bool = SettingsField(
+        title="Enabled",
         default=False
     )
-    list_tags: list[str] = SettingsField(
-        title="List tags",
+    profiles: list[ListProfileModel] = SettingsField(
+        title="Profiles",
         default_factory=list
     )
 
@@ -551,8 +603,16 @@ DEFAULT_CREATORS = {
                     "task_create_type": "Generic",
                 },
                 "list_config": {
-                    "populate_to_list": False,
-                    "list_tags": [],
+                    "enabled": False,
+                    "profiles": [{
+                        "product_base_types": [],
+                        "product_types": [],
+                        "task_types": [],
+                        "task_names": [],
+                        "name_template": "",
+                        "parent_folders": [],
+                        "is_review_list": False,
+                    }],
                 },
             }
         ]
