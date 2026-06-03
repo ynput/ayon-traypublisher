@@ -11,7 +11,13 @@ from typing import Any, Optional, Union
 
 import ayon_api
 import clique
-from ayon_core.lib import BoolDef, EnumDef, FileDef, Logger
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    FileDef,
+    Logger,
+    filter_profiles,
+)
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import CreatorError, get_product_name
@@ -1058,6 +1064,7 @@ configuration in project settings.
             instance_tasks = None
             task_name = None
             task_entity = None
+            task_type = None
             if product_item.task_name:
                 task_name_low = product_item.task_name.lower()
                 for f_task_entity in task_entities_by_folder_path[folder_path]:
@@ -1137,11 +1144,31 @@ configuration in project settings.
                 # review family needs to be added for ExtractReview plugin
                 families.append("review")
 
-            add_to_list_name: str | None = None
-            add_to_list_tags: list[str] = []
-            if preset_data["list_config"]["populate_to_list"]:
-                add_to_list_tags = preset_data["list_config"]["list_tags"]
-                add_to_list_name = Path(filename).stem
+            version_lists_templates: list[dict[str, Any]] = []
+            if preset_data["list_config"]["enabled"]:
+                profiles = preset_data["list_config"]["profiles"]
+                filtering_criteria = {
+                    "product_base_types": product_item.product_base_type,
+                    "product_names": product_name,
+                    "task_names": task_name,
+                    "task_types": task_type,
+                }
+                formating_data = {
+                    "originalBasename": Path(filename).stem
+                }
+                profile = filter_profiles(
+                    profiles,
+                    filtering_criteria,
+                    logger=self.log
+                )
+                if profile:
+                    name_template = profile["name_template"]
+                    version_lists_templates.append({
+                        "name_template": name_template,
+                        "parent_folders": profile.get("parent_folders", None),
+                        "is_review_list": profile.get("is_review_list", False),
+                        "data": formating_data,
+                    })
 
             instance_data = {
                 "name": product_item.instance_name,
@@ -1159,10 +1186,12 @@ configuration in project settings.
                 "fps": first_repre_item.fps,
                 "version": version,
                 "comment": version_comment,
-                "addToListName": add_to_list_name,
-                "addToListTags": add_to_list_tags,
                 "prepared_data_for_repres": [],
             }
+            if version_lists_templates:
+                instance_data["versionListsTemplates"] = \
+                    version_lists_templates
+
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
 
