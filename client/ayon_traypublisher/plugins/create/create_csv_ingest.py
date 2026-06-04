@@ -1159,13 +1159,15 @@ configuration in project settings.
                     logger=self.log
                 )
                 if profile:
+                    self.log.debug(f"profile: {profile}")
                     name = profile["list_name"]
                     version_lists_template = {
                         "name": name,
                         "list_type": profile["list_type"],
                         "parent_folders": profile.get("parent_folders", None),
                         "csv_basename": Path(filename).stem,
-                        "csv_parent_dir": Path(csv_dir).parents[-1].name
+                        "csv_parent_dir": Path(csv_dir).parent.name
+
                     }
 
             instance_data = {
