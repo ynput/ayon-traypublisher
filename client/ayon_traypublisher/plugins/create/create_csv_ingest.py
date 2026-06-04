@@ -1044,7 +1044,7 @@ configuration in project settings.
             if folder_entity is not None:
                 folder_type = folder_entity["folderType"]
             else:
-                # TODO find out how to define default folder type
+                # TODO: find out how to define default folder type
                 # - was hardcoded in pyblish plugin 'CollectShotInstances'
                 folder_type: str = "Shot"
                 if product_item.has_promised_context:
