@@ -139,15 +139,22 @@ class ListProfileModel(BaseSettingsModel):
         description="The product names to match this profile to.",
     )
     name_template: str = SettingsField(
-        "",
+        "{csv_basename}-{yy}{mm}{dd}",
         title="Name template",
-        description="Anatomy formattable template for the name.",
+        description=(
+            "Anatomy formattable template for the name. \n"
+            "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
+        ),
         section="List configuration",
     )
     parent_folders: list[str] = SettingsField(
         default_factory=list,
         title="Parent folders",
-        description="Folder hierarchy formed from top to bottom.",
+        description=(
+            "Folder hierarchy formed from top to bottom.\n"
+            "Also supports Anatomy formattable template keys.\n"
+            "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
+        ),
     )
     list_type: str = SettingsField(
         "generic",

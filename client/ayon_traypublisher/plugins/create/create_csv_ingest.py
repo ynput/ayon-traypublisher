@@ -1144,7 +1144,7 @@ configuration in project settings.
                 # review family needs to be added for ExtractReview plugin
                 families.append("review")
 
-            version_lists_templates: list[dict[str, Any]] = []
+            version_lists_template: dict[str, Any] = {}
             if preset_data["list_config"]["enabled"]:
                 profiles = preset_data["list_config"]["profiles"]
                 filtering_criteria = {
@@ -1153,22 +1153,20 @@ configuration in project settings.
                     "task_names": task_name,
                     "task_types": task_type,
                 }
-                formating_data = {
-                    "originalBasename": Path(filename).stem
-                }
                 profile = filter_profiles(
                     profiles,
                     filtering_criteria,
                     logger=self.log
                 )
                 if profile:
-                    name_template = profile["name_template"]
-                    version_lists_templates.append({
-                        "name_template": name_template,
+                    name = profile["name"]
+                    version_lists_template = {
+                        "name": name,
+                        "list_type": profile["list_type"],
                         "parent_folders": profile.get("parent_folders", None),
-                        "is_review_list": profile.get("is_review_list", False),
-                        "data": formating_data,
-                    })
+                        "csv_basename": Path(filename).stem,
+                        "csv_parent_dir": Path(csv_dir).parents[-1].name
+                    }
 
             instance_data = {
                 "name": product_item.instance_name,
@@ -1188,9 +1186,9 @@ configuration in project settings.
                 "comment": version_comment,
                 "prepared_data_for_repres": [],
             }
-            if version_lists_templates:
-                instance_data["versionListsTemplates"] = \
-                    version_lists_templates
+            if version_lists_template:
+                instance_data["versionListsTemplate"] = \
+                    version_lists_template
 
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
