@@ -16,7 +16,6 @@ from ayon_core.lib import (
     EnumDef,
     FileDef,
     Logger,
-    filter_profiles,
 )
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
