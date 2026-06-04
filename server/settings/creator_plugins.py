@@ -138,9 +138,9 @@ class ListProfileModel(BaseSettingsModel):
         title="Product names",
         description="The product names to match this profile to.",
     )
-    name_template: str = SettingsField(
+    name: str = SettingsField(
         "{csv_basename}-{yy}{mm}{dd}",
-        title="Name template",
+        title="Name",
         description=(
             "Anatomy formattable template for the name. \n"
             "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
@@ -620,15 +620,7 @@ DEFAULT_CREATORS = {
                 },
                 "list_config": {
                     "enabled": False,
-                    "profiles": [{
-                        "product_base_types": [],
-                        "product_types": [],
-                        "task_types": [],
-                        "task_names": [],
-                        "name_template": "",
-                        "parent_folders": [],
-                        "is_review_list": False,
-                    }],
+                    "profiles": [],
                 },
             }
         ]
