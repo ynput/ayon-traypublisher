@@ -1159,7 +1159,7 @@ configuration in project settings.
                     logger=self.log
                 )
                 if profile:
-                    name = profile["name"]
+                    name = profile["list_name"]
                     version_lists_template = {
                         "name": name,
                         "list_type": profile["list_type"],

@@ -138,9 +138,9 @@ class ListProfileModel(BaseSettingsModel):
         title="Product names",
         description="The product names to match this profile to.",
     )
-    name: str = SettingsField(
+    list_name: str = SettingsField(
         "{csv_basename}-{yy}{mm}{dd}",
-        title="Name",
+        title="List Name",
         description=(
             "Anatomy formattable template for the name. \n"
             "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
