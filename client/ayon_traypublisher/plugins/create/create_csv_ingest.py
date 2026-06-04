@@ -1144,36 +1144,11 @@ configuration in project settings.
                 # review family needs to be added for ExtractReview plugin
                 families.append("review")
 
-            version_lists_template: dict[str, Any] = {}
-            if preset_data["list_config"]["enabled"]:
-                profiles = preset_data["list_config"]["profiles"]
-                filtering_criteria = {
-                    "product_base_types": product_item.product_base_type,
-                    "product_names": product_name,
-                    "task_names": task_name,
-                    "task_types": task_type,
-                }
-                profile = filter_profiles(
-                    profiles,
-                    filtering_criteria,
-                    logger=self.log
-                )
-                if profile:
-                    self.log.debug(f"profile: {profile}")
-                    name = profile["list_name"]
-                    version_lists_template = {
-                        "name": name,
-                        "list_type": profile["list_type"],
-                        "parent_folders": profile.get("parent_folders", None),
-                        "csv_basename": Path(filename).stem,
-                        "csv_parent_dir": Path(csv_dir).parent.name
-
-                    }
-
             instance_data = {
                 "name": product_item.instance_name,
                 "label": label,
                 "folderPath": folder_path,
+                "csv_preset_name": preset_data["name"],
                 "task": task_name,
                 "folder_type": folder_type,
                 "families": families,
@@ -1188,9 +1163,6 @@ configuration in project settings.
                 "comment": version_comment,
                 "prepared_data_for_repres": [],
             }
-            if version_lists_template:
-                instance_data["versionListsTemplate"] = \
-                    version_lists_template
 
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks

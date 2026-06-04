@@ -1,10 +1,7 @@
 from pprint import pformat
 
 import pyblish.api
-from ayon_core.lib import StringTemplate
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.structures import ListConfig
-
 
 class CollectCSVIngestInstancesData(
     pyblish.api.InstancePlugin,
@@ -20,7 +17,6 @@ class CollectCSVIngestInstancesData(
     families = ["csv_ingest"]
 
     def process(self, instance):
-        self._collect_version_lists(instance)
 
         # expecting [(colorspace, repre_data), ...]
         prepared_repres_data_items = instance.data[
@@ -63,41 +59,3 @@ class CollectCSVIngestInstancesData(
         if frame_start is not None and frame_end is not None:
             instance.data["frameStart"] = frame_start
             instance.data["frameEnd"] = frame_end
-
-    def _collect_version_lists(self, instance):
-        version_lists_template = instance.data.get(
-            "versionListsTemplate")
-
-        version_lists: list[ListConfig] = instance.data.setdefault(
-            "versionLists", [])
-
-        if version_lists:
-            self.log.debug(f"Version lists already collected: {version_lists}")
-            return
-
-        name = version_lists_template["name"]
-        template_keys = {
-            "csv_basename": version_lists_template["csv_basename"],
-            "csv_parent_dir": version_lists_template["csv_parent_dir"],
-        }
-        parent_folders: list[str] | None
-        if parent_folders := version_lists_template.get(
-            "parent_folders", None):
-            parent_folders = [
-                StringTemplate.format_template(
-                    folder,
-                    template_keys
-                )
-                for folder in parent_folders
-            ]
-        version_lists.append(
-            ListConfig(
-                name=StringTemplate.format_template(
-                    name,
-                    template_keys
-                ),
-                parent_folders=parent_folders,
-                list_type=version_lists_template["list_type"],
-            )
-        )
-        self.log.debug(f"Collected version lists: {version_lists}")
