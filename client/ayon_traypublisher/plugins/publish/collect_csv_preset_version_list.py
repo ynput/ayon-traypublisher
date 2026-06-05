@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
