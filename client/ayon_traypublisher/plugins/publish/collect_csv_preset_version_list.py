@@ -38,19 +38,21 @@ class CollectCSVPresetVersionList(
             task_type = tasks.get(task_name, {}).get("type")
 
         profile: dict[str, Any] = {}
-        if preset_data["list_config"]["enabled"]:
-            profiles = preset_data["list_config"]["profiles"]
-            filtering_criteria = {
-                "product_base_types": product_base_type,
-                "product_names": product_name,
-                "task_names": task_name,
-                "task_types": task_type,
-            }
-            profile = filter_profiles(
-                profiles, filtering_criteria, logger=self.log
-            )
-            if not profile:
-                return
+        if not preset_data["list_config"]["enabled"]:
+            return
+
+        profiles = preset_data["list_config"]["profiles"]
+        filtering_criteria = {
+            "product_base_types": product_base_type,
+            "product_names": product_name,
+            "task_names": task_name,
+            "task_types": task_type,
+        }
+        profile = filter_profiles(
+            profiles, filtering_criteria, logger=self.log
+        )
+        if not profile:
+            return
 
         self.log.debug(f"profile: {profile}")
         version_lists: list[ListConfig] = instance.data.setdefault(
