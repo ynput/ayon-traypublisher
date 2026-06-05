@@ -42,5 +42,4 @@ class ExtractCSVPrevalidationReport(publish.Extractor):
                     f.write("- " + row + "\n")
                 f.write("\n\n")
 
-
         self.log.info("CSV report saved: {}".format(csv_report_filepath))
