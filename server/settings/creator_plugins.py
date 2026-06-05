@@ -78,6 +78,39 @@ class ColumnItemModel(BaseSettingsModel):
     )
 
 
+def _csv_prevalidators_enum() -> list:
+    return [
+        {"label": "Existing versions", "value": "existing_versions"},
+        {"label": "Wrong framerange", "value": "wrong_framerange"}
+    ]
+
+
+def _csv_prevalidation_config_enum() -> list:
+    return [
+        {"label": "Skip instances from publishing", "value": "skip"},
+        {"label": "Bypass relative validators", "value": "bypass"}
+    ]
+
+
+class PrevalidationModel(BaseSettingsModel):
+    """Prevalidation model."""
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=False
+    )
+
+    validators: list[str] = SettingsField(
+        default_factory=list,
+        title="Activated prevalidators",
+        enum_resolver=_csv_prevalidators_enum,
+    )
+    config: str = SettingsField(
+        title="Prevalidation config",
+        default="skip",
+        enum_resolver=_csv_prevalidation_config_enum,
+    )
+
+
 class ColumnConfigModel(BaseSettingsModel):
     """Column configuration model"""
 
@@ -241,6 +274,10 @@ class IngestCSVPresetModel(BaseSettingsModel):
         "Default",
         title="Name",
     )
+    prevalidation: PrevalidationModel = SettingsField(
+        title="Prevalidation",
+        default_factory=PrevalidationModel
+    )
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
         default_factory=ColumnConfigModel
@@ -334,6 +371,11 @@ DEFAULT_CREATORS = {
         "presets": [
             {
                 "name": "Default",
+                "prevalidation": {
+                    "enabled": True,
+                    "validators": ["existing_versions", "wrong_framerange"],
+                    "config": "skip"
+                },
                 "columns_config": {
                     "csv_delimiter": ",",
                     "columns": [
