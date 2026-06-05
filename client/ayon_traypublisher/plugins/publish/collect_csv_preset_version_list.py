@@ -40,7 +40,6 @@ class CollectCSVPresetVersionList(
         if not preset_data["list_config"]["enabled"]:
             return
 
-        profile: dict[str, Any] = {}
         profiles = preset_data["list_config"]["profiles"]
         filtering_criteria = {
             "product_base_types": product_base_type,
