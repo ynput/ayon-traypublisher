@@ -64,7 +64,8 @@ class CollectCSVPresetVersionList(
             ListConfigFolder(
                 label=StringTemplate.format_template(
                     folder, template_keys
-                )
+                ),
+                scope=[profile["list_type"]],
             )
             for folder in profile.get("parent_folders", [])
         ]
