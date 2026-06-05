@@ -6,7 +6,7 @@ from typing import Any
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.structures import ListConfig
+from ayon_core.pipeline.structures import ListConfig, ListConfigFolder
 
 
 class CollectCSVPresetVersionList(
@@ -60,22 +60,21 @@ class CollectCSVPresetVersionList(
             "csv_basename": csv_source_path.stem,
             "csv_parent_dir": csv_source_path.parent.name
         }
-        parent_folders: list[str] | None
-        if parent_folders := profile.get("parent_folders", None):
-            parent_folders = [
-                StringTemplate.format_template(
-                    folder,
-                    template_keys
+        parent_folders: list[ListConfigFolder] = [
+            ListConfigFolder(
+                label=StringTemplate.format_template(
+                    folder, template_keys
                 )
-                for folder in parent_folders
-            ]
+            )
+            for folder in profile.get("parent_folders", [])
+        ]
         version_lists.append(
             ListConfig(
-                name=StringTemplate.format_template(
+                label=StringTemplate.format_template(
                     profile["list_name"],
                     template_keys
                 ),
-                parent_folders=parent_folders,
+                list_folders=parent_folders,
                 list_type=profile["list_type"],
             )
         )
