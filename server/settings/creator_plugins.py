@@ -137,6 +137,41 @@ def list_type_enum():
     ]
 
 
+def list_folder_scope_def():
+    return [
+        {"label": "Scope folder to all views", "value": "all"},
+        {"label": "Scope to the list type", "value": "list_type"},
+    ]
+
+
+class EntityListFolderModel(BaseSettingsModel):
+    """Folder must have label and can be scoped to views.
+
+    Scope of the folder can be defined for all views or use just the view
+        matching list type of created list. In case the list folder already
+        exists the settings are not used and we just make sure the list can
+        be seen under the folder.
+
+    """
+    _layout = "expanded"
+    label: str = SettingsField(
+        "",
+        title="Folder label",
+        description=(
+            "The label of the folder to create. \n"
+            "Also supports Anatomy formattable template keys.\n"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
+        ),
+    )
+    # Don't use explicit scope enum, rather ask if the folder should be seen
+    #   everywhere or just in the list type matching created list.
+    scope_def: str = SettingsField(
+        "all",
+        enum_resolver=list_folder_scope_def,
+        title="Scope",
+    )
+
+
 class ListProfileModel(BaseSettingsModel):
     """List profile model."""
 
@@ -180,21 +215,17 @@ class ListProfileModel(BaseSettingsModel):
         ),
         section="List configuration",
     )
-    parent_folders: list[str] = SettingsField(
-        default_factory=list,
-        title="Parent folders",
-        description=(
-            "Folder hierarchy formed from top to bottom.\n"
-            "Also supports Anatomy formattable template keys.\n"
-            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
-        ),
-    )
     list_type: str = SettingsField(
         "generic",
         title="List type",
         description="Define what type of list this profile represents.",
         enum_resolver=list_type_enum,
 
+    )
+    list_folders: list[EntityListFolderModel] = SettingsField(
+        default_factory=list,
+        title="List folders",
+        description="Folder hierarchy formed from top to bottom.",
     )
 
 

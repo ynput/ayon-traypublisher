@@ -60,22 +60,30 @@ class CollectCSVPresetVersionList(
             "csv_basename": csv_source_path.stem,
             "csv_parent_dir": csv_source_path.parent.name
         }
-        parent_folders: list[ListConfigFolder] = [
-            ListConfigFolder(
-                label=StringTemplate.format_template(
-                    folder, template_keys
-                ),
-                scope=[profile["list_type"]],
+
+        list_folders = []
+        for item in profile["list_folders"]:
+            scope = []
+            if item["scope_def"] == "list_type":
+                scope.append(profile["list_type"])
+
+            list_folders.append(
+                ListConfigFolder(
+                    label=StringTemplate.format_template(
+                        item["label"],
+                        template_keys
+                    ),
+                    scope=scope,
+                )
             )
-            for folder in profile.get("parent_folders", [])
-        ]
+
         version_lists.append(
             ListConfig(
                 label=StringTemplate.format_template(
                     profile["list_name"],
                     template_keys
                 ),
-                list_folders=parent_folders,
+                list_folders=list_folders,
                 list_type=profile["list_type"],
             )
         )
