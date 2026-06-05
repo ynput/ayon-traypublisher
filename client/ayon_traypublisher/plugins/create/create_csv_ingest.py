@@ -1213,6 +1213,11 @@ configuration in project settings.
             if product_item.has_promised_context:
                 new_instance.transient_data["has_promised_context"] = True
 
+            # add prevalidation preset to instance transient data
+            if preset_data.get("prevalidation"):
+                new_instance.data["prevalidation"] = \
+                    preset_data["prevalidation"]
+
             instances.append(new_instance)
 
         return instances
