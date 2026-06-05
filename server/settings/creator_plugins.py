@@ -143,7 +143,7 @@ class ListProfileModel(BaseSettingsModel):
         title="List Name",
         description=(
             "Anatomy formattable template for the name. \n"
-            "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
         ),
         section="List configuration",
     )
@@ -153,7 +153,7 @@ class ListProfileModel(BaseSettingsModel):
         description=(
             "Folder hierarchy formed from top to bottom.\n"
             "Also supports Anatomy formattable template keys.\n"
-            "csv workflow related keys: {csv_basename}, {csv_parent_dir}"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
         ),
     )
     list_type: str = SettingsField(
