@@ -6,16 +6,21 @@ import os
 import re
 from copy import copy, deepcopy
 from io import StringIO
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import ayon_api
 import clique
-from ayon_traypublisher.api.plugin import TrayPublishCreator
-
-from ayon_core.lib import BoolDef, EnumDef, FileDef, Logger
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    FileDef,
+    Logger,
+)
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import CreatorError, get_product_name
+from ayon_traypublisher.api.plugin import TrayPublishCreator
 
 log = Logger.get_logger(__name__)
 
@@ -1039,7 +1044,7 @@ configuration in project settings.
             if folder_entity is not None:
                 folder_type = folder_entity["folderType"]
             else:
-                # TODO find out how to define default folder type
+                # TODO: find out how to define default folder type
                 # - was hardcoded in pyblish plugin 'CollectShotInstances'
                 folder_type: str = "Shot"
                 if product_item.has_promised_context:
@@ -1058,6 +1063,7 @@ configuration in project settings.
             instance_tasks = None
             task_name = None
             task_entity = None
+            task_type = None
             if product_item.task_name:
                 task_name_low = product_item.task_name.lower()
                 for f_task_entity in task_entities_by_folder_path[folder_path]:
@@ -1141,11 +1147,12 @@ configuration in project settings.
                 "name": product_item.instance_name,
                 "label": label,
                 "folderPath": folder_path,
+                "csv_preset_name": preset_data["name"],
                 "task": task_name,
                 "folder_type": folder_type,
                 "families": families,
                 "variant": product_item.variant,
-                "source": "csv",
+                "source": Path(csv_dir, filename).as_posix(),
                 "frameStart": first_repre_item.frame_start,
                 "frameEnd": first_repre_item.frame_end,
                 "handleStart": first_repre_item.handle_start,
@@ -1155,6 +1162,7 @@ configuration in project settings.
                 "comment": version_comment,
                 "prepared_data_for_repres": [],
             }
+
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
 

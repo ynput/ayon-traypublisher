@@ -130,6 +130,118 @@ class ColumnConfigModel(BaseSettingsModel):
         return value
 
 
+def list_type_enum():
+    return [
+        {"label": "Generic", "value": "generic"},
+        {"label": "Review Session", "value": "review-session"},
+    ]
+
+
+def list_folder_scope_def():
+    return [
+        {"label": "Scope folder to all views", "value": "all"},
+        {"label": "Scope to the list type", "value": "list_type"},
+    ]
+
+
+class EntityListFolderModel(BaseSettingsModel):
+    """Folder must have label and can be scoped to views.
+
+    Scope of the folder can be defined for all views or use just the view
+        matching list type of created list. In case the list folder already
+        exists the settings are not used and we just make sure the list can
+        be seen under the folder.
+
+    """
+    _layout = "expanded"
+    label: str = SettingsField(
+        "",
+        title="Folder label",
+        description=(
+            "The label of the folder to create. \n"
+            "Also supports Anatomy formattable template keys.\n"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
+        ),
+    )
+    # Don't use explicit scope enum, rather ask if the folder should be seen
+    #   everywhere or just in the list type matching created list.
+    scope_def: str = SettingsField(
+        "all",
+        enum_resolver=list_folder_scope_def,
+        title="Scope",
+    )
+
+
+class ListProfileModel(BaseSettingsModel):
+    """List profile model."""
+
+    _layout = "expanded"
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task Types",
+        enum_resolver=task_types_enum,
+        description=(
+            "The current create context task type to filter against. This"
+            " allows to filter the profile to only be valid if currently "
+            " creating from within that task type."
+        ),
+        section="Filter",
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names",
+        description="The task names to match this profile to.",
+    )
+    product_base_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Product base types",
+        description=(
+            "The product base types to match this profile to. When matched,"
+            " the settings below would apply to the instance as default"
+            " attributes."
+        )
+    )
+    product_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Product names",
+        description="The product names to match this profile to.",
+    )
+    list_name: str = SettingsField(
+        "{csv_basename}-{yy}{mm}{dd}",
+        title="List Name",
+        description=(
+            "Anatomy formattable template for the name. \n"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
+        ),
+        section="List configuration",
+    )
+    list_type: str = SettingsField(
+        "generic",
+        title="List type",
+        description="Define what type of list this profile represents.",
+        enum_resolver=list_type_enum,
+
+    )
+    list_folders: list[EntityListFolderModel] = SettingsField(
+        default_factory=list,
+        title="List folders",
+        description="Folder hierarchy formed from top to bottom.",
+    )
+
+
+class ListConfigModel(BaseSettingsModel):
+    """List configuration model."""
+
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=False
+    )
+    profiles: list[ListProfileModel] = SettingsField(
+        title="Profiles",
+        default_factory=list
+    )
+
+
 class RepresentationItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go.
 
@@ -282,15 +394,17 @@ class IngestCSVPresetModel(BaseSettingsModel):
         title="Columns config",
         default_factory=ColumnConfigModel
     )
-
     representations_config: RepresentationConfigModel = SettingsField(
         title="Representations config",
         default_factory=RepresentationConfigModel
     )
-
     folder_creation_config: FolderCreationConfigModel = SettingsField(
         title="Folder creation config",
         default_factory=FolderCreationConfigModel
+    )
+    list_config: ListConfigModel = SettingsField(
+        title="List config",
+        default_factory=ListConfigModel
     )
 
 
@@ -576,7 +690,11 @@ DEFAULT_CREATORS = {
                     "folder_create_type": "Folder",
                     "task_type_regexes": [],
                     "task_create_type": "Generic",
-                }
+                },
+                "list_config": {
+                    "enabled": False,
+                    "profiles": [],
+                },
             }
         ]
     },
