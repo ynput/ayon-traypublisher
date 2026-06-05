@@ -3,13 +3,13 @@ from pprint import pformat
 import pyblish.api
 from ayon_core.pipeline import publish
 
+
 class CollectCSVIngestInstancesData(
     pyblish.api.InstancePlugin,
     publish.AYONPyblishPluginMixin,
     publish.ColormanagedPyblishPluginMixin
 ):
-    """Collect CSV Ingest data from instance.
-    """
+    """Collect CSV Ingest data from instance."""
 
     label = "Collect CSV Ingest instances data"
     order = pyblish.api.CollectorOrder + 0.1
