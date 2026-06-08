@@ -703,7 +703,6 @@ configuration in project settings.
         # building product items.
         raw_rows: list[dict[str, Any]] = [dict(row) for row in csv_reader]
 
-        # --- Targeted API call #1: folder-name resolution ---
         # Collect only the names that actually need path resolution (i.e.
         # rows where Folder Path is absent/empty but Folder Name is set).
         folder_names_to_query: set[str] = set()
@@ -744,7 +743,6 @@ configuration in project settings.
                 )
             )
 
-        # --- Targeted API call #2: folder-path validation ---
         # Query only the resolved paths to build the ID map and detect
         # missing folders.
         folder_paths: set[str] = {
