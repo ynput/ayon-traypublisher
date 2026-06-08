@@ -581,7 +581,7 @@ configuration in project settings.
 
         folder_path = (row.get("Folder Path") or "").strip()
         if folder_path:
-            # Folder Path already provided – nothing to resolve.
+            # Folder Path already provided. Nothing to resolve.
             return row
 
         folder_name = (row.get("Folder Name") or "").strip()
@@ -695,7 +695,8 @@ configuration in project settings.
         # check if csv file contains all required columns
         if any(column not in all_columns for column in required_columns):
             raise CreatorError(
-                f"Missing required columns: {required_columns}"
+                f"Missing required columns: {required_columns}\n"
+                f"All columns: {all_columns}"
             )
 
         # Read all rows upfront so we can make targeted API calls before
