@@ -96,6 +96,10 @@ def _csv_precreate_validators_enum() -> list:
     return [
         {"label": "Folder does not exist", "value": "folder_not_exists"},
         {"label": "Folder Name duplicity", "value": "folder_name_duplicity"},
+        {
+            "label": "Missing frame range column values",
+            "value": "missing_frame_range_values",
+        },
     ]
 
 

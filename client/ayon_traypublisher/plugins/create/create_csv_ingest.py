@@ -146,14 +146,11 @@ class RepreItem:
             )
         }
 
-        # Convert frame/fps values; allow None when columns are optional
-        # and the value was not provided (nor filled from folder attrs).
+        # Convert frame/fps values to their expected types.
         for key in {"frame_start", "frame_end", "handle_start", "handle_end"}:
-            if kwargs[key] is not None:
-                kwargs[key] = int(kwargs[key])
+            kwargs[key] = int(kwargs[key])
 
-        if kwargs["fps"] is not None:
-            kwargs["fps"] = float(kwargs["fps"])
+        kwargs["fps"] = float(kwargs["fps"])
 
         # Convert tags value to list
         tags_list = copy(repre_config["default_tags"])
@@ -583,6 +580,7 @@ configuration in project settings.
         row: dict[str, Any],
         folders_by_name: dict[str, list[dict[str, Any]]],
         precreate_validation: Optional[dict[str, Any]] = None,
+        row_index: int = 0,
     ) -> tuple[Optional[dict[str, Any]], Optional[tuple[str, str]]]:
         """Resolve folder path from folder name when path is missing.
 
@@ -607,6 +605,9 @@ configuration in project settings.
             precreate_validation (dict | None): The ``precreate_validation``
                 block from the active preset, or ``None`` to use the
                 raise-only behaviour.
+            row_index (int): 1-based row number in the CSV file (header = 1,
+                first data row = 2).  Used in error messages for easier
+                identification of the failing row.
 
         Returns:
             tuple: ``(resolved_row, None)`` on success, or
@@ -624,11 +625,14 @@ configuration in project settings.
             # Folder Path already provided. Nothing to resolve.
             return row, None
 
+        file_path = (row.get("File Path") or "").strip()
+        row_ctx = f"Row {row_index} (File Path: '{file_path}'): " if row_index else ""
+
         folder_name = (row.get("Folder Name") or "").strip()
         if not folder_name:
             error_msg = (
-                "Both 'Folder Path' and 'Folder Name' are empty. "
-                "At least one must be provided per row."
+                f"{row_ctx}Both 'Folder Path' and 'Folder Name' are empty. "
+                "Provide either a 'Folder Path' or a 'Folder Name' for this row."
             )
             if self._should_report_precreate(
                 precreate_validation, "folder_not_exists"
@@ -639,8 +643,9 @@ configuration in project settings.
         matching = folders_by_name.get(folder_name, [])
         if not matching:
             error_msg = (
-                f"No existing folder found with name '{folder_name}'. "
-                "Provide 'Folder Path' or create the folder first."
+                f"{row_ctx}No existing folder found with name '{folder_name}'. "
+                "Verify the 'Folder Name' value is correct in the project, "
+                "or use 'Folder Path' to specify the folder directly."
             )
             if self._should_report_precreate(
                 precreate_validation, "folder_not_exists"
@@ -651,9 +656,9 @@ configuration in project settings.
         if len(matching) > 1:
             paths = ", ".join(f["path"] for f in matching)
             error_msg = (
-                f"Multiple folders share the name '{folder_name}': "
+                f"{row_ctx}Multiple folders share the name '{folder_name}': "
                 f"{paths}. "
-                "Use 'Folder Path' to disambiguate."
+                "Use 'Folder Path' to uniquely identify which folder to use."
             )
             if self._should_report_precreate(
                 precreate_validation, "folder_name_duplicity"
@@ -788,15 +793,16 @@ configuration in project settings.
                 folders_by_name[folder["name"]].append(folder)
 
         # Resolve rows and build product items.  Rows that fail folder
-        # resolution under "ignore_and_report" mode are skipped; their
-        # messages accumulate in precreate_report_data.
+        # resolution or frame range validation under "ignore_and_report" mode
+        # are skipped; their messages accumulate in precreate_report_data.
         product_items_by_name: dict[str, ProductItem] = {}
         precreate_report_data: dict[str, list[str]] = {}
-        for row in raw_rows:
+        # CSV header is row 1, so data rows start at 2.
+        for row_index, row in enumerate(raw_rows, start=2):
             # Resolve Folder Path from Folder Name when path is absent and
             # inject temporal attrs from the matched folder entity.
             resolved_row, report_entry = self._resolve_row_folder(
-                row, folders_by_name, precreate_validation
+                row, folders_by_name, precreate_validation, row_index
             )
             if resolved_row is None:
                 # Row failed folder resolution; record and skip.
@@ -808,6 +814,38 @@ configuration in project settings.
                     message,
                 )
                 continue
+
+            # Validate that frame range values are present after folder
+            # resolution (folder attribs may have been back-filled above).
+            frame_range_cols = [
+                "Frame Start", "Frame End",
+                "Handle Start", "Handle End", "FPS",
+            ]
+            missing_frame_cols = [
+                col for col in frame_range_cols
+                if not (resolved_row.get(col) or "").strip()
+            ]
+            if missing_frame_cols:
+                file_path = (resolved_row.get("File Path") or "").strip()
+                error_msg = (
+                    f"Row {row_index} (File Path: '{file_path}'): "
+                    f"Missing frame range values for column(s): "
+                    f"{missing_frame_cols}. "
+                    "Provide the values in the CSV or ensure the matched "
+                    "folder has these attributes set."
+                )
+                if self._should_report_precreate(
+                    precreate_validation, "missing_frame_range_values"
+                ):
+                    precreate_report_data.setdefault(
+                        "Missing Frame Range Values", []
+                    ).append(error_msg)
+                    log.warning(
+                        "Skipping row due to missing frame range values: %s",
+                        error_msg,
+                    )
+                    continue
+                raise CreatorError(error_msg)
 
             product_item_: ProductItem = ProductItem.from_csv_row(
                 columns_config, resolved_row
