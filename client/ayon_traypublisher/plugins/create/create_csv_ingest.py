@@ -146,12 +146,14 @@ class RepreItem:
             )
         }
 
-        # Should the 'int' and 'float' conversion happen?
-        # - looks like '_get_row_value_with_validation' is already handling it
+        # Convert frame/fps values; allow None when columns are optional
+        # and the value was not provided (nor filled from folder attrs).
         for key in {"frame_start", "frame_end", "handle_start", "handle_end"}:
-            kwargs[key] = int(kwargs[key])
+            if kwargs[key] is not None:
+                kwargs[key] = int(kwargs[key])
 
-        kwargs["fps"] = float(kwargs["fps"])
+        if kwargs["fps"] is not None:
+            kwargs["fps"] = float(kwargs["fps"])
 
         # Convert tags value to list
         tags_list = copy(repre_config["default_tags"])
@@ -547,12 +549,118 @@ configuration in project settings.
 
         return parent_data
 
+    def _resolve_row_folder(
+        self,
+        row: dict[str, Any],
+        folders_by_name: dict[str, list[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        """Resolve folder path from folder name when path is missing.
+
+        If the row already has a non-empty ``Folder Path`` the row is
+        returned unchanged.  Otherwise the project folders index is
+        searched by ``Folder Name`` and – when exactly one match is found –
+        the resolved path is injected together with any temporal attributes
+        (Frame Start, Frame End, Handle Start, Handle End, FPS) that are
+        absent from the row but present on the matched folder entity.
+
+        Args:
+            row (dict): A single CSV row (will be copied, not mutated).
+            folders_by_name (dict): Project folders indexed by folder name.
+                Values are lists of folder entity dicts
+                (``id``, ``path``, ``name``, ``attrib``).
+
+        Returns:
+            dict: Processed row with resolved ``Folder Path`` and any
+                injected attribute values.
+
+        Raises:
+            CreatorError: When the folder name is missing/empty, no folder
+                matches the name, or the name is ambiguous (multiple hits).
+        """
+        row = dict(row)  # work on a copy so the original is never mutated
+
+        folder_path = (row.get("Folder Path") or "").strip()
+        if folder_path:
+            # Folder Path already provided – nothing to resolve.
+            return row
+
+        folder_name = (row.get("Folder Name") or "").strip()
+        if not folder_name:
+            raise CreatorError(
+                "Both 'Folder Path' and 'Folder Name' are empty. "
+                "At least one must be provided per row."
+            )
+
+        matching = folders_by_name.get(folder_name, [])
+        if not matching:
+            raise CreatorError(
+                f"No existing folder found with name '{folder_name}'. "
+                "Provide 'Folder Path' or create the folder first."
+            )
+        if len(matching) > 1:
+            paths = ", ".join(f["path"] for f in matching)
+            raise CreatorError(
+                f"Multiple folders share the name '{folder_name}': "
+                f"{paths}. "
+                "Use 'Folder Path' to disambiguate."
+            )
+
+        matched = matching[0]
+        row["Folder Path"] = matched["path"]
+        log.debug(
+            "Resolved folder '%s' -> '%s' from project folders.",
+            folder_name,
+            matched["path"],
+        )
+
+        # Fill in temporal columns from folder entity attrs when absent.
+        attrib = matched.get("attrib") or {}
+        attr_column_map = (
+            ("Frame Start", "frameStart"),
+            ("Frame End", "frameEnd"),
+            ("Handle Start", "handleStart"),
+            ("Handle End", "handleEnd"),
+            ("FPS", "fps"),
+        )
+        for csv_col, attr_key in attr_column_map:
+            if (row.get(csv_col) or "").strip():
+                continue  # CSV already has a value
+            attr_val = attrib.get(attr_key)
+            if attr_val is not None:
+                row[csv_col] = str(attr_val)
+                log.debug(
+                    "Filled '%s' = %s from folder '%s' attrib.",
+                    csv_col,
+                    attr_val,
+                    matched["path"],
+                )
+
+        return row
 
     def _get_data_from_csv(
-        self, preset_data: dict[str, Any], csv_dir: str, filename: str
-    ) -> dict[str, ProductItem]:
-        """Generate instances from the csv file"""
-        # get current project name and code from context.data
+        self,
+        preset_data: dict[str, Any],
+        csv_dir: str,
+        filename: str,
+    ) -> tuple[dict[str, ProductItem], dict[str, Any]]:
+        """Parse the CSV file and build product items.
+
+        Fetches all project folders once at the start so that rows missing
+        a ``Folder Path`` can be matched by ``Folder Name`` and have their
+        temporal attributes (frame range, FPS, handles) filled from the
+        matching folder entity.
+
+        Args:
+            preset_data (dict): The selected CSV ingest preset.
+            csv_dir (str): Directory containing the CSV file.
+            filename (str): CSV filename.
+
+        Returns:
+            tuple: A two-element tuple of
+                ``(product_items_by_name, all_project_folders)``
+                where *all_project_folders* is a dict keyed by folder
+                path for reuse by the caller.
+        """
         project_name = self.create_context.get_current_project_name()
         csv_path = os.path.join(csv_dir, filename)
 
@@ -561,7 +669,22 @@ configuration in project settings.
         representations_config = preset_data["representations_config"]
         folder_creation_config = preset_data["folder_creation_config"]
 
-        # make sure csv file contains columns from following list
+        # Fetch ALL project folders once.  Used for:
+        #   1. Folder-name-based path resolution (new).
+        #   2. Folder-ID lookup that previously required a second API call.
+        all_project_folders: dict[str, Any] = {
+            folder["path"]: folder
+            for folder in ayon_api.get_folders(
+                project_name,
+                fields={"id", "path", "name", "attrib", "folderType"},
+            )
+        }
+        # Secondary index: name -> list[folder entity]
+        folders_by_name: dict[str, list[Any]] = collections.defaultdict(list)
+        for folder in all_project_folders.values():
+            folders_by_name[folder["name"]].append(folder)
+
+        # Make sure csv file contains all required columns.
         required_columns = [
             column["name"]
             for column in columns_config["columns"]
@@ -578,15 +701,11 @@ configuration in project settings.
             delimiter=columns_config["csv_delimiter"]
         )
 
-        # fix fieldnames
-        # sometimes someone can keep extra space at the start or end of
-        # the column name
+        # Fix fieldnames – strip accidental leading/trailing whitespace.
         all_columns = [
             " ".join(column.rsplit())
             for column in csv_reader.fieldnames
         ]
-
-        # return back fixed fieldnames
         csv_reader.fieldnames = all_columns
 
         # check if csv file contains all required columns
@@ -597,6 +716,10 @@ configuration in project settings.
 
         product_items_by_name: dict[str, ProductItem] = {}
         for row in csv_reader:
+            # Resolve Folder Path from Folder Name when path is absent and
+            # inject temporal attrs from the matched folder entity.
+            row = self._resolve_row_folder(row, folders_by_name)
+
             product_item_: ProductItem = ProductItem.from_csv_row(
                 columns_config, row
             )
@@ -608,7 +731,7 @@ configuration in project settings.
                 RepreItem.from_csv_row(
                     columns_config,
                     representations_config,
-                    row
+                    row,
                 )
             )
 
@@ -616,11 +739,11 @@ configuration in project settings.
             product_item.folder_path
             for product_item in product_items_by_name.values()
         }
+        # Use pre-fetched folders to build the ID map (no extra API call).
         folder_ids_by_path: dict[str, str] = {
-            folder_entity["path"]: folder_entity["id"]
-            for folder_entity in ayon_api.get_folders(
-                project_name, folder_paths=folder_paths, fields={"id", "path"}
-            )
+            path: all_project_folders[path]["id"]
+            for path in folder_paths
+            if path in all_project_folders
         }
         missing_paths: set[str] = folder_paths - set(folder_ids_by_path.keys())
 
@@ -641,8 +764,8 @@ configuration in project settings.
         missing_tasks: set[str] = set()
         if missing_paths and not folder_creation_config["enabled"]:
             error_msg = (
-                "Folder creation is disabled but found missing folder(s): %r" %
-                ",".join(missing_paths)
+                "Folder creation is disabled but found missing folder(s): %r"
+                % ",".join(missing_paths)
             )
             raise CreatorError(error_msg)
 
@@ -713,7 +836,7 @@ configuration in project settings.
                     f"Duplicate filename{ending} in csv file.\n{joined_names}"
                 )
 
-        return product_items_by_name
+        return product_items_by_name, all_project_folders
 
     def _add_thumbnail_repre(
         self,
@@ -1001,25 +1124,24 @@ configuration in project settings.
         Returns:
             list[CreatedInstance]. The created instances.
         """
-        # from special function get all data from csv file and convert them
-        # to new instances
-        product_items_by_name: dict[str, ProductItem] = (
+        # Parse CSV and receive pre-fetched project folders (all folders
+        # were already retrieved once inside _get_data_from_csv).
+        product_items_by_name, all_project_folders = (
             self._get_data_from_csv(preset_data, csv_dir, filename)
         )
 
         instances = []
         project_name: str = self.create_context.get_current_project_name()
-        # Pre-fetch all existing entities to find matching
+        # Build folder entities map from the already-fetched data so we
+        # avoid a redundant API call.
         folder_paths = {
             product_item.folder_path
             for product_item in product_items_by_name.values()
         }
-        folder_entities_by_path: dict[str, dict[str, str]] = {
-            folder_entity["path"]: folder_entity
-            for folder_entity in ayon_api.get_folders(
-                project_name,
-                folder_paths=folder_paths,
-            )
+        folder_entities_by_path: dict[str, dict[str, Any]] = {
+            path: all_project_folders[path]
+            for path in folder_paths
+            if path in all_project_folders
         }
         folder_paths_by_id = {
             f["id"]: f["path"]

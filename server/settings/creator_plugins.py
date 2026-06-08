@@ -501,10 +501,17 @@ DEFAULT_CREATORS = {
                             "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
                         },
                         {
-                            "name": "Folder Path",
+                            "name": "Folder Name",
                             "type": "text",
                             "default": "",
                             "required_column": True,
+                            "validation_pattern": "^([a-zA-Z0-9_]*)$"
+                        },
+                        {
+                            "name": "Folder Path",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
                             "validation_pattern": "^([a-zA-Z0-9_\\/]*)$"
                         },
                         {
