@@ -5,21 +5,34 @@ import pyblish.api
 from ayon_core.pipeline import publish
 
 
-class ExtractCSVPrevalidationReport(publish.Extractor):
-    """
-    Extractor CSV ingest prevalidation report
+class ExtractCSVReport(publish.Extractor):
+    """Extract CSV ingest report.
+
+    Merges two sources of report data into a single text file:
+
+    - ``csvPrevalidationReportData`` – collected during the publish phase
+      by ``CollectCSVIngestPrevalidationReport`` and stored on the context.
+    - ``csvPrecreateReportData`` – collected during the create phase when
+      the precreate validation is configured with ``Ignore and report``,
+      stored directly on the CSV product instance.
     """
 
-    label = "Extract CSV file"
+    label = "Extract CSV Report"
     order = pyblish.api.ExtractorOrder - 0.45
     families = ["csv_ingest_file"]
     hosts = ["traypublisher"]
 
     def process(self, instance):
-        prevalidation_report_data = instance.context.data.get(
-            "csvPrevalidationReportData", {})
-        if not prevalidation_report_data:
-            self.log.info("No prevalidation report data found.")
+        # Merge publish-phase and create-phase report data.
+        report_data: dict = dict(
+            instance.context.data.get("csvPrevalidationReportData") or {}
+        )
+        precreate_report = instance.data.get("csvPrecreateReportData") or {}
+        for category, messages in precreate_report.items():
+            report_data.setdefault(category, []).extend(messages)
+
+        if not report_data:
+            self.log.info("No report data found.")
             return
 
         csv_file_data = instance.data["csvFileData"]
@@ -35,7 +48,7 @@ class ExtractCSVPrevalidationReport(publish.Extractor):
 
         # create the report file and save the content to it
         with csv_report_filepath.open("w", encoding="utf-8") as f:
-            for label, rows in prevalidation_report_data.items():
+            for label, rows in report_data.items():
                 # write rows into a simple text file as markdown
                 f.write("## {}\n".format(label))
                 for row in rows:

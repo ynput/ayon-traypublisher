@@ -435,8 +435,12 @@ configuration in project settings.
         }
 
         # create instances from csv data via self function
-        instances = self._create_instances_from_csv_data(
+        instances, precreate_report_data = self._create_instances_from_csv_data(
             preset_data, csv_dir, filename)
+
+        if precreate_report_data:
+            csv_instance["csvPrecreateReportData"] = precreate_report_data
+
         for instance in instances:
             self._store_new_instance(instance)
         self._store_new_instance(csv_instance)
@@ -549,11 +553,37 @@ configuration in project settings.
 
         return parent_data
 
+    def _should_report_precreate(
+        self,
+        precreate_validation: dict[str, Any],
+        validator_name: str,
+    ) -> bool:
+        """Return True when a precreate failure should be reported, not raised.
+
+        Args:
+            precreate_validation (dict): The ``precreate_validation`` block
+                from the active preset.
+            validator_name (str): The validator key to check
+                (e.g. ``"folder_not_exists"`` or ``"folder_name_duplicity"``).
+
+        Returns:
+            bool: True if the failure should produce a report entry instead
+                of raising a ``CreatorError``.
+        """
+        if not precreate_validation:
+            return False
+        if not precreate_validation.get("enabled"):
+            return False
+        if validator_name not in (precreate_validation.get("validators") or []):
+            return False
+        return precreate_validation.get("on_failure") == "ignore_and_report"
+
     def _resolve_row_folder(
         self,
         row: dict[str, Any],
         folders_by_name: dict[str, list[dict[str, Any]]],
-    ) -> dict[str, Any]:
+        precreate_validation: Optional[dict[str, Any]] = None,
+    ) -> tuple[Optional[dict[str, Any]], Optional[tuple[str, str]]]:
         """Resolve folder path from folder name when path is missing.
 
         If the row already has a non-empty ``Folder Path`` the row is
@@ -563,47 +593,73 @@ configuration in project settings.
         (Frame Start, Frame End, Handle Start, Handle End, FPS) that are
         absent from the row but present on the matched folder entity.
 
+        When ``precreate_validation`` is configured with
+        ``on_failure: "ignore_and_report"`` for the relevant validator, a
+        failing row is *not* raised as a ``CreatorError``.  Instead the
+        method returns ``(None, (category, message))`` so the caller can
+        skip the row and collect the report entry.
+
         Args:
             row (dict): A single CSV row (will be copied, not mutated).
             folders_by_name (dict): Project folders indexed by folder name.
                 Values are lists of folder entity dicts
                 (``id``, ``path``, ``name``, ``attrib``).
+            precreate_validation (dict | None): The ``precreate_validation``
+                block from the active preset, or ``None`` to use the
+                raise-only behaviour.
 
         Returns:
-            dict: Processed row with resolved ``Folder Path`` and any
-                injected attribute values.
+            tuple: ``(resolved_row, None)`` on success, or
+                ``(None, (category, message))`` when the row should be
+                skipped and reported.
 
         Raises:
-            CreatorError: When the folder name is missing/empty, no folder
-                matches the name, or the name is ambiguous (multiple hits).
+            CreatorError: When a folder resolution error occurs and the
+                precreate validation is not configured to ignore it.
         """
         row = dict(row)  # work on a copy so the original is never mutated
 
         folder_path = (row.get("Folder Path") or "").strip()
         if folder_path:
             # Folder Path already provided. Nothing to resolve.
-            return row
+            return row, None
 
         folder_name = (row.get("Folder Name") or "").strip()
         if not folder_name:
-            raise CreatorError(
+            error_msg = (
                 "Both 'Folder Path' and 'Folder Name' are empty. "
                 "At least one must be provided per row."
             )
+            if self._should_report_precreate(
+                precreate_validation, "folder_not_exists"
+            ):
+                return None, ("Folder Not Found", error_msg)
+            raise CreatorError(error_msg)
 
         matching = folders_by_name.get(folder_name, [])
         if not matching:
-            raise CreatorError(
+            error_msg = (
                 f"No existing folder found with name '{folder_name}'. "
                 "Provide 'Folder Path' or create the folder first."
             )
+            if self._should_report_precreate(
+                precreate_validation, "folder_not_exists"
+            ):
+                return None, ("Folder Not Found", error_msg)
+            raise CreatorError(error_msg)
+
         if len(matching) > 1:
             paths = ", ".join(f["path"] for f in matching)
-            raise CreatorError(
+            error_msg = (
                 f"Multiple folders share the name '{folder_name}': "
                 f"{paths}. "
                 "Use 'Folder Path' to disambiguate."
             )
+            if self._should_report_precreate(
+                precreate_validation, "folder_name_duplicity"
+            ):
+                return None, ("Folder Name Duplicity", error_msg)
+            raise CreatorError(error_msg)
 
         matched = matching[0]
         row["Folder Path"] = matched["path"]
@@ -635,14 +691,14 @@ configuration in project settings.
                     matched["path"],
                 )
 
-        return row
+        return row, None
 
     def _get_data_from_csv(
         self,
         preset_data: dict[str, Any],
         csv_dir: str,
         filename: str,
-    ) -> dict[str, ProductItem]:
+    ) -> tuple[dict[str, ProductItem], dict[str, list[str]]]:
         """Parse the CSV file and build product items.
 
         Makes two targeted API calls:
@@ -652,13 +708,22 @@ configuration in project settings.
         2. After all rows are resolved, queries the final folder paths
            for ID lookup and validation.
 
+        When ``precreate_validation`` is configured with
+        ``on_failure: "ignore_and_report"``, rows that fail folder
+        resolution are skipped instead of raising a ``CreatorError``.
+        The collected report messages are returned as the second element
+        of the tuple so the caller can store them on the CSV product
+        instance.
+
         Args:
             preset_data (dict): The selected CSV ingest preset.
             csv_dir (str): Directory containing the CSV file.
             filename (str): CSV filename.
 
         Returns:
-            dict: Product items keyed by unique name.
+            tuple: ``(product_items_by_name, precreate_report_data)`` where
+                *precreate_report_data* is a ``dict[str, list[str]]`` keyed
+                by report category, containing any skipped-row messages.
         """
         project_name = self.create_context.get_current_project_name()
         csv_path = os.path.join(csv_dir, filename)
@@ -667,6 +732,7 @@ configuration in project settings.
         columns_config = preset_data["columns_config"]
         representations_config = preset_data["representations_config"]
         folder_creation_config = preset_data["folder_creation_config"]
+        precreate_validation = preset_data.get("precreate_validation") or {}
 
         # Make sure csv file contains all required columns.
         required_columns = [
@@ -721,15 +787,30 @@ configuration in project settings.
             ):
                 folders_by_name[folder["name"]].append(folder)
 
-        # Resolve rows and build product items.
+        # Resolve rows and build product items.  Rows that fail folder
+        # resolution under "ignore_and_report" mode are skipped; their
+        # messages accumulate in precreate_report_data.
         product_items_by_name: dict[str, ProductItem] = {}
+        precreate_report_data: dict[str, list[str]] = {}
         for row in raw_rows:
             # Resolve Folder Path from Folder Name when path is absent and
             # inject temporal attrs from the matched folder entity.
-            row = self._resolve_row_folder(row, folders_by_name)
+            resolved_row, report_entry = self._resolve_row_folder(
+                row, folders_by_name, precreate_validation
+            )
+            if resolved_row is None:
+                # Row failed folder resolution; record and skip.
+                category, message = report_entry
+                precreate_report_data.setdefault(category, []).append(message)
+                log.warning(
+                    "Skipping row due to precreate validation (%s): %s",
+                    category,
+                    message,
+                )
+                continue
 
             product_item_: ProductItem = ProductItem.from_csv_row(
-                columns_config, row
+                columns_config, resolved_row
             )
             unique_name = product_item_.unique_name
             if unique_name not in product_items_by_name:
@@ -739,7 +820,7 @@ configuration in project settings.
                 RepreItem.from_csv_row(
                     columns_config,
                     representations_config,
-                    row,
+                    resolved_row,
                 )
             )
 
@@ -848,7 +929,7 @@ configuration in project settings.
                     f"Duplicate filename{ending} in csv file.\n{joined_names}"
                 )
 
-        return product_items_by_name
+        return product_items_by_name, precreate_report_data
 
     def _add_thumbnail_repre(
         self,
@@ -1125,7 +1206,7 @@ configuration in project settings.
         preset_data: dict[str, Any],
         csv_dir: str,
         filename: str
-    ) -> list[CreatedInstance]:
+    ) -> tuple[list[CreatedInstance], dict[str, list[str]]]:
         """Create instances from csv data.
 
         Args:
@@ -1134,11 +1215,13 @@ configuration in project settings.
             filename (str): The name of the CSV file.
 
         Returns:
-            list[CreatedInstance]. The created instances.
+            tuple: ``(instances, precreate_report_data)`` where
+                *precreate_report_data* holds any folder-resolution errors
+                that were configured to be reported rather than raised.
         """
         # from special function get all data from csv file and convert them
         # to new instances
-        product_items_by_name: dict[str, ProductItem] = (
+        product_items_by_name, precreate_report_data = (
             self._get_data_from_csv(preset_data, csv_dir, filename)
         )
 
@@ -1355,4 +1438,4 @@ configuration in project settings.
 
             instances.append(new_instance)
 
-        return instances
+        return instances, precreate_report_data

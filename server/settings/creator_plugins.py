@@ -92,6 +92,44 @@ def _csv_prevalidation_config_enum() -> list:
     ]
 
 
+def _csv_precreate_validators_enum() -> list:
+    return [
+        {"label": "Folder does not exist", "value": "folder_not_exists"},
+        {"label": "Folder Name duplicity", "value": "folder_name_duplicity"},
+    ]
+
+
+def _csv_precreate_on_failure_enum() -> list:
+    return [
+        {"label": "Raise Error", "value": "raise_error"},
+        {"label": "Ignore and report", "value": "ignore_and_report"},
+    ]
+
+
+class PrecreateValidationModel(BaseSettingsModel):
+    """Precreate validation model.
+
+    Validates folder context during the create phase, before any instances
+    are built. When 'Ignore and report' is selected, failing rows are skipped
+    and a report is written alongside the ingested CSV file instead of
+    blocking the whole publish.
+    """
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=False,
+    )
+    validators: list[str] = SettingsField(
+        default_factory=list,
+        title="Validation cases",
+        enum_resolver=_csv_precreate_validators_enum,
+    )
+    on_failure: str = SettingsField(
+        title="On failure",
+        default="raise_error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
 class PrevalidationModel(BaseSettingsModel):
     """Prevalidation model."""
     enabled: bool = SettingsField(
@@ -386,9 +424,15 @@ class IngestCSVPresetModel(BaseSettingsModel):
         "Default",
         title="Name",
     )
+    precreate_validation: PrecreateValidationModel = SettingsField(
+        title="Precreate validation",
+        default_factory=PrecreateValidationModel,
+        section="Precreate validation",
+    )
     prevalidation: PrevalidationModel = SettingsField(
         title="Prevalidation",
-        default_factory=PrevalidationModel
+        default_factory=PrevalidationModel,
+        section="Prevalidation",
     )
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
@@ -485,6 +529,11 @@ DEFAULT_CREATORS = {
         "presets": [
             {
                 "name": "Default",
+                "precreate_validation": {
+                    "enabled": False,
+                    "validators": [],
+                    "on_failure": "raise_error",
+                },
                 "prevalidation": {
                     "enabled": True,
                     "validators": ["existing_versions", "wrong_framerange"],
