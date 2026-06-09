@@ -602,40 +602,41 @@ configuration in project settings.
 
         file_path = (row.get("File Path") or "").strip()
         row_ctx = (
-            f"Row {row_index} (File Path: '{file_path}'): "
+            f"Row {row_index} (File Path: '{file_path}'): \n"
             if row_index else ""
         )
 
         folder_name = (row.get("Folder Name") or "").strip()
         if not folder_name:
             error_msg = (
-                f"{row_ctx}Both 'Folder Path' and 'Folder Name' are empty. "
+                f"{row_ctx}Both 'Folder Path' and 'Folder Name' are empty. \n"
                 "Provide either a 'Folder Path' or a 'Folder Name' "
                 "for this row."
             )
             if prevalidation["folder_does_not_exists"] == "ignore":
-                return None, ("Folder Does Not Found", error_msg)
+                return None, ("Folder Does Not Exist", error_msg)
             raise CreatorError(error_msg)
 
         matching = folders_by_name.get(folder_name, [])
         if not matching:
             error_msg = (
-                f"{row_ctx}No existing folder found with name '{folder_name}'."
-                " Verify the 'Folder Name' value is correct in the project,"
+                f"\n{row_ctx}No existing folder found "
+                f"with name '{folder_name}'."
+                " \nVerify the 'Folder Name' value is correct in the project,"
                 " or use 'Folder Path' to specify the folder directly."
             )
-            if prevalidation["folder_does_not_exists"] == "ignore":
-                return None, ("Folder Does Not Found", error_msg)
+            if prevalidation["folder_not_exists"]["mode"] == "ignore":
+                return None, ("Folder Does Not Exist", error_msg)
             raise CreatorError(error_msg)
 
         if len(matching) > 1:
             paths = ", ".join(f["path"] for f in matching)
             error_msg = (
-                f"{row_ctx}Multiple folders share the name '{folder_name}': "
+                f"{row_ctx}Multiple folders share the name '{folder_name}': \n"
                 f"{paths}. "
                 "Use 'Folder Path' to uniquely identify which folder to use."
             )
-            if prevalidation["folder_name_duplicity"] == "ignore":
+            if prevalidation["folder_name_duplicity"]["mode"] == "ignore":
                 return None, ("Folder Name Duplicity", error_msg)
             raise CreatorError(error_msg)
 
@@ -802,12 +803,12 @@ configuration in project settings.
                 file_path = (resolved_row.get("File Path") or "").strip()
                 error_msg = (
                     f"Row {row_index} (File Path: '{file_path}'): "
-                    f"Missing frame range values for column(s): "
-                    f"{missing_frame_cols}. "
+                    f"Missing frame range values for column(s): \n\t"
+                    f"{missing_frame_cols}. \n"
                     "Provide the values in the CSV or ensure the matched "
                     "folder has these attributes set."
                 )
-                if prevalidation["missing_frame_range_values"] == "ignore":
+                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa
                     report_data.setdefault(
                         "Missing Frame Range Values", []
                     ).append(error_msg)

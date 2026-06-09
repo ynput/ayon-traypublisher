@@ -89,7 +89,7 @@ class ExistingVersionsPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
-    validation_mode: str = SettingsField(
+    mode: str = SettingsField(
         title="Existing Versions",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
@@ -100,7 +100,7 @@ class WrongFramerangePrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
-    validation_mode: str = SettingsField(
+    mode: str = SettingsField(
         title="Wrong Framerange",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
@@ -111,7 +111,7 @@ class FolderDoesNotExistsrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
-    validation_mode: str = SettingsField(
+    mode: str = SettingsField(
         title="Folder Does Not Exists",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
@@ -122,7 +122,7 @@ class FolderNameDuplicityPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
-    validation_mode: str = SettingsField(
+    mode: str = SettingsField(
         title="Folder Name Duplicity",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
@@ -133,7 +133,7 @@ class MissingFrameRangeValuesPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
-    validation_mode: str = SettingsField(
+    mode: str = SettingsField(
         title="Missing Frame Range Values",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
@@ -542,11 +542,11 @@ DEFAULT_CREATORS = {
             {
                 "name": "Default",
                 "prevalidation": {
-                    "existing_versions": {"validation_mode": "error"},
-                    "wrong_framerange": {"validation_mode": "error"},
-                    "folder_not_exists": {"validation_mode": "error"},
-                    "folder_name_duplicity": {"validation_mode": "error"},
-                    "missing_frame_range_values": {"validation_mode": "error"},
+                    "existing_versions": {"mode": "error"},
+                    "wrong_framerange": {"mode": "error"},
+                    "folder_not_exists": {"mode": "error"},
+                    "folder_name_duplicity": {"mode": "error"},
+                    "missing_frame_range_values": {"mode": "error"},
                 },
                 "columns_config": {
                     "csv_delimiter": ",",

@@ -32,7 +32,7 @@ class CollectCSVIngestPrevalidationReport(
         prevalidation = instance.data["prevalidation"]
 
         failing_validation = False
-        if prevalidation["existing_versions"] == "ignore":
+        if prevalidation["existing_versions"]["mode"] == "ignore":
             report_row = self._existing_version_check(
                 instance)
             if report_row:
@@ -42,7 +42,7 @@ class CollectCSVIngestPrevalidationReport(
                 existing_rows.append(report_row)
                 failing_validation = True
 
-        if prevalidation["wrong_framerange"] == "ignore":
+        if prevalidation["wrong_framerange"]["mode"] == "ignore":
             report_row = self._wrong_framerange_check(
                 instance)
             if report_row:
