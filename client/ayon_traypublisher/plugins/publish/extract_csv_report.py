@@ -25,7 +25,7 @@ class ExtractCSVReport(publish.Extractor):
     def process(self, instance):
         # Merge publish-phase and create-phase report data.
         report_data: dict = dict(
-            instance.context.data.get("csvPrevalidationReportData") or {}
+            instance.context.data.get("csvReportData") or {}
         )
         precreate_report = instance.data.get("csvPrecreateReportData") or {}
         for category, messages in precreate_report.items():

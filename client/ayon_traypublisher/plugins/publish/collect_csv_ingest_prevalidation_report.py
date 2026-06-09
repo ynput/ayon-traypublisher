@@ -19,19 +19,20 @@ class CollectCSVIngestPrevalidationReport(
     settings_category = "traypublisher"
 
     def process(self, instance):
+        # first get csvReportData if there are any from Creator phase
+        report_data: dict[str, list] = instance.context.data.get(
+            "csvReportData", {})
+        if not report_data:
+            for instance_ in instance.context:
+                report_data = instance_.data.get("csvReportData", {})
+                if report_data:
+                    break
+            instance.context.data["csvReportData"] = report_data
 
-        publish_attributes = instance.data["publish_attributes"]
         prevalidation = instance.data["prevalidation"]
-        if not prevalidation["enabled"]:
-            return
-
-        validators = prevalidation.get("validators", [])
-        config = prevalidation.get("config")
 
         failing_validation = False
-        if "existing_versions" in validators:
-            report_data: dict[str, list] = instance.context.data.setdefault(
-                "csvPrevalidationReportData", {})
+        if prevalidation["existing_versions"] == "ignore":
             report_row = self._existing_version_check(
                 instance)
             if report_row:
@@ -41,13 +42,7 @@ class CollectCSVIngestPrevalidationReport(
                 existing_rows.append(report_row)
                 failing_validation = True
 
-                if "bypass" in config:
-                    publish_attributes[
-                        "ValidateExistingVersion"]["active"] = False
-
-        if "wrong_framerange" in validators:
-            report_data: dict[str, list] = instance.context.data.setdefault(
-                "csvPrevalidationReportData", {})
+        if prevalidation["wrong_framerange"] == "ignore":
             report_row = self._wrong_framerange_check(
                 instance)
             if report_row:
@@ -57,14 +52,9 @@ class CollectCSVIngestPrevalidationReport(
                 wrongrange_rows.append(report_row)
                 failing_validation = True
 
-                if config == "bypass":
-                    publish_attributes[
-                        "ValidateFrameRange"]["active"] = False
-
         # Skip publishing if requested
-        if failing_validation and config == "skip":
+        if failing_validation:
             instance.context.remove(instance)
-
 
     def _existing_version_check(
         self,
