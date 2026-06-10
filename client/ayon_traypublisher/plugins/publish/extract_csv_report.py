@@ -10,11 +10,12 @@ class ExtractCSVReport(publish.Extractor):
 
     Merges two sources of report data into a single text file:
 
-    - ``csvPrevalidationReportData`` – collected during the publish phase
-      by ``CollectCSVIngestPrevalidationReport`` and stored on the context.
-    - ``csvPrecreateReportData`` – collected during the create phase when
-      the precreate validation is configured with ``Ignore and report``,
-      stored directly on the CSV product instance.
+    - ``csvReportData`` – Two phases of gathering report data:
+            1. collected during the create phase by ``IngestCSV`` and stored
+                on the instance.data of ``csv_ingest_file``.
+            2. collected during the publish phase by
+                ``CollectCSVIngestPrevalidationReport`` and stored
+                on the context.
     """
 
     label = "Extract CSV Report"
@@ -27,9 +28,6 @@ class ExtractCSVReport(publish.Extractor):
         report_data: dict = dict(
             instance.context.data.get("csvReportData") or {}
         )
-        precreate_report = instance.data.get("csvPrecreateReportData") or {}
-        for category, messages in precreate_report.items():
-            report_data.setdefault(category, []).extend(messages)
 
         if not report_data:
             self.log.info("No report data found.")
