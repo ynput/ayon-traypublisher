@@ -430,6 +430,7 @@ configuration in project settings.
             "filename": filename,
             "staging_dir": csv_dir,
         }
+        csv_instance.set_mandatory(True)
 
         # create instances from csv data via self function
         instances, report_data = self._create_instances_from_csv_data(
