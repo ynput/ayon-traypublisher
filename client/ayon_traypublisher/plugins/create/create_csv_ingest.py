@@ -299,6 +299,9 @@ configuration in project settings.
             if instance.creator_identifier == self.identifier:
                 instance.transient_data["has_promised_context"] = True
 
+            if instance.data["productBaseType"] == "csv_ingest_file":
+                instance.set_mandatory(True)
+
     def get_pre_create_attr_defs(self):
         """Creating pre-create attributes at creator plugin.
 
@@ -440,6 +443,7 @@ configuration in project settings.
             csv_instance["csvReportData"] = report_data
 
         for instance in instances:
+            instance.data["csv_parent_instance"] = csv_instance.id
             self._store_new_instance(instance)
         self._store_new_instance(csv_instance)
 
@@ -712,7 +716,7 @@ configuration in project settings.
         columns_config = preset_data["columns_config"]
         representations_config = preset_data["representations_config"]
         folder_creation_config = preset_data["folder_creation_config"]
-        prevalidation = preset_data.get("prevalidation") or {}
+        prevalidation = preset_data["prevalidation"]
 
         # Make sure csv file contains all required columns.
         required_columns = [
@@ -1441,11 +1445,6 @@ configuration in project settings.
 
             if product_item.has_promised_context:
                 new_instance.transient_data["has_promised_context"] = True
-
-            # add prevalidation preset to instance transient data
-            if preset_data.get("prevalidation"):
-                new_instance.data["prevalidation"] = \
-                    preset_data["prevalidation"]
 
             instances.append(new_instance)
 

@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from pprint import pformat
+from collections import defaultdict
+
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
@@ -6,55 +11,121 @@ from ayon_core.pipeline.publish import (
 
 class CollectCSVIngestPrevalidationReport(
     OptionalPyblishPluginMixin,
-    pyblish.api.InstancePlugin
+    pyblish.api.ContextPlugin
 ):
-    """Collect CSV Ingest prevalidation report data from instances.
+    """Collect CSV Ingest prevalidation report data into context data.
+
+    This plugin merges two sources of report data into a single dictionary
+    stored at ``context.data["csvReportData"]``, keyed by the ID of each
+    parent ``csv_ingest_file`` instance.
+
+    The data is gathered across two phases:
+
+    1. **Create phase** – Report data is collected by ``IngestCSV`` and
+       stored on ``instance.data["csvReportData"]`` of each
+       ``csv_ingest_file`` instance.
+    2. **Publish phase** – Additional validation checks are performed here
+       for each ``csv_ingest`` instance:
+
+       - **Existing Versions** – Flags instances whose version already
+         exists in the database (when the preset mode is set to
+         ``"ignore"``).
+       - **Wrong Frame Range** – Flags instances where the number of
+         ingested files does not match the frame range duration defined
+         in the database (when the preset mode is set to ``"ignore"``).
+
+    Instances that fail any of the above validations are removed from the
+    publish context and their failure details are recorded in the report.
     """
 
     label = "Collect CSV Ingest Prevalidation Report"
     order = pyblish.api.CollectorOrder + 0.499
     hosts = ["traypublisher"]
-    families = ["csv_ingest"]
 
     settings_category = "traypublisher"
 
-    def process(self, instance):
-        # first get csvReportData if there are any from Creator phase
-        report_data: dict[str, list] = instance.context.data.get(
-            "csvReportData", {})
-        if not report_data:
-            for instance_ in instance.context:
-                report_data = instance_.data.get("csvReportData", {})
-                if report_data:
-                    break
-            instance.context.data["csvReportData"] = report_data
+    def process(self, context: pyblish.api.Context):
+        report_per_csv_ingest = defaultdict(dict)
+        # at first we need to get csv_ingest_file instance and distribute
+        # its csvReportData from creating phase to context data
+        for instance in context:
+            if not self._is_csv_ingest_file_instance(instance):
+                continue
 
-        prevalidation = instance.data["prevalidation"]
+            csv_report_data = self._get_csv_instance_report(instance)
 
-        failing_validation = False
-        if prevalidation["existing_versions"]["mode"] == "ignore":
-            report_row = self._existing_version_check(
-                instance)
-            if report_row:
-                existing_rows: list[str] = report_data.setdefault(
-                    "Existing Versions Validation", []
-                )
-                existing_rows.append(report_row)
-                failing_validation = True
+            if not csv_report_data:
+                # Instance has nothing to report
+                continue
 
-        if prevalidation["wrong_framerange"]["mode"] == "ignore":
-            report_row = self._wrong_framerange_check(
-                instance)
-            if report_row:
-                wrongrange_rows: list[str] = report_data.setdefault(
-                    "Wrong Frame Range", []
-                )
-                wrongrange_rows.append(report_row)
-                failing_validation = True
+            instance_id = instance.data["instance_id"]
+            self.log.debug(f"Report data for {instance_id}")
+            report_per_csv_ingest.update({instance_id: csv_report_data})
 
-        # Skip publishing if requested
-        if failing_validation:
-            instance.context.remove(instance)
+        # now we can distribute csvReportData from parent csv_ingest_file
+        # instances to their csv_ingest instances
+        for instance in context:
+            if not self._is_csv_ingest_instance(instance):
+                continue
+
+            # parent instance id is added during creating phase only to
+            # instances related to csv_ingest_file parent instance
+            csv_parent_instance_id = instance.data.get("csv_parent_instance")
+            if not csv_parent_instance_id:
+                continue
+
+            # for each instance make sure we do have correct csv preset data
+            csv_preset_name = instance.data["csv_preset_name"]
+            preset_data = self._get_csv_ingest_preset_data(
+                instance, csv_preset_name)
+
+            # very unlikely this will happen but just in case we make sure
+            # it exists. Only case would be if a admin would remove preset
+            # just before the publish button was pushed
+            if not preset_data:
+                self.log.warning(
+                    f"Preset does not exist anymore: {csv_preset_name}")
+                return
+
+            prevalidation = preset_data["prevalidation"]
+
+            # we need to make sure the data are available even nothing
+            # was added from creator context processed in first pass
+            report_data = report_per_csv_ingest.setdefault(
+                csv_parent_instance_id, {}
+            )
+
+            failing_validation = False
+            if prevalidation["existing_versions"]["mode"] == "ignore":
+                report_row = self._existing_version_check(
+                    instance)
+                if report_row:
+                    existing_rows: list[str] = report_data.setdefault(
+                        "Existing Versions Validation", []
+                    )
+                    existing_rows.append(report_row)
+                    failing_validation = True
+
+            if prevalidation["wrong_framerange"]["mode"] == "ignore":
+                report_row = self._wrong_framerange_check(
+                    instance)
+                if report_row:
+                    wrongrange_rows: list[str] = report_data.setdefault(
+                        "Wrong Frame Range", []
+                    )
+                    wrongrange_rows.append(report_row)
+                    failing_validation = True
+
+            # Skip publishing if ignored with report is chosen
+            if failing_validation:
+                context.remove(instance)
+
+        self.log.info(f"Collected {len(report_per_csv_ingest)} CSV ingest prevalidation reports")
+        self.log.debug(f"Report data: {pformat(report_per_csv_ingest)}")
+
+        # only store report data if there are any
+        if report_per_csv_ingest:
+            context.data["csvReportData"] = report_per_csv_ingest
 
     def _existing_version_check(
         self,
@@ -160,3 +231,33 @@ class CollectCSVIngestPrevalidationReport(
                     "range for folder/task or limit no. of files"
                 )
         return ""
+
+
+    @staticmethod
+    def _is_csv_ingest_file_instance(instance):
+        return (
+            "csv_ingest_file" in instance.data.get("families", [])
+            is not None
+        )
+
+    def _is_csv_ingest_instance(self, instance):
+        return (
+            "csv_ingest" in instance.data.get("families", [])
+        )
+
+    @staticmethod
+    def _get_csv_instance_report(instance):
+        return instance.data.get("csvReportData")
+
+    @staticmethod
+    def _get_csv_ingest_preset_data(
+        instance: pyblish.api.Instance,
+        csv_preset_name: str,
+    ) -> dict | None:
+        project_settings = instance.context.data["project_settings"]
+        tp_settings = project_settings["traypublisher"]
+        ingest_presets = tp_settings["create"]["IngestCSV"]["presets"]
+        return next(
+            (p for p in ingest_presets if p["name"] == csv_preset_name),
+            None
+        )
