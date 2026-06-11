@@ -107,17 +107,19 @@ class WrongFramerangePrevalidationItemModel(BaseSettingsModel):
     )
 
 
-class FolderDoesNotExistsrevalidationItemModel(BaseSettingsModel):
+class FolderDoesNotExistPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
 
     mode: str = SettingsField(
-        title="Folder Does Not Exists",
+        title="Folder Does Not Exist",
         default="error",
         enum_resolver=_csv_precreate_on_failure_enum,
     )
 
 
+# Backwards-compatible alias for the previous (typoed) class name.
+FolderDoesNotExistsrevalidationItemModel = FolderDoesNotExistPrevalidationItemModel
 class FolderNameDuplicityPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
@@ -151,9 +153,9 @@ class PrevalidationModel(BaseSettingsModel):
         title="Wrong Framerange",
         default_factory=WrongFramerangePrevalidationItemModel,
     )
-    folder_not_exists: FolderDoesNotExistsrevalidationItemModel = SettingsField(  # noqa
-        title="Folder Does Not Exists",
-        default_factory=FolderDoesNotExistsrevalidationItemModel,
+    folder_not_exists: FolderDoesNotExistPrevalidationItemModel = SettingsField(  # noqa
+        title="Folder Does Not Exist",
+        default_factory=FolderDoesNotExistPrevalidationItemModel,
     )
     folder_name_duplicity: FolderNameDuplicityPrevalidationItemModel = SettingsField(  # noqa
         title="Folder Name Duplicity",

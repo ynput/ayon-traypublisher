@@ -60,7 +60,6 @@ class CollectCSVIngestPrevalidationReport(
                 continue
 
             instance_id = instance.data["instance_id"]
-            self.log.debug(f"Report data for {instance_id}")
             report_per_csv_ingest.update({instance_id: csv_report_data})
 
         # now we can distribute csvReportData from parent csv_ingest_file
@@ -97,8 +96,11 @@ class CollectCSVIngestPrevalidationReport(
 
             failing_validation = False
             if prevalidation["existing_versions"]["mode"] == "ignore":
-                report_row = self._existing_version_check(
-                    instance)
+                version = instance.data.get("version")
+                if version is not None:
+                    report_row = self._existing_version_check(instance)
+                else:
+                    report_row = ""
                 if report_row:
                     existing_rows: list[str] = report_data.setdefault(
                         "Existing Versions Validation", []
@@ -120,7 +122,7 @@ class CollectCSVIngestPrevalidationReport(
             if failing_validation:
                 context.remove(instance)
 
-        self.log.info(f"Collected {len(report_per_csv_ingest)} CSV ingest prevalidation reports")
+        self.log.debug(f"Collected {len(report_per_csv_ingest)} CSV ingest prevalidation reports")
         self.log.debug(f"Report data: {pformat(report_per_csv_ingest)}")
 
         # only store report data if there are any
@@ -231,7 +233,6 @@ class CollectCSVIngestPrevalidationReport(
                     "range for folder/task or limit no. of files"
                 )
         return ""
-
 
     @staticmethod
     def _is_csv_ingest_file_instance(instance):

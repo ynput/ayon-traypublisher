@@ -23,7 +23,7 @@ class ExtractCSVReport(pyblish.api.ContextPlugin):
         )
 
         if not report_data:
-            self.log.info("No report data found.")
+            self.log.debug("No CSV ingest report data found.")
             return
 
         for parent_instance_id, parent_report_data in report_data.items():
@@ -85,7 +85,7 @@ class ExtractCSVReport(pyblish.api.ContextPlugin):
         self, context: pyblish.api.Context, instance_id: str
     ) -> pyblish.api.Instance | None:
         for instance in context:
-            if instance.data["instance_id"] == instance_id:
+            if instance.data.get("instance_id") == instance_id:
                 self.log.info(
                     f"Found parent instance with {instance} "
                     f"(instance_id: {instance_id})"
