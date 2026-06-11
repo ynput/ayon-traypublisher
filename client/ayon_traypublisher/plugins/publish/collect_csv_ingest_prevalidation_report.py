@@ -60,7 +60,7 @@ class CollectCSVIngestPrevalidationReport(
                 continue
 
             instance_id = instance.data["instance_id"]
-            report_per_csv_ingest.update({instance_id: csv_report_data})
+            report_per_csv_ingest[instance_id] = csv_report_data
 
         # now we can distribute csvReportData from parent csv_ingest_file
         # instances to their csv_ingest instances
@@ -90,9 +90,7 @@ class CollectCSVIngestPrevalidationReport(
 
             # we need to make sure the data are available even nothing
             # was added from creator context processed in first pass
-            report_data = report_per_csv_ingest.setdefault(
-                csv_parent_instance_id, {}
-            )
+            report_data = report_per_csv_ingest[csv_parent_instance_id]
 
             failing_validation = False
             if prevalidation["existing_versions"]["mode"] == "ignore":
