@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from pprint import pformat
 from collections import defaultdict
+from pprint import pformat
 
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
+    PublishError,
 )
 
 
@@ -83,9 +84,8 @@ class CollectCSVIngestPrevalidationReport(
             # it exists. Only case would be if a admin would remove preset
             # just before the publish button was pushed
             if not preset_data:
-                self.log.warning(
+                raise PublishError(
                     f"Preset does not exist anymore: {csv_preset_name}")
-                return
 
             prevalidation = preset_data["prevalidation"]
 
