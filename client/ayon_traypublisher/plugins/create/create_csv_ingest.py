@@ -571,9 +571,11 @@ configuration in project settings.
         (Frame Start, Frame End, Handle Start, Handle End, FPS) that are
         absent from the row but present on the matched folder entity.
 
-        When ``precreate_validation`` is configured with
-        ``on_failure: "ignore_and_report"`` for the relevant validator, a
-        failing row is *not* raised as a ``CreatorError``.  Instead the
+        When the relevant validator in ``prevalidation`` is configured with
+        ``mode: \"ignore\"``, a failing row is *not* raised as a
+        ``CreatorError``. Instead the method returns
+        ``(None, (category, message))`` so the caller can skip the row and
+        collect the report entry.
         method returns ``(None, (category, message))`` so the caller can
         skip the row and collect the report entry.
 
@@ -692,9 +694,9 @@ configuration in project settings.
         2. After all rows are resolved, queries the final folder paths
            for ID lookup and validation.
 
-        When ``precreate_validation`` is configured with
-        ``on_failure: "ignore_and_report"``, rows that fail folder
-        resolution are skipped instead of raising a ``CreatorError``.
+        When the relevant validator in ``prevalidation`` is configured with
+        ``mode: \"ignore\"``, rows that fail folder resolution are skipped
+        instead of raising a ``CreatorError``.
         The collected report messages are returned as the second element
         of the tuple so the caller can store them on the CSV product
         instance.
