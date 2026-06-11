@@ -118,8 +118,6 @@ class FolderDoesNotExistPrevalidationItemModel(BaseSettingsModel):
     )
 
 
-# Backwards-compatible alias for the previous (typoed) class name.
-FolderDoesNotExistsrevalidationItemModel = FolderDoesNotExistPrevalidationItemModel
 class FolderNameDuplicityPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model."""
     _layout = "expanded"
