@@ -235,15 +235,10 @@ class CollectCSVIngestPrevalidationReport(
 
     @staticmethod
     def _is_csv_ingest_file_instance(instance):
-        return (
-            "csv_ingest_file" in instance.data.get("families", [])
-            is not None
-        )
+        return "csv_ingest_file" in instance.data.get("families", [])
 
     def _is_csv_ingest_instance(self, instance):
-        return (
-            "csv_ingest" in instance.data.get("families", [])
-        )
+        return "csv_ingest" in instance.data.get("families", [])
 
     @staticmethod
     def _get_csv_instance_report(instance):
