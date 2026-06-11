@@ -64,7 +64,7 @@ class CollectCSVIngestPrevalidationReport(
 
         # now we can distribute csvReportData from parent csv_ingest_file
         # instances to their csv_ingest instances
-        for instance in context:
+        for instance in list(context):
             if not self._is_csv_ingest_instance(instance):
                 continue
 
