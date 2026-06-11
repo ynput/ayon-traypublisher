@@ -77,7 +77,7 @@ class CollectCSVIngestPrevalidationReport(
             # for each instance make sure we do have correct csv preset data
             csv_preset_name = instance.data["csv_preset_name"]
             preset_data = self._get_csv_ingest_preset_data(
-                instance, csv_preset_name)
+                context, csv_preset_name)
 
             # very unlikely this will happen but just in case we make sure
             # it exists. Only case would be if a admin would remove preset
@@ -246,10 +246,10 @@ class CollectCSVIngestPrevalidationReport(
 
     @staticmethod
     def _get_csv_ingest_preset_data(
-        instance: pyblish.api.Instance,
+        context: pyblish.api.Context,
         csv_preset_name: str,
     ) -> dict | None:
-        project_settings = instance.context.data["project_settings"]
+        project_settings = context.data["project_settings"]
         tp_settings = project_settings["traypublisher"]
         ingest_presets = tp_settings["create"]["IngestCSV"]["presets"]
         return next(
