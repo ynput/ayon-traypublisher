@@ -78,37 +78,92 @@ class ColumnItemModel(BaseSettingsModel):
     )
 
 
-def _csv_prevalidators_enum() -> list:
+def _csv_precreate_on_failure_enum() -> list:
     return [
-        {"label": "Existing versions", "value": "existing_versions"},
-        {"label": "Wrong framerange", "value": "wrong_framerange"}
+        {"label": "Raise Error", "value": "error"},
+        {"label": "Ignore and report", "value": "ignore"},
     ]
 
 
-def _csv_prevalidation_config_enum() -> list:
-    return [
-        {"label": "Skip instances from publishing", "value": "skip"},
-        {"label": "Bypass relative validators", "value": "bypass"}
-    ]
+class ExistingVersionsPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Existing Versions",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class WrongFramerangePrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Wrong Framerange",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class FolderDoesNotExistPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Folder Does Not Exist",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class FolderNameDuplicityPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Folder Name Duplicity",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class MissingFrameRangeValuesPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Missing Frame Range Values",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
 
 
 class PrevalidationModel(BaseSettingsModel):
     """Prevalidation model."""
-    enabled: bool = SettingsField(
-        title="Enabled",
-        default=False
+
+    existing_versions: ExistingVersionsPrevalidationItemModel = SettingsField(
+        title="Existing Versions",
+        default_factory=ExistingVersionsPrevalidationItemModel,
+    )
+    wrong_framerange: WrongFramerangePrevalidationItemModel = SettingsField(
+        title="Wrong Framerange",
+        default_factory=WrongFramerangePrevalidationItemModel,
+    )
+    folder_not_exists: FolderDoesNotExistPrevalidationItemModel = SettingsField(  # noqa
+        title="Folder Does Not Exist",
+        default_factory=FolderDoesNotExistPrevalidationItemModel,
+    )
+    folder_name_duplicity: FolderNameDuplicityPrevalidationItemModel = SettingsField(  # noqa
+        title="Folder Name Duplicity",
+        default_factory=FolderNameDuplicityPrevalidationItemModel,
+    )
+    missing_frame_range_values: MissingFrameRangeValuesPrevalidationItemModel = SettingsField(  # noqa
+        title="Missing Frame Range Values",
+        default_factory=MissingFrameRangeValuesPrevalidationItemModel,
     )
 
-    validators: list[str] = SettingsField(
-        default_factory=list,
-        title="Activated prevalidators",
-        enum_resolver=_csv_prevalidators_enum,
-    )
-    config: str = SettingsField(
-        title="Prevalidation config",
-        default="skip",
-        enum_resolver=_csv_prevalidation_config_enum,
-    )
 
 
 class ColumnConfigModel(BaseSettingsModel):
@@ -388,7 +443,8 @@ class IngestCSVPresetModel(BaseSettingsModel):
     )
     prevalidation: PrevalidationModel = SettingsField(
         title="Prevalidation",
-        default_factory=PrevalidationModel
+        default_factory=PrevalidationModel,
+        section="Prevalidation",
     )
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
@@ -486,9 +542,11 @@ DEFAULT_CREATORS = {
             {
                 "name": "Default",
                 "prevalidation": {
-                    "enabled": True,
-                    "validators": ["existing_versions", "wrong_framerange"],
-                    "config": "skip"
+                    "existing_versions": {"mode": "error"},
+                    "wrong_framerange": {"mode": "error"},
+                    "folder_not_exists": {"mode": "error"},
+                    "folder_name_duplicity": {"mode": "error"},
+                    "missing_frame_range_values": {"mode": "error"},
                 },
                 "columns_config": {
                     "csv_delimiter": ",",
@@ -506,6 +564,13 @@ DEFAULT_CREATORS = {
                             "default": "",
                             "required_column": True,
                             "validation_pattern": "^([a-zA-Z0-9_\\/]*)$"
+                        },
+                        {
+                            "name": "Folder Name",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^([a-zA-Z0-9_]*)$"
                         },
                         {
                             "name": "Task Name",
