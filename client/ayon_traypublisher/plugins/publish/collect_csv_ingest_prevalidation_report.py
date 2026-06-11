@@ -146,7 +146,8 @@ class CollectCSVIngestPrevalidationReport(
         }
         version = instance.data.get("version")
         latest_version = instance.data.get("latestVersion")
-
+        if version is None:
+            return ""
         if (
             latest_version is not None
             and int(version) <= int(latest_version)
