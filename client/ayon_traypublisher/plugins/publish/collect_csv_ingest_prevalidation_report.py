@@ -238,7 +238,8 @@ class CollectCSVIngestPrevalidationReport(
     def _is_csv_ingest_file_instance(instance):
         return "csv_ingest_file" in instance.data.get("families", [])
 
-    def _is_csv_ingest_instance(self, instance):
+    @staticmethod
+    def _is_csv_ingest_instance(instance):
         return "csv_ingest" in instance.data.get("families", [])
 
     @staticmethod
