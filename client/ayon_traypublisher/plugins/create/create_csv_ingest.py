@@ -299,7 +299,7 @@ configuration in project settings.
             if instance.creator_identifier == self.identifier:
                 instance.transient_data["has_promised_context"] = True
 
-            if instance.data["productBaseType"] == "csv_ingest_file":
+            if instance.product_base_type == "csv_ingest_file":
                 instance.set_mandatory(True)
 
     def get_pre_create_attr_defs(self):
