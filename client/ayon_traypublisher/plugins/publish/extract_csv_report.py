@@ -66,7 +66,8 @@ class ExtractCSVReport(pyblish.api.ContextPlugin):
 
         # add _report suffix and change extension to .txt
         csv_report_filepath = csv_filepath.with_stem(
-            csv_filepath.stem + f"_report_{timestamp}").with_suffix(".txt")
+            f"{csv_filepath.stem}_report_{timestamp}"
+        ).with_suffix(".txt")
 
         # create the report file and save the content to it
         with csv_report_filepath.open("w", encoding="utf-8") as f:
