@@ -59,7 +59,7 @@ class ExtractCSVReport(pyblish.api.ContextPlugin):
             return False
 
         csv_file_data = parent_instance.data["csvFileData"]
-        csv_filename = Path(csv_file_data["filename"])
+        csv_filename = csv_file_data["filename"]
         csv_staging_dir = csv_file_data["staging_dir"]
         csv_filepath = Path(csv_staging_dir) / csv_filename
         timestamp = time.strftime("%Y%m%d_%H%M%S")
