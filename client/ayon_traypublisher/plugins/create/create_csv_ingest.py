@@ -618,7 +618,7 @@ configuration in project settings.
                 "Provide either a 'Folder Path' or a 'Folder Name' "
                 "for this row."
             )
-            if prevalidation["folder_does_not_exists"] == "ignore":
+            if prevalidation["folder_not_exists"]["mode"] == "ignore":
                 return None, ("Folder Does Not Exist", error_msg)
             raise CreatorError(error_msg)
 
