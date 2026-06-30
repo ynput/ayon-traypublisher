@@ -1,5 +1,6 @@
-from pydantic import validator
+from typing import Any
 
+from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
@@ -7,7 +8,7 @@ from ayon_server.settings import (
     task_types_enum,
 )
 from ayon_server.settings.validators import ensure_unique_names
-from ayon_server.exceptions import BadRequestException
+from pydantic import root_validator, validator
 
 
 class ProductTypeItemModel(BaseSettingsModel):
@@ -46,6 +47,42 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
     )
 
 
+def _entity_type_enum() -> list[str]:
+    return [
+        {"value": "folder", "label": "Folder"},
+        {"value": "task", "label": "Task"},
+        {"value": "version", "label": "Version"},
+    ]
+
+
+class CSVColumnAttrMappingModel(BaseSettingsModel):
+    name: str = SettingsField(
+        title="Name",
+        default="",
+    )
+    entity_type: str = SettingsField(
+        title="Entity Type",
+        default="version",
+        enum_resolver=_entity_type_enum,
+    )
+
+
+def _processing_type_enum() -> list[str]:
+    return [
+        {"value": "data", "label": "Data"},
+        {"value": "attr", "label": "Attribute"},
+    ]
+
+
+def _value_type_enum() -> list[str]:
+    return [
+        {"value": "text", "label": "Text"},
+        {"value": "number", "label": "Number"},
+        {"value": "decimal", "label": "Decimal"},
+        {"value": "bool", "label": "Boolean"},
+    ]
+
+
 class ColumnItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -54,28 +91,53 @@ class ColumnItemModel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(
         title="Name",
-        default=""
+        default="",
     )
 
     type: str = SettingsField(
         title="Type",
-        default=""
+        default="text",
+        enum_resolver=_value_type_enum,
     )
 
     default: str = SettingsField(
         title="Default",
-        default=""
+        default="",
     )
 
     required_column: bool = SettingsField(
         title="Required Column",
-        default=False
+        default=False,
     )
 
     validation_pattern: str = SettingsField(
         title="Validation Regex Pattern",
-        default="^(.*)$"
+        default="^(.*)$",
     )
+    processing_type: str = SettingsField(
+        title="Processing Type",
+        default="data",
+        enum_resolver=_processing_type_enum,
+        conditional_enum=True,
+    )
+    attr: CSVColumnAttrMappingModel = SettingsField(
+        title="Attribute",
+        default_factory=CSVColumnAttrMappingModel,
+    )
+
+    @root_validator(pre=True)
+    def validate_attr_name(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # only validate if attr.name is not set in case processing_type
+        # is set to attr
+        if (
+            values.get("processing_type") == "attr" and
+            not values.get("attr", {}).get("name")
+        ):
+            raise ValueError(
+                "Attribute name is required when Processing Type "
+                "is set to Attribute"
+            )
+        return values
 
 
 def _csv_precreate_on_failure_enum() -> list:
@@ -163,7 +225,6 @@ class PrevalidationModel(BaseSettingsModel):
         title="Missing Frame Range Values",
         default_factory=MissingFrameRangeValuesPrevalidationItemModel,
     )
-
 
 
 class ColumnConfigModel(BaseSettingsModel):
