@@ -91,6 +91,9 @@ class CollectCSVIngestInstancesData(
             elif entity_type == "folder":
                 folder_data[attr_name] = attr_value
 
-        instance.data["versionData"] = version_data
-        instance.data["taskData"] = task_data
-        instance.data["folderData"] = folder_data
+        if version_data:
+            instance.data["versionData"] = version_data
+        if task_data:
+            instance.data["taskData"] = task_data
+        if folder_data:
+            instance.data["folderData"] = folder_data
