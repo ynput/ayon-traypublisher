@@ -110,9 +110,9 @@ def _collect_attr_columns(
             columns_config, column["name"], row
         )
         result.append({
-            "name": attr_cfg.get("name", ""),
+            "name": attr_cfg["name"],
             "value": value,
-            "entity_type": attr_cfg.get("entity_type", "version"),
+            "entity_type": attr_cfg["entity_type"],
         })
     return result
 
