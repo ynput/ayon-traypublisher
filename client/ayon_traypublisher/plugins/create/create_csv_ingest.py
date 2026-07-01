@@ -92,6 +92,31 @@ def _get_row_value_with_validation(
     return column_value
 
 
+def _collect_attr_columns(
+    columns_config: dict[str, Any],
+    row: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Collect columns with processing_type 'attr' from a CSV row.
+
+    Returns a list of dicts with ``name``, ``value``,
+    and ``entity_type`` for each matching column.
+    """
+    result = []
+    for column in columns_config["columns"]:
+        if column.get("processing_type") != "attr":
+            continue
+        attr_cfg = column.get("attr") or {}
+        value = _get_row_value_with_validation(
+            columns_config, column["name"], row
+        )
+        result.append({
+            "name": attr_cfg.get("name", ""),
+            "value": value,
+            "entity_type": attr_cfg.get("entity_type", "version"),
+        })
+    return result
+
+
 class RepreItem:
     def __init__(
         self,
@@ -198,6 +223,7 @@ class ProductItem:
         self.width = width
         self.height = height
         self.pixel_aspect = pixel_aspect
+        self.attr_data: list[dict] = []
 
     @property
     def unique_name(self) -> str:
@@ -831,6 +857,9 @@ configuration in project settings.
             )
             unique_name = product_item_.unique_name
             if unique_name not in product_items_by_name:
+                product_item_.attr_data = _collect_attr_columns(
+                    columns_config, resolved_row
+                )
                 product_items_by_name[unique_name] = product_item_
             product_item: ProductItem = product_items_by_name[unique_name]
             product_item.add_repre_item(
@@ -1400,6 +1429,9 @@ configuration in project settings.
 
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
+
+            if product_item.attr_data:
+                instance_data["csv_attributes"] = product_item.attr_data
 
             if product_item.has_promised_context:
                 families.append("shot")
