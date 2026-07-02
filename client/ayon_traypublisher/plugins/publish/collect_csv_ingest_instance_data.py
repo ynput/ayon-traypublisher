@@ -2,6 +2,7 @@ from pprint import pformat
 
 import pyblish.api
 from ayon_core.pipeline import publish
+from ayon_traypublisher.api.structures import PassingDataValue
 
 
 class CollectCSVIngestInstancesData(
@@ -19,7 +20,7 @@ class CollectCSVIngestInstancesData(
     def process(self, instance):
 
         # populate all attributes to instance data
-        self._process_attr_data(instance)
+        self._process_passing_data(instance)
 
         # populate representation data to instance data
         self._process_representation_data(instance)
@@ -70,30 +71,23 @@ class CollectCSVIngestInstancesData(
             instance.data["frameStart"] = frame_start
             instance.data["frameEnd"] = frame_end
 
-    def _process_attr_data(self, instance):
+    def _process_passing_data(self, instance):
         """Populate attribute data to instance data."""
 
-        attr_data = instance.data.get("csv_attributes", [])
+        attr_data: list[PassingDataValue] = instance.data.get(
+            "csv_passing_data", [])
         if not attr_data:
             return
 
+        # TODO: add passing for representation data
+        # TODO: add passing for instance data keys from columns
         version_data = {}
-        task_data = {}
-        folder_data = {}
         for attr_item in attr_data:
             attr_name = attr_item["name"]
             attr_value = attr_item["value"]
             entity_type = attr_item["entity_type"]
             if entity_type == "version":
                 version_data[attr_name] = attr_value
-            elif entity_type == "task":
-                task_data[attr_name] = attr_value
-            elif entity_type == "folder":
-                folder_data[attr_name] = attr_value
 
         if version_data:
             instance.data["versionData"] = version_data
-        if task_data:
-            instance.data["taskData"] = task_data
-        if folder_data:
-            instance.data["folderData"] = folder_data

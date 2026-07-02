@@ -21,8 +21,10 @@ from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import CreatorError, get_product_name
 from ayon_traypublisher.api.plugin import TrayPublishCreator
+from ayon_traypublisher.api.structures import PassingDataValue
 
 log = Logger.get_logger(__name__)
+
 
 
 def _get_row_value_with_validation(
@@ -92,28 +94,37 @@ def _get_row_value_with_validation(
     return column_value
 
 
-def _collect_attr_columns(
+def _collect_passing_data_columns(
     columns_config: dict[str, Any],
     row: dict[str, Any],
-) -> list[dict[str, Any]]:
-    """Collect columns with processing_type 'attr' from a CSV row.
+) -> list[PassingDataValue]:
+    """Collect columns with processing_type 'passing_data' from a CSV row.
 
     Returns a list of dicts with ``name``, ``value``,
     and ``entity_type`` for each matching column.
+
+    Args:
+        columns_config (dict[str, Any]): The columns configuration.
+        row (dict[str, Any]): The CSV row data.
+
+    Returns:
+        list[PassingDataValue]: A list of PassingDataValue objects.
     """
     result = []
     for column in columns_config["columns"]:
-        if column.get("processing_type") != "attr":
+        if column.get("processing_type") != "passing_data":
             continue
-        attr_cfg = column.get("attr") or {}
+        passing_data_cfg = column.get("passing_data") or {}
         value = _get_row_value_with_validation(
             columns_config, column["name"], row
         )
-        result.append({
-            "name": attr_cfg["name"],
-            "value": value,
-            "entity_type": attr_cfg["entity_type"],
-        })
+        result.append(
+            PassingDataValue(
+                name=passing_data_cfg["name"],
+                value=value,
+                data_type=passing_data_cfg["passing_data_type"],
+            )
+        )
     return result
 
 
@@ -223,7 +234,7 @@ class ProductItem:
         self.width = width
         self.height = height
         self.pixel_aspect = pixel_aspect
-        self.attr_data: list[dict] = []
+        self.passing_data: list[PassingDataValue] = []
 
     @property
     def unique_name(self) -> str:
@@ -857,7 +868,7 @@ configuration in project settings.
             )
             unique_name = product_item_.unique_name
             if unique_name not in product_items_by_name:
-                product_item_.attr_data = _collect_attr_columns(
+                product_item_.passing_data = _collect_passing_data_columns(
                     columns_config, resolved_row
                 )
                 product_items_by_name[unique_name] = product_item_
@@ -1430,8 +1441,8 @@ configuration in project settings.
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
 
-            if product_item.attr_data:
-                instance_data["csv_attributes"] = product_item.attr_data
+            if product_item.passing_data:
+                instance_data["csv_passing_data"] = product_item.passing_data
 
             if product_item.has_promised_context:
                 families.append("shot")

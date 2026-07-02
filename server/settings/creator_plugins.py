@@ -47,30 +47,30 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
     )
 
 
-def _entity_type_enum() -> list[str]:
+def _passing_data_type_enum() -> list[str]:
     return [
-        {"value": "folder", "label": "Folder"},
-        {"value": "task", "label": "Task"},
-        {"value": "version", "label": "Version"},
+        {"value": "representation_data", "label": "Representation Data"},
+        {"value": "instance_data", "label": "Instance Data"},
+        {"value": "version_data", "label": "Version Data"},
     ]
 
 
-class CSVColumnAttrMappingModel(BaseSettingsModel):
+class CSVColumnPassingDataMappingModel(BaseSettingsModel):
     name: str = SettingsField(
         title="Name",
         default="",
     )
-    entity_type: str = SettingsField(
-        title="Entity Type",
-        default="version",
-        enum_resolver=_entity_type_enum,
+    passing_data_type: str = SettingsField(
+        title="Passing Data Type",
+        default="version_data",
+        enum_resolver=_passing_data_type_enum,
     )
 
 
 def _processing_type_enum() -> list[str]:
     return [
-        {"value": "data", "label": "Data"},
-        {"value": "attr", "label": "Attribute"},
+        {"value": "processing_data", "label": "Processing Data"},
+        {"value": "passing_data", "label": "Passing Data"},
     ]
 
 
@@ -116,26 +116,29 @@ class ColumnItemModel(BaseSettingsModel):
     )
     processing_type: str = SettingsField(
         title="Processing Type",
-        default="data",
+        default="processing_data",
         enum_resolver=_processing_type_enum,
         conditional_enum=True,
     )
-    attr: CSVColumnAttrMappingModel = SettingsField(
-        title="Attribute",
-        default_factory=CSVColumnAttrMappingModel,
+    passing_data: CSVColumnPassingDataMappingModel = SettingsField(
+        title="Passing Data",
+        default_factory=CSVColumnPassingDataMappingModel,
     )
 
     @root_validator(pre=True)
-    def validate_attr_name(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # only validate if attr.name is not set in case processing_type
-        # is set to attr
+    def validate_passing_data_name(
+        cls,
+        values: dict[str, Any],
+    ) -> dict[str, Any]:
+        # only validate if passing_data.name is not set in case processing_type
+        # is set to passing_data
         if (
-            values.get("processing_type") == "attr" and
-            not values.get("attr", {}).get("name")
+            values.get("processing_type") == "passing_data" and
+            not values.get("passing_data", {}).get("name")
         ):
             raise ValueError(
-                "Attribute name is required when Processing Type "
-                "is set to Attribute"
+                "Passing Data name is required when Processing Type "
+                "is set to Passing Data"
             )
         return values
 
