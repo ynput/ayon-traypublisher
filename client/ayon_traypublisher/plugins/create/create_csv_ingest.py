@@ -150,20 +150,27 @@ def _merge_passing_data_values(
     occurs; empty values never overwrite non-empty values.
     """
     merged_by_name = {
-        item.name: PassingDataValue(item.name, item.value, item.data_type)
+        item["name"]: {
+            "name": item["name"],
+            "value": item["value"],
+            "data_type": item["data_type"],
+        }
         for item in existing_values
     }
 
     for item in new_values:
-        current = merged_by_name.get(item.name)
+        item_name = item["name"]
+        current = merged_by_name.get(item_name)
         if current is None:
-            merged_by_name[item.name] = PassingDataValue(
-                item.name, item.value, item.data_type
-            )
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
             continue
 
-        current_is_empty = _is_empty_passing_data_value(current.value)
-        incoming_is_empty = _is_empty_passing_data_value(item.value)
+        current_is_empty = _is_empty_passing_data_value(current["value"])
+        incoming_is_empty = _is_empty_passing_data_value(item["value"])
 
         # Empty values should not replace a non-empty one.
         if incoming_is_empty and not current_is_empty:
@@ -171,9 +178,11 @@ def _merge_passing_data_values(
 
         # Prefer any non-empty value over an empty one.
         if current_is_empty and not incoming_is_empty:
-            merged_by_name[item.name] = PassingDataValue(
-                item.name, item.value, item.data_type
-            )
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
             continue
 
         # If both are empty, keep original.
@@ -181,32 +190,37 @@ def _merge_passing_data_values(
             continue
 
         # Both values are non-empty here.
-        if current.value != item.value or current.data_type != item.data_type:
+        if (
+            current["value"] != item["value"]
+            or current["data_type"] != item["data_type"]
+        ):
             if conflict_mode != "lenient":
                 raise CreatorError(
                     "Conflicting passing_data value for product "
-                    f"'{unique_name}', key '{item.name}' on row {row_index}. "
-                    f"Existing value: {current.value!r}, "
-                    f"incoming value: {item.value!r}."
+                    f"'{unique_name}', key '{item_name}' on row {row_index}. "
+                    f"Existing value: {current['value']!r}, "
+                    f"incoming value: {item['value']!r}."
                 )
 
             log.warning(
                 "Conflicting passing_data for product '%s', key '%s' on row "
                 "%d. Keeping latest non-empty value %r over previous %r.",
                 unique_name,
-                item.name,
+                item_name,
                 row_index,
-                item.value,
-                current.value,
+                item["value"],
+                current["value"],
             )
-            merged_by_name[item.name] = PassingDataValue(
-                item.name, item.value, item.data_type
-            )
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
 
-    ordered_names = [item.name for item in existing_values]
+    ordered_names = [item["name"] for item in existing_values]
     for item in new_values:
-        if item.name not in ordered_names:
-            ordered_names.append(item.name)
+        if item["name"] not in ordered_names:
+            ordered_names.append(item["name"])
 
     return [merged_by_name[name] for name in ordered_names]
 
@@ -965,12 +979,12 @@ configuration in project settings.
             row_repre_passing_data = [
                 item
                 for item in row_passing_data
-                if item.data_type == "representation_data"
+                if item["data_type"] == "representation_data"
             ]
             row_product_passing_data = [
                 item
                 for item in row_passing_data
-                if item.data_type != "representation_data"
+                if item["data_type"] != "representation_data"
             ]
 
             if unique_name not in product_items_by_name:
@@ -1297,9 +1311,9 @@ configuration in project settings.
             representation_data["outputName"] = explicit_output_name
 
         repre_passing_data = {
-            item.name: item.value
+            item["name"]: item["value"]
             for item in repre_item.passing_data
-            if item.data_type == "representation_data"
+            if item["data_type"] == "representation_data"
         }
         if repre_passing_data:
             representation_data["data"] = repre_passing_data

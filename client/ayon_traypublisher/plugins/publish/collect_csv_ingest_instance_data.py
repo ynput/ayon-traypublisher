@@ -25,6 +25,8 @@ class CollectCSVIngestInstancesData(
         # populate representation data to instance data
         self._process_representation_data(instance)
 
+        self.log.debug(pformat(instance.data))
+
 
     def _process_representation_data(self, instance):
         """Populate representation data to instance data."""
@@ -82,14 +84,16 @@ class CollectCSVIngestInstancesData(
         version_data = {}
         instance_data = {}
         for data_item in passing_data:
-            key_name = data_item.name
-            item_value = data_item.value
-            data_type = data_item.data_type
+            key_name = data_item["name"]
+            item_value = data_item["value"]
+            data_type = data_item["data_type"]
             if data_type == "version_data":
                 version_data[key_name] = item_value
+            elif data_type == "instance_data":
+                instance_data[key_name] = item_value
 
         if version_data:
             instance.data["versionData"] = version_data
-        elif instance_data:
+        if instance_data:
             for key, value in instance_data.items():
                 instance.data[key] = value

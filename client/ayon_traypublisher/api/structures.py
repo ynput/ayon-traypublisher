@@ -1,12 +1,10 @@
-from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 DataType = Literal["version_data", "representation_data", "instance_data"]
 
 
-@dataclass
-class PassingDataValue:
-    """Represents a value to be passed to the publishing context.
+class PassingDataValue(TypedDict):
+    """JSON-serializable passing-data payload item.
 
     This class encapsulates values that need to be passed to the traypublisher
     publishing context. Data values are mapped from settings column
@@ -16,4 +14,4 @@ class PassingDataValue:
 
     name: str
     value: Any
-    data_type: DataType = "version_data"
+    data_type: DataType
