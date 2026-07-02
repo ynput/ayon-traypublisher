@@ -226,6 +226,7 @@ class RepreItem:
         comment,
         slate_exists,
         tags,
+        passing_data: Optional[list[PassingDataValue]] = None,
     ):
         self.name = name
         self.filepath = filepath
@@ -239,9 +240,16 @@ class RepreItem:
         self.comment = comment
         self.slate_exists = slate_exists
         self.tags = tags
+        self.passing_data = passing_data or []
 
     @classmethod
-    def from_csv_row(cls, columns_config, repre_config, row):
+    def from_csv_row(
+        cls,
+        columns_config,
+        repre_config,
+        row,
+        passing_data: Optional[list[PassingDataValue]] = None,
+    ):
         kwargs = {
             dst_key: _get_row_value_with_validation(
                 columns_config, column_name, row
@@ -285,6 +293,7 @@ class RepreItem:
             else:
                 tags_list.append(repre_tags)
         kwargs["tags"] = tags_list
+        kwargs["passing_data"] = passing_data
         return cls(**kwargs)
 
 
@@ -953,14 +962,25 @@ configuration in project settings.
             row_passing_data = _collect_passing_data_columns(
                 columns_config, resolved_row
             )
+            row_repre_passing_data = [
+                item
+                for item in row_passing_data
+                if item.data_type == "representation_data"
+            ]
+            row_product_passing_data = [
+                item
+                for item in row_passing_data
+                if item.data_type != "representation_data"
+            ]
+
             if unique_name not in product_items_by_name:
-                product_item_.passing_data = row_passing_data
+                product_item_.passing_data = row_product_passing_data
                 product_items_by_name[unique_name] = product_item_
             else:
                 existing_product_item = product_items_by_name[unique_name]
                 existing_product_item.passing_data = _merge_passing_data_values(
                     existing_product_item.passing_data,
-                    row_passing_data,
+                    row_product_passing_data,
                     unique_name,
                     row_index,
                 )
@@ -971,6 +991,7 @@ configuration in project settings.
                     columns_config,
                     representations_config,
                     resolved_row,
+                    passing_data=row_repre_passing_data,
                 )
             )
 
@@ -1274,6 +1295,14 @@ configuration in project settings.
 
         if explicit_output_name:
             representation_data["outputName"] = explicit_output_name
+
+        repre_passing_data = {
+            item.name: item.value
+            for item in repre_item.passing_data
+            if item.data_type == "representation_data"
+        }
+        if repre_passing_data:
+            representation_data["data"] = repre_passing_data
 
         if frame_start:
             representation_data["frameStart"] = frame_start
