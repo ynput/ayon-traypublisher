@@ -128,6 +128,89 @@ def _collect_passing_data_columns(
     return result
 
 
+def _is_empty_passing_data_value(value: Any) -> bool:
+    """Return whether a passing-data value should be treated as empty."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    return False
+
+
+def _merge_passing_data_values(
+    existing_values: list[PassingDataValue],
+    new_values: list[PassingDataValue],
+    unique_name: str,
+    row_index: int,
+    conflict_mode: str = "lenient",
+) -> list[PassingDataValue]:
+    """Merge passing-data values for a product aggregated from multiple rows.
+
+    In lenient mode (default), latest non-empty value wins when a conflict
+    occurs; empty values never overwrite non-empty values.
+    """
+    merged_by_name = {
+        item.name: PassingDataValue(item.name, item.value, item.data_type)
+        for item in existing_values
+    }
+
+    for item in new_values:
+        current = merged_by_name.get(item.name)
+        if current is None:
+            merged_by_name[item.name] = PassingDataValue(
+                item.name, item.value, item.data_type
+            )
+            continue
+
+        current_is_empty = _is_empty_passing_data_value(current.value)
+        incoming_is_empty = _is_empty_passing_data_value(item.value)
+
+        # Empty values should not replace a non-empty one.
+        if incoming_is_empty and not current_is_empty:
+            continue
+
+        # Prefer any non-empty value over an empty one.
+        if current_is_empty and not incoming_is_empty:
+            merged_by_name[item.name] = PassingDataValue(
+                item.name, item.value, item.data_type
+            )
+            continue
+
+        # If both are empty, keep original.
+        if current_is_empty and incoming_is_empty:
+            continue
+
+        # Both values are non-empty here.
+        if current.value != item.value or current.data_type != item.data_type:
+            if conflict_mode != "lenient":
+                raise CreatorError(
+                    "Conflicting passing_data value for product "
+                    f"'{unique_name}', key '{item.name}' on row {row_index}. "
+                    f"Existing value: {current.value!r}, "
+                    f"incoming value: {item.value!r}."
+                )
+
+            log.warning(
+                "Conflicting passing_data for product '%s', key '%s' on row "
+                "%d. Keeping latest non-empty value %r over previous %r.",
+                unique_name,
+                item.name,
+                row_index,
+                item.value,
+                current.value,
+            )
+            merged_by_name[item.name] = PassingDataValue(
+                item.name, item.value, item.data_type
+            )
+
+    ordered_names = [item.name for item in existing_values]
+    for item in new_values:
+        if item.name not in ordered_names:
+            ordered_names.append(item.name)
+
+    return [merged_by_name[name] for name in ordered_names]
+
+
 class RepreItem:
     def __init__(
         self,
@@ -867,11 +950,21 @@ configuration in project settings.
                 columns_config, resolved_row
             )
             unique_name = product_item_.unique_name
+            row_passing_data = _collect_passing_data_columns(
+                columns_config, resolved_row
+            )
             if unique_name not in product_items_by_name:
-                product_item_.passing_data = _collect_passing_data_columns(
-                    columns_config, resolved_row
-                )
+                product_item_.passing_data = row_passing_data
                 product_items_by_name[unique_name] = product_item_
+            else:
+                existing_product_item = product_items_by_name[unique_name]
+                existing_product_item.passing_data = _merge_passing_data_values(
+                    existing_product_item.passing_data,
+                    row_passing_data,
+                    unique_name,
+                    row_index,
+                )
+
             product_item: ProductItem = product_items_by_name[unique_name]
             product_item.add_repre_item(
                 RepreItem.from_csv_row(

@@ -74,20 +74,22 @@ class CollectCSVIngestInstancesData(
     def _process_passing_data(self, instance):
         """Populate attribute data to instance data."""
 
-        attr_data: list[PassingDataValue] = instance.data.get(
+        passing_data: list[PassingDataValue] = instance.data.get(
             "csv_passing_data", [])
-        if not attr_data:
+        if not passing_data:
             return
 
-        # TODO: add passing for representation data
-        # TODO: add passing for instance data keys from columns
         version_data = {}
-        for attr_item in attr_data:
-            attr_name = attr_item["name"]
-            attr_value = attr_item["value"]
-            entity_type = attr_item["entity_type"]
-            if entity_type == "version":
-                version_data[attr_name] = attr_value
+        instance_data = {}
+        for data_item in passing_data:
+            key_name = data_item.name
+            item_value = data_item.value
+            data_type = data_item.data_type
+            if data_type == "version_data":
+                version_data[key_name] = item_value
 
         if version_data:
             instance.data["versionData"] = version_data
+        elif instance_data:
+            for key, value in instance_data.items():
+                instance.data[key] = value
