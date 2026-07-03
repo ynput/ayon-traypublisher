@@ -67,14 +67,14 @@ class CSVColumnPassingDataMappingModel(BaseSettingsModel):
     )
 
 
-def _processing_type_enum() -> list[str]:
+def _processing_type_enum() -> list[dict[str, str]]:
     return [
         {"value": "processing_data", "label": "Processing Data"},
         {"value": "passing_data", "label": "Passing Data"},
     ]
 
 
-def _value_type_enum() -> list[str]:
+def _value_type_enum() -> list[dict[str, str]]:
     return [
         {"value": "text", "label": "Text"},
         {"value": "number", "label": "Number"},

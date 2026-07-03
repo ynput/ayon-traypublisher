@@ -100,8 +100,8 @@ def _collect_passing_data_columns(
 ) -> list[PassingDataValue]:
     """Collect columns with processing_type 'passing_data' from a CSV row.
 
-    Returns a list of dicts with ``name``, ``value``,
-    and ``entity_type`` for each matching column.
+    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for each
+    matching column.
 
     Args:
         columns_config (dict[str, Any]): The columns configuration.

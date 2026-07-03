@@ -71,8 +71,7 @@ class CollectCSVIngestInstancesData(
             instance.data["frameEnd"] = frame_end
 
     def _process_passing_data(self, instance):
-        """Populate attribute data to instance data."""
-
+        """Populate passing-data to instance data."""
         passing_data: list[PassingDataValue] = instance.data.get(
             "csv_passing_data", [])
         if not passing_data:
@@ -90,7 +89,8 @@ class CollectCSVIngestInstancesData(
                 instance_data[key_name] = item_value
 
         if version_data:
-            instance.data["versionData"] = version_data
-        if instance_data:
+            existing = instance.data.get("versionData") or {}
+            existing.update(version_data)
+            instance.data["versionData"] = existing
             for key, value in instance_data.items():
                 instance.data[key] = value
