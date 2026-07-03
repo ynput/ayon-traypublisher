@@ -25,9 +25,6 @@ class CollectCSVIngestInstancesData(
         # populate representation data to instance data
         self._process_representation_data(instance)
 
-        self.log.debug(pformat(instance.data))
-
-
     def _process_representation_data(self, instance):
         """Populate representation data to instance data."""
 
