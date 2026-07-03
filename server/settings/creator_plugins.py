@@ -47,7 +47,7 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
     )
 
 
-def _passing_data_type_enum() -> list[str]:
+def _passing_data_type_enum() -> list[dict[str, str]]:
     return [
         {"value": "representation_data", "label": "Representation Data"},
         {"value": "instance_data", "label": "Instance Data"},
