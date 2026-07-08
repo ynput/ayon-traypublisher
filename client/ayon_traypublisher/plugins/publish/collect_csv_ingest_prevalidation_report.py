@@ -269,8 +269,8 @@ class CollectCSVIngestPrevalidationReport(
             None
         )
 
-    @staticmethod
     def _is_instance_plugin_active(
+        self,
         instance: pyblish.api.Instance,
         plugin_name: str
     ) -> bool:
