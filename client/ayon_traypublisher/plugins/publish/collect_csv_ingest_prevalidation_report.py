@@ -91,7 +91,7 @@ class CollectCSVIngestPrevalidationReport(
             # we need to make sure the data are available even nothing
             # was added from creator context processed in first pass
             report_data = report_per_csv_ingest[csv_parent_instance_id]
-            plugin_enabled = self._check_enabled_plugins(
+            plugin_enabled = self._is_instance_plugin_active(
                 instance, "ValidateExistingVersion")
             failing_validation = False
             if (
@@ -111,7 +111,7 @@ class CollectCSVIngestPrevalidationReport(
                     existing_rows.append(report_row)
                     failing_validation = True
 
-            plugin_enabled = self._check_enabled_plugins(
+            plugin_enabled = self._is_instance_plugin_active(
                 instance, "ValidateFrameRange")
             if (
                 prevalidation["wrong_framerange"]["mode"] == "ignore"
@@ -270,7 +270,7 @@ class CollectCSVIngestPrevalidationReport(
         )
 
     @staticmethod
-    def _check_enabled_plugins(
+    def _is_instance_plugin_active(
         instance: pyblish.api.Instance,
         plugin_name: str
     ) -> bool:
