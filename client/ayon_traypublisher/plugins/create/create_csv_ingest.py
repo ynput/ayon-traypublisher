@@ -871,7 +871,7 @@ configuration in project settings.
         ]
 
         # read csv file
-        with open(csv_path, "r") as csv_file:
+        with open(csv_path, "r", encoding="utf-8-sig") as csv_file:
             csv_content = csv_file.read()
 
         # read csv file with DictReader
