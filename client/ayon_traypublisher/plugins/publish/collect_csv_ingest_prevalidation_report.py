@@ -281,7 +281,7 @@ class CollectCSVIngestPrevalidationReport(
             plugin_name (str): The name of the plugin to check.
 
         Returns:
-            bool: True if the plugin is available an active
+            bool: True if the plugin is available and active
                 for the instance.
         """
         # plugin might not be enabled in the publish context
