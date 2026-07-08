@@ -1,5 +1,6 @@
-from pydantic import validator
+from typing import Any
 
+from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
@@ -7,7 +8,7 @@ from ayon_server.settings import (
     task_types_enum,
 )
 from ayon_server.settings.validators import ensure_unique_names
-from ayon_server.exceptions import BadRequestException
+from pydantic import root_validator, validator
 
 
 class ProductTypeItemModel(BaseSettingsModel):
@@ -46,6 +47,42 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
     )
 
 
+def _passing_data_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "representation_data", "label": "Representation Data"},
+        {"value": "instance_data", "label": "Instance Data"},
+        {"value": "version_data", "label": "Version Data"},
+    ]
+
+
+class CSVColumnPassingDataMappingModel(BaseSettingsModel):
+    name: str = SettingsField(
+        title="Name",
+        default="",
+    )
+    passing_data_type: str = SettingsField(
+        title="Passing Data Type",
+        default="version_data",
+        enum_resolver=_passing_data_type_enum,
+    )
+
+
+def _processing_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "processing_data", "label": "Processing Data"},
+        {"value": "passing_data", "label": "Passing Data"},
+    ]
+
+
+def _value_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "text", "label": "Text"},
+        {"value": "number", "label": "Number"},
+        {"value": "decimal", "label": "Decimal"},
+        {"value": "bool", "label": "Boolean"},
+    ]
+
+
 class ColumnItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -54,28 +91,56 @@ class ColumnItemModel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(
         title="Name",
-        default=""
+        default="",
     )
 
     type: str = SettingsField(
         title="Type",
-        default=""
+        default="text",
+        enum_resolver=_value_type_enum,
     )
 
     default: str = SettingsField(
         title="Default",
-        default=""
+        default="",
     )
 
     required_column: bool = SettingsField(
         title="Required Column",
-        default=False
+        default=False,
     )
 
     validation_pattern: str = SettingsField(
         title="Validation Regex Pattern",
-        default="^(.*)$"
+        default="^(.*)$",
     )
+    processing_type: str = SettingsField(
+        title="Processing Type",
+        default="processing_data",
+        enum_resolver=_processing_type_enum,
+        conditional_enum=True,
+    )
+    passing_data: CSVColumnPassingDataMappingModel = SettingsField(
+        title="Passing Data",
+        default_factory=CSVColumnPassingDataMappingModel,
+    )
+
+    @root_validator(pre=True)
+    def validate_passing_data_name(
+        cls,
+        values: dict[str, Any],
+    ) -> dict[str, Any]:
+        # only validate if passing_data.name is not set in case processing_type
+        # is set to passing_data
+        if (
+            values.get("processing_type") == "passing_data" and
+            not values.get("passing_data", {}).get("name")
+        ):
+            raise ValueError(
+                "Passing Data name is required when Processing Type "
+                "is set to Passing Data"
+            )
+        return values
 
 
 def _csv_precreate_on_failure_enum() -> list:
@@ -163,7 +228,6 @@ class PrevalidationModel(BaseSettingsModel):
         title="Missing Frame Range Values",
         default_factory=MissingFrameRangeValuesPrevalidationItemModel,
     )
-
 
 
 class ColumnConfigModel(BaseSettingsModel):
