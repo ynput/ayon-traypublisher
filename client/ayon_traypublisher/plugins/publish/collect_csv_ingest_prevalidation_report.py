@@ -284,10 +284,23 @@ class CollectCSVIngestPrevalidationReport(
             True if the plugin is not set as optional or if it is set
             but not active.
         """
+        # plugin might not be enabled in the publish context
+        plugins = instance.context.data["create_context"].publish_plugins
+        plugin = next(
+            (
+                pl for pl in plugins
+                if pl.__name__ == plugin_name
+            ),
+            None
+        )
+        if plugin is None:
+            return False
+
+        # plugin might not be set as optional so it will not be added
+        # to publish attributes
+        if not plugin.optional:
+            return True
+
         plugin_attributes = instance.data["publish_attributes"].get(
             plugin_name, {})
-        if not plugin_attributes:
-            # plugin might not be set as optional so it will not be added
-            # to publish attributes
-            return True
         return plugin_attributes.get("active", False)
