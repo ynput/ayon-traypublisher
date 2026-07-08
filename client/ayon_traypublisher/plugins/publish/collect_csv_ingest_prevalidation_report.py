@@ -301,6 +301,7 @@ class CollectCSVIngestPrevalidationReport(
         if not plugin.optional:
             return True
 
-        plugin_attributes = instance.data["publish_attributes"].get(
-            plugin_name, {})
-        return plugin_attributes.get("active", False)
+        values = self.get_attr_values_from_data_for_plugin(
+            plugin, instance.data
+        )
+        return values.get("active", False)
