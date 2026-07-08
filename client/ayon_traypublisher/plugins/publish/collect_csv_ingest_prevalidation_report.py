@@ -91,9 +91,14 @@ class CollectCSVIngestPrevalidationReport(
             # we need to make sure the data are available even nothing
             # was added from creator context processed in first pass
             report_data = report_per_csv_ingest[csv_parent_instance_id]
-
+            plugin_enabled = self._check_enabled_plugins(
+                instance, "ValidateExistingVersion")
             failing_validation = False
-            if prevalidation["existing_versions"]["mode"] == "ignore":
+            if (
+                prevalidation["existing_versions"]["mode"] == "ignore"
+                and plugin_enabled
+            ):
+                # only check existing version if related validator is enabled
                 version = instance.data.get("version")
                 if version is not None:
                     report_row = self._existing_version_check(instance)
@@ -106,9 +111,14 @@ class CollectCSVIngestPrevalidationReport(
                     existing_rows.append(report_row)
                     failing_validation = True
 
-            if prevalidation["wrong_framerange"]["mode"] == "ignore":
-                report_row = self._wrong_framerange_check(
-                    instance)
+            plugin_enabled = self._check_enabled_plugins(
+                instance, "ValidateFrameRange")
+            if (
+                prevalidation["wrong_framerange"]["mode"] == "ignore"
+                and plugin_enabled
+            ):
+                # only check existing version if related validator is enabled
+                report_row = self._wrong_framerange_check(instance)
                 if report_row:
                     wrongrange_rows: list[str] = report_data.setdefault(
                         "Wrong Frame Range", []
@@ -234,15 +244,16 @@ class CollectCSVIngestPrevalidationReport(
         return ""
 
     @staticmethod
-    def _is_csv_ingest_file_instance(instance):
+    def _is_csv_ingest_file_instance(instance: pyblish.api.Instance) -> bool:
         return "csv_ingest_file" in instance.data.get("families", [])
 
     @staticmethod
-    def _is_csv_ingest_instance(instance):
+    def _is_csv_ingest_instance(instance: pyblish.api.Instance) -> bool:
         return "csv_ingest" in instance.data.get("families", [])
 
     @staticmethod
-    def _get_csv_instance_report(instance):
+    def _get_csv_instance_report(
+            instance: pyblish.api.Instance) -> dict | None:
         return instance.data.get("csvReportData")
 
     @staticmethod
@@ -257,3 +268,26 @@ class CollectCSVIngestPrevalidationReport(
             (p for p in ingest_presets if p["name"] == csv_preset_name),
             None
         )
+
+    @staticmethod
+    def _check_enabled_plugins(
+        instance: pyblish.api.Instance,
+        plugin_name: str
+    ) -> bool:
+        """Check if the plugin is enabled for the given instance.
+
+        Args:
+            instance (pyblish.api.Instance): The instance to check.
+            plugin_name (str): The name of the plugin to check.
+
+        Returns:
+            True if the plugin is not set as optional or if it is set
+            but not active.
+        """
+        plugin_attributes = instance.data["publish_attributes"].get(
+            plugin_name, {})
+        if not plugin_attributes:
+            # plugin might not be set as optional so it will not be added
+            # to publish attributes
+            return True
+        return plugin_attributes.get("active", False)
