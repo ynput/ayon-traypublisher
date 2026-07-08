@@ -281,8 +281,8 @@ class CollectCSVIngestPrevalidationReport(
             plugin_name (str): The name of the plugin to check.
 
         Returns:
-            True if the plugin is not set as optional or if it is set
-            but not active.
+            bool: True if the plugin is available an active
+                for the instance.
         """
         # plugin might not be enabled in the publish context
         plugins = instance.context.data["create_context"].publish_plugins
