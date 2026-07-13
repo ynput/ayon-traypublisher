@@ -57,6 +57,10 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
+    default_collect_video_framerange: bool = SettingsField(
+        True,
+        title="Default Collect Original Video Frame Data",
+    )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect Original Sequence Frame Data",
@@ -79,6 +83,7 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
+    "default_collect_video_framerange": True,
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,

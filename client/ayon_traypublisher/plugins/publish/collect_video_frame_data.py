@@ -128,7 +128,12 @@ class CollectTraypublisherVideoFrameData(
             BoolDef(
                 "collect_video_framerange",
                 label="Collect Original Video Frame Data",
-                default=True,
+                default=bool(
+                    create_context.get_current_project_settings()
+                    .get("traypublisher", {})
+                    .get("publish", {})
+                    .get("default_collect_video_framerange", True)
+                ),
                 visible=cls.optional,
             )
         ]
