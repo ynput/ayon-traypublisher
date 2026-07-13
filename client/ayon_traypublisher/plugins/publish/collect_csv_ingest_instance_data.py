@@ -1,6 +1,8 @@
 from pprint import pformat
+
 import pyblish.api
 from ayon_core.pipeline import publish
+from ayon_traypublisher.api.structures import PassingDataValue
 
 
 class CollectCSVIngestInstancesData(
@@ -8,8 +10,7 @@ class CollectCSVIngestInstancesData(
     publish.AYONPyblishPluginMixin,
     publish.ColormanagedPyblishPluginMixin
 ):
-    """Collect CSV Ingest data from instance.
-    """
+    """Collect CSV Ingest data from instance."""
 
     label = "Collect CSV Ingest instances data"
     order = pyblish.api.CollectorOrder + 0.1
@@ -17,6 +18,15 @@ class CollectCSVIngestInstancesData(
     families = ["csv_ingest"]
 
     def process(self, instance):
+
+        # populate all attributes to instance data
+        self._process_passing_data(instance)
+
+        # populate representation data to instance data
+        self._process_representation_data(instance)
+
+    def _process_representation_data(self, instance):
+        """Populate representation data to instance data."""
 
         # expecting [(colorspace, repre_data), ...]
         prepared_repres_data_items = instance.data[
@@ -59,3 +69,28 @@ class CollectCSVIngestInstancesData(
         if frame_start is not None and frame_end is not None:
             instance.data["frameStart"] = frame_start
             instance.data["frameEnd"] = frame_end
+
+    def _process_passing_data(self, instance):
+        """Populate passing-data to instance data."""
+        passing_data: list[PassingDataValue] = instance.data.get(
+            "csv_passing_data", [])
+        if not passing_data:
+            return
+
+        version_data = {}
+        instance_data = {}
+        for data_item in passing_data:
+            key_name = data_item["name"]
+            item_value = data_item["value"]
+            data_type = data_item["data_type"]
+            if data_type == "version_data":
+                version_data[key_name] = item_value
+            elif data_type == "instance_data":
+                instance_data[key_name] = item_value
+
+        if version_data:
+            existing = instance.data.get("versionData") or {}
+            existing.update(version_data)
+            instance.data["versionData"] = existing
+            for key, value in instance_data.items():
+                instance.data[key] = value

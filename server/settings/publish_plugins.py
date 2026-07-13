@@ -48,8 +48,8 @@ class ExtractEditorialPckgOutputDefModel(BaseSettingsModel):
 
 class ExtractEditorialPckgConversionModel(BaseSettingsModel):
     """Set output definition if resource files should be converted."""
-    conversion_enabled: bool = SettingsField(True,
-                                             title="Conversion enabled")
+    conversion_enabled: bool = SettingsField(
+        True, title="Conversion enabled")
     output: ExtractEditorialPckgOutputDefModel = SettingsField(
         default_factory=ExtractEditorialPckgOutputDefModel,
         title="Output Definitions",
@@ -60,6 +60,9 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
     default_collect_video_framerange: bool = SettingsField(
         True,
         title="Default Collect Original Video Frame Data",
+    CollectCSVIngestPrevalidationReport: ValidatePluginModel = SettingsField(
+        default_factory=ValidatePluginModel,
+        title="Collect CSV Ingest Prevalidation Report",
     )
     CollectSequenceFrameData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
@@ -84,6 +87,11 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 DEFAULT_PUBLISH_PLUGINS = {
     "default_collect_video_framerange": True,
+    "CollectCSVIngestPrevalidationReport": {
+        "enabled": True,
+        "optional": True,
+        "active": True
+    },
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
