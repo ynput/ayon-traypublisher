@@ -63,28 +63,39 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
             self.log.info("No representations, skipping.")
             return
 
-        first_repre = repres[0]
-        ext = first_repre['ext'].replace(".", '')
+        for repre in repres:
+            ext = repre['ext'].replace(".", '')
 
-        if not ext or ext.lower() not in self.check_extensions:
-            self.log.warning("Cannot check for extension {}".format(ext))
-            return
+            if not ext or ext.lower() not in {
+                "exr",
+                "dpx",
+                "jpg",
+                "jpeg",
+                "png",
+                "tiff",
+                "tga",
+                "gif",
+                "svg",
+                "sxr"
+            }:
+                self.log.debug("Cannot check for extension {}".format(ext))
+                continue
 
-        files = first_repre["files"]
-        if isinstance(files, str):
-            files = [files]
-        frames = len(files)
+            files = repre["files"]
+            if isinstance(files, str):
+                continue
+            frames = len(files)
 
-        msg = (
-            "Frame duration from DB:'{}' doesn't match number of files:'{}'"
-            " Please change frame range for folder/task or limit no. of files"
-        ). format(int(duration), frames)
+            msg = (
+                "Frame duration from DB:'{}' doesn't match number of files:'{}'"
+                " Please change frame range for folder/task or limit no. of files"
+            ). format(int(duration), frames)
 
-        formatting_data = {"duration": duration,
-                           "found": frames}
-        if frames != duration:
-            raise PublishXmlValidationError(self, msg,
-                                            formatting_data=formatting_data)
+            formatting_data = {"duration": duration,
+                            "found": frames}
+            if frames != duration:
+                raise PublishXmlValidationError(self, msg,
+                                                formatting_data=formatting_data)
 
         self.log.debug("Valid ranges expected '{}' - found '{}'".
                        format(int(duration), frames))
