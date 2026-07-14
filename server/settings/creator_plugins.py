@@ -1,5 +1,6 @@
-from pydantic import validator
+from typing import Any
 
+from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
@@ -7,7 +8,7 @@ from ayon_server.settings import (
     task_types_enum,
 )
 from ayon_server.settings.validators import ensure_unique_names
-from ayon_server.exceptions import BadRequestException
+from pydantic import root_validator, validator
 
 
 class ProductTypeItemModel(BaseSettingsModel):
@@ -46,6 +47,42 @@ class BatchMovieCreatorPlugin(BaseSettingsModel):
     )
 
 
+def _passing_data_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "representation_data", "label": "Representation Data"},
+        {"value": "instance_data", "label": "Instance Data"},
+        {"value": "version_data", "label": "Version Data"},
+    ]
+
+
+class CSVColumnPassingDataMappingModel(BaseSettingsModel):
+    name: str = SettingsField(
+        title="Name",
+        default="",
+    )
+    passing_data_type: str = SettingsField(
+        title="Passing Data Type",
+        default="version_data",
+        enum_resolver=_passing_data_type_enum,
+    )
+
+
+def _processing_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "processing_data", "label": "Processing Data"},
+        {"value": "passing_data", "label": "Passing Data"},
+    ]
+
+
+def _value_type_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "text", "label": "Text"},
+        {"value": "number", "label": "Number"},
+        {"value": "decimal", "label": "Decimal"},
+        {"value": "bool", "label": "Boolean"},
+    ]
+
+
 class ColumnItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
@@ -54,27 +91,142 @@ class ColumnItemModel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(
         title="Name",
-        default=""
+        default="",
     )
 
     type: str = SettingsField(
         title="Type",
-        default=""
+        default="text",
+        enum_resolver=_value_type_enum,
     )
 
     default: str = SettingsField(
         title="Default",
-        default=""
+        default="",
     )
 
     required_column: bool = SettingsField(
         title="Required Column",
-        default=False
+        default=False,
     )
 
     validation_pattern: str = SettingsField(
         title="Validation Regex Pattern",
-        default="^(.*)$"
+        default="^(.*)$",
+    )
+    processing_type: str = SettingsField(
+        title="Processing Type",
+        default="processing_data",
+        enum_resolver=_processing_type_enum,
+        conditional_enum=True,
+    )
+    passing_data: CSVColumnPassingDataMappingModel = SettingsField(
+        title="Passing Data",
+        default_factory=CSVColumnPassingDataMappingModel,
+    )
+
+    @root_validator(pre=True)
+    def validate_passing_data_name(
+        cls,
+        values: dict[str, Any],
+    ) -> dict[str, Any]:
+        # only validate if passing_data.name is not set in case processing_type
+        # is set to passing_data
+        if (
+            values.get("processing_type") == "passing_data" and
+            not values.get("passing_data", {}).get("name")
+        ):
+            raise ValueError(
+                "Passing Data name is required when Processing Type "
+                "is set to Passing Data"
+            )
+        return values
+
+
+def _csv_precreate_on_failure_enum() -> list:
+    return [
+        {"label": "Raise Error", "value": "error"},
+        {"label": "Ignore and report", "value": "ignore"},
+    ]
+
+
+class ExistingVersionsPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Existing Versions",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class WrongFramerangePrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Wrong Framerange",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class FolderDoesNotExistPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Folder Does Not Exist",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class FolderNameDuplicityPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Folder Name Duplicity",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class MissingFrameRangeValuesPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model."""
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Missing Frame Range Values",
+        default="error",
+        enum_resolver=_csv_precreate_on_failure_enum,
+    )
+
+
+class PrevalidationModel(BaseSettingsModel):
+    """Prevalidation model."""
+
+    existing_versions: ExistingVersionsPrevalidationItemModel = SettingsField(
+        title="Existing Versions",
+        default_factory=ExistingVersionsPrevalidationItemModel,
+    )
+    wrong_framerange: WrongFramerangePrevalidationItemModel = SettingsField(
+        title="Wrong Framerange",
+        default_factory=WrongFramerangePrevalidationItemModel,
+    )
+    folder_not_exists: FolderDoesNotExistPrevalidationItemModel = SettingsField(  # noqa
+        title="Folder Does Not Exist",
+        default_factory=FolderDoesNotExistPrevalidationItemModel,
+    )
+    folder_name_duplicity: FolderNameDuplicityPrevalidationItemModel = SettingsField(  # noqa
+        title="Folder Name Duplicity",
+        default_factory=FolderNameDuplicityPrevalidationItemModel,
+    )
+    missing_frame_range_values: MissingFrameRangeValuesPrevalidationItemModel = SettingsField(  # noqa
+        title="Missing Frame Range Values",
+        default_factory=MissingFrameRangeValuesPrevalidationItemModel,
     )
 
 
@@ -95,6 +247,118 @@ class ColumnConfigModel(BaseSettingsModel):
     def validate_unique_outputs(cls, value):
         ensure_unique_names(value)
         return value
+
+
+def list_type_enum():
+    return [
+        {"label": "Generic", "value": "generic"},
+        {"label": "Review Session", "value": "review-session"},
+    ]
+
+
+def list_folder_scope_def():
+    return [
+        {"label": "Scope folder to all views", "value": "all"},
+        {"label": "Scope to the list type", "value": "list_type"},
+    ]
+
+
+class EntityListFolderModel(BaseSettingsModel):
+    """Folder must have label and can be scoped to views.
+
+    Scope of the folder can be defined for all views or use just the view
+        matching list type of created list. In case the list folder already
+        exists the settings are not used and we just make sure the list can
+        be seen under the folder.
+
+    """
+    _layout = "expanded"
+    label: str = SettingsField(
+        "",
+        title="Folder label",
+        description=(
+            "The label of the folder to create. \n"
+            "Also supports Anatomy formattable template keys.\n"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
+        ),
+    )
+    # Don't use explicit scope enum, rather ask if the folder should be seen
+    #   everywhere or just in the list type matching created list.
+    scope_def: str = SettingsField(
+        "all",
+        enum_resolver=list_folder_scope_def,
+        title="Scope",
+    )
+
+
+class ListProfileModel(BaseSettingsModel):
+    """List profile model."""
+
+    _layout = "expanded"
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task Types",
+        enum_resolver=task_types_enum,
+        description=(
+            "The current create context task type to filter against. This"
+            " allows to filter the profile to only be valid if currently "
+            " creating from within that task type."
+        ),
+        section="Filter",
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names",
+        description="The task names to match this profile to.",
+    )
+    product_base_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Product base types",
+        description=(
+            "The product base types to match this profile to. When matched,"
+            " the settings below would apply to the instance as default"
+            " attributes."
+        )
+    )
+    product_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Product names",
+        description="The product names to match this profile to.",
+    )
+    list_name: str = SettingsField(
+        "{csv_basename}-{yy}{mm}{dd}",
+        title="List Name",
+        description=(
+            "Anatomy formattable template for the name. \n"
+            "CSV ingest related keys: {csv_basename}, {csv_parent_dir}"
+        ),
+        section="List configuration",
+    )
+    list_type: str = SettingsField(
+        "generic",
+        title="List type",
+        description="Define what type of list this profile represents.",
+        enum_resolver=list_type_enum,
+
+    )
+    list_folders: list[EntityListFolderModel] = SettingsField(
+        default_factory=list,
+        title="List folders",
+        description="Folder hierarchy formed from top to bottom.",
+    )
+
+
+class ListConfigModel(BaseSettingsModel):
+    """List configuration model."""
+
+    enabled: bool = SettingsField(
+        title="Enabled",
+        default=False
+    )
+    profiles: list[ListProfileModel] = SettingsField(
+        title="Profiles",
+        default_factory=list
+    )
 
 
 class RepresentationItemModel(BaseSettingsModel):
@@ -241,19 +505,26 @@ class IngestCSVPresetModel(BaseSettingsModel):
         "Default",
         title="Name",
     )
+    prevalidation: PrevalidationModel = SettingsField(
+        title="Prevalidation",
+        default_factory=PrevalidationModel,
+        section="Prevalidation",
+    )
     columns_config: ColumnConfigModel = SettingsField(
         title="Columns config",
         default_factory=ColumnConfigModel
     )
-
     representations_config: RepresentationConfigModel = SettingsField(
         title="Representations config",
         default_factory=RepresentationConfigModel
     )
-
     folder_creation_config: FolderCreationConfigModel = SettingsField(
         title="Folder creation config",
         default_factory=FolderCreationConfigModel
+    )
+    list_config: ListConfigModel = SettingsField(
+        title="List config",
+        default_factory=ListConfigModel
     )
 
 
@@ -334,6 +605,13 @@ DEFAULT_CREATORS = {
         "presets": [
             {
                 "name": "Default",
+                "prevalidation": {
+                    "existing_versions": {"mode": "error"},
+                    "wrong_framerange": {"mode": "error"},
+                    "folder_not_exists": {"mode": "error"},
+                    "folder_name_duplicity": {"mode": "error"},
+                    "missing_frame_range_values": {"mode": "error"},
+                },
                 "columns_config": {
                     "csv_delimiter": ",",
                     "columns": [
@@ -350,6 +628,13 @@ DEFAULT_CREATORS = {
                             "default": "",
                             "required_column": True,
                             "validation_pattern": "^([a-zA-Z0-9_\\/]*)$"
+                        },
+                        {
+                            "name": "Folder Name",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^([a-zA-Z0-9_]*)$"
                         },
                         {
                             "name": "Task Name",
@@ -534,7 +819,11 @@ DEFAULT_CREATORS = {
                     "folder_create_type": "Folder",
                     "task_type_regexes": [],
                     "task_create_type": "Generic",
-                }
+                },
+                "list_config": {
+                    "enabled": False,
+                    "profiles": [],
+                },
             }
         ]
     },

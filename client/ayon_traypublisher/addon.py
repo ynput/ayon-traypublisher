@@ -99,7 +99,8 @@ class TrayPublishAddon(
             "--preset",
             help="Name of the preset to use for the CSV ingest",
             type=str,
-            required=True
+            required=False,
+            default="Default",
         ).option(
             "--project",
             help="Project name in which the context will be used",

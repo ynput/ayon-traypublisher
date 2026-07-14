@@ -6,18 +6,25 @@ import os
 import re
 from copy import copy, deepcopy
 from io import StringIO
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import ayon_api
 import clique
-from ayon_traypublisher.api.plugin import TrayPublishCreator
-
-from ayon_core.lib import BoolDef, EnumDef, FileDef, Logger
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    FileDef,
+    Logger,
+)
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import CreatorError, get_product_name
+from ayon_traypublisher.api.plugin import TrayPublishCreator
+from ayon_traypublisher.api.structures import PassingDataValue
 
 log = Logger.get_logger(__name__)
+
 
 
 def _get_row_value_with_validation(
@@ -87,6 +94,137 @@ def _get_row_value_with_validation(
     return column_value
 
 
+def _collect_passing_data_columns(
+    columns_config: dict[str, Any],
+    row: dict[str, Any],
+) -> list[PassingDataValue]:
+    """Collect columns with processing_type 'passing_data' from a CSV row.
+
+    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for each
+    matching column.
+
+    Args:
+        columns_config (dict[str, Any]): The columns configuration.
+        row (dict[str, Any]): The CSV row data.
+
+    Returns:
+        list[PassingDataValue]: A list of PassingDataValue objects.
+    """
+    result = []
+    for column in columns_config["columns"]:
+        if column.get("processing_type") != "passing_data":
+            continue
+        passing_data_cfg = column.get("passing_data") or {}
+        value = _get_row_value_with_validation(
+            columns_config, column["name"], row
+        )
+        result.append(
+            PassingDataValue(
+                name=passing_data_cfg["name"],
+                value=value,
+                data_type=passing_data_cfg["passing_data_type"],
+            )
+        )
+    return result
+
+
+def _is_empty_passing_data_value(value: Any) -> bool:
+    """Return whether a passing-data value should be treated as empty."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    return False
+
+
+def _merge_passing_data_values(
+    existing_values: list[PassingDataValue],
+    new_values: list[PassingDataValue],
+    unique_name: str,
+    row_index: int,
+    conflict_mode: str = "lenient",
+) -> list[PassingDataValue]:
+    """Merge passing-data values for a product aggregated from multiple rows.
+
+    In lenient mode (default), latest non-empty value wins when a conflict
+    occurs; empty values never overwrite non-empty values.
+    """
+    merged_by_name = {
+        item["name"]: {
+            "name": item["name"],
+            "value": item["value"],
+            "data_type": item["data_type"],
+        }
+        for item in existing_values
+    }
+
+    for item in new_values:
+        item_name = item["name"]
+        current = merged_by_name.get(item_name)
+        if current is None:
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
+            continue
+
+        current_is_empty = _is_empty_passing_data_value(current["value"])
+        incoming_is_empty = _is_empty_passing_data_value(item["value"])
+
+        # Empty values should not replace a non-empty one.
+        if incoming_is_empty and not current_is_empty:
+            continue
+
+        # Prefer any non-empty value over an empty one.
+        if current_is_empty and not incoming_is_empty:
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
+            continue
+
+        # If both are empty, keep original.
+        if current_is_empty and incoming_is_empty:
+            continue
+
+        # Both values are non-empty here.
+        if (
+            current["value"] != item["value"]
+            or current["data_type"] != item["data_type"]
+        ):
+            if conflict_mode != "lenient":
+                raise CreatorError(
+                    "Conflicting passing_data value for product "
+                    f"'{unique_name}', key '{item_name}' on row {row_index}. "
+                    f"Existing value: {current['value']!r}, "
+                    f"incoming value: {item['value']!r}."
+                )
+
+            log.warning(
+                "Conflicting passing_data for product '%s', key '%s' on row "
+                "%d. Keeping latest non-empty value %r over previous %r.",
+                unique_name,
+                item_name,
+                row_index,
+                item["value"],
+                current["value"],
+            )
+            merged_by_name[item_name] = {
+                "name": item_name,
+                "value": item["value"],
+                "data_type": item["data_type"],
+            }
+
+    ordered_names = [item["name"] for item in existing_values]
+    for item in new_values:
+        if item["name"] not in ordered_names:
+            ordered_names.append(item["name"])
+
+    return [merged_by_name[name] for name in ordered_names]
+
+
 class RepreItem:
     def __init__(
         self,
@@ -102,6 +240,7 @@ class RepreItem:
         comment,
         slate_exists,
         tags,
+        passing_data: Optional[list[PassingDataValue]] = None,
     ):
         self.name = name
         self.filepath = filepath
@@ -115,9 +254,16 @@ class RepreItem:
         self.comment = comment
         self.slate_exists = slate_exists
         self.tags = tags
+        self.passing_data = passing_data or []
 
     @classmethod
-    def from_csv_row(cls, columns_config, repre_config, row):
+    def from_csv_row(
+        cls,
+        columns_config,
+        repre_config,
+        row,
+        passing_data: Optional[list[PassingDataValue]] = None,
+    ):
         kwargs = {
             dst_key: _get_row_value_with_validation(
                 columns_config, column_name, row
@@ -141,8 +287,7 @@ class RepreItem:
             )
         }
 
-        # Should the 'int' and 'float' conversion happen?
-        # - looks like '_get_row_value_with_validation' is already handling it
+        # Convert frame/fps values to their expected types.
         for key in {"frame_start", "frame_end", "handle_start", "handle_end"}:
             kwargs[key] = int(kwargs[key])
 
@@ -162,6 +307,7 @@ class RepreItem:
             else:
                 tags_list.append(repre_tags)
         kwargs["tags"] = tags_list
+        kwargs["passing_data"] = passing_data
         return cls(**kwargs)
 
 
@@ -194,6 +340,7 @@ class ProductItem:
         self.width = width
         self.height = height
         self.pixel_aspect = pixel_aspect
+        self.passing_data: list[PassingDataValue] = []
 
     @property
     def unique_name(self) -> str:
@@ -294,6 +441,9 @@ configuration in project settings.
         for instance in self.create_context.instances:
             if instance.creator_identifier == self.identifier:
                 instance.transient_data["has_promised_context"] = True
+
+            if instance.product_base_type == "csv_ingest_file":
+                instance.set_mandatory(True)
 
     def get_pre_create_attr_defs(self):
         """Creating pre-create attributes at creator plugin.
@@ -426,11 +576,17 @@ configuration in project settings.
             "filename": filename,
             "staging_dir": csv_dir,
         }
+        csv_instance.set_mandatory(True)
 
         # create instances from csv data via self function
-        instances = self._create_instances_from_csv_data(
+        instances, report_data = self._create_instances_from_csv_data(
             preset_data, csv_dir, filename)
+
+        if report_data:
+            csv_instance["csvReportData"] = report_data
+
         for instance in instances:
+            instance.data["csv_parent_instance"] = csv_instance.id
             self._store_new_instance(instance)
         self._store_new_instance(csv_instance)
 
@@ -542,12 +698,162 @@ configuration in project settings.
 
         return parent_data
 
+    def _resolve_row_folder(
+        self,
+        row: dict[str, Any],
+        folders_by_name: dict[str, list[dict[str, Any]]],
+        prevalidation: dict[str, Any],
+        row_index: int = 0,
+    ) -> tuple[Optional[dict[str, Any]], Optional[tuple[str, str]]]:
+        """Resolve folder path from folder name when path is missing.
+
+        If the row already has a non-empty ``Folder Path`` the row is
+        returned unchanged.  Otherwise the project folders index is
+        searched by ``Folder Name`` and – when exactly one match is found –
+        the resolved path is injected together with any temporal attributes
+        (Frame Start, Frame End, Handle Start, Handle End, FPS) that are
+        absent from the row but present on the matched folder entity.
+
+        When the relevant validator in ``prevalidation`` is configured with
+        ``mode: \"ignore\"``, a failing row is *not* raised as a
+        ``CreatorError``. Instead the method returns
+        ``(None, (category, message))`` so the caller can skip the row and
+        collect the report entry.
+        method returns ``(None, (category, message))`` so the caller can
+        skip the row and collect the report entry.
+
+        Args:
+            row (dict): A single CSV row (will be copied, not mutated).
+            folders_by_name (dict): Project folders indexed by folder name.
+                Values are lists of folder entity dicts
+                (``id``, ``path``, ``name``, ``attrib``).
+            prevalidation (dict): The ``prevalidation``
+                for specific validator with output either ``error``
+                or ``ignore``.
+            row_index (int): 1-based row number in the CSV file (header = 1,
+                first data row = 2).  Used in error messages for easier
+                identification of the failing row.
+
+        Returns:
+            tuple: ``(resolved_row, None)`` on success, or
+                ``(None, (category, message))`` when the row should be
+                skipped and reported.
+
+        Raises:
+            CreatorError: When a folder resolution error occurs and the
+                precreate validation is not configured to ignore it.
+        """
+        row = dict(row)  # work on a copy so the original is never mutated
+
+        folder_path = (row.get("Folder Path") or "").strip()
+        if folder_path:
+            # Folder Path already provided. Nothing to resolve.
+            return row, None
+
+        file_path = (row.get("File Path") or "").strip()
+        row_ctx = (
+            f"Row {row_index} (File Path: '{file_path}'): \n"
+            if row_index else ""
+        )
+
+        folder_name = (row.get("Folder Name") or "").strip()
+        if not folder_name:
+            error_msg = (
+                f"{row_ctx}Both 'Folder Path' and 'Folder Name' are empty. \n"
+                "Provide either a 'Folder Path' or a 'Folder Name' "
+                "for this row."
+            )
+            if prevalidation["folder_not_exists"]["mode"] == "ignore":
+                return None, ("Folder Does Not Exist", error_msg)
+            raise CreatorError(error_msg)
+
+        matching = folders_by_name.get(folder_name, [])
+        if not matching:
+            error_msg = (
+                f"\n{row_ctx}No existing folder found "
+                f"with name '{folder_name}'."
+                " \nVerify the 'Folder Name' value is correct in the project,"
+                " or use 'Folder Path' to specify the folder directly."
+            )
+            if prevalidation["folder_not_exists"]["mode"] == "ignore":
+                return None, ("Folder Does Not Exist", error_msg)
+            raise CreatorError(error_msg)
+
+        if len(matching) > 1:
+            paths = ", ".join(f["path"] for f in matching)
+            error_msg = (
+                f"{row_ctx}Multiple folders share the name '{folder_name}': \n"
+                f"{paths}. "
+                "Use 'Folder Path' to uniquely identify which folder to use."
+            )
+            if prevalidation["folder_name_duplicity"]["mode"] == "ignore":
+                return None, ("Folder Name Duplicity", error_msg)
+            raise CreatorError(error_msg)
+
+        matched = matching[0]
+        row["Folder Path"] = matched["path"]
+        log.debug(
+            "Resolved folder '%s' -> '%s' from project folders.",
+            folder_name,
+            matched["path"],
+        )
+
+        # Fill in temporal columns from folder entity attrs when absent.
+        attrib = matched.get("attrib") or {}
+        attr_column_map = (
+            ("Frame Start", "frameStart"),
+            ("Frame End", "frameEnd"),
+            ("Handle Start", "handleStart"),
+            ("Handle End", "handleEnd"),
+            ("FPS", "fps"),
+        )
+        for csv_col, attr_key in attr_column_map:
+            if (row.get(csv_col) or "").strip():
+                continue  # CSV already has a value
+            attr_val = attrib.get(attr_key)
+            if attr_val is not None:
+                row[csv_col] = str(attr_val)
+                log.debug(
+                    "Filled '%s' = %s from folder '%s' attrib.",
+                    csv_col,
+                    attr_val,
+                    matched["path"],
+                )
+
+        return row, None
 
     def _get_data_from_csv(
-        self, preset_data: dict[str, Any], csv_dir: str, filename: str
-    ) -> dict[str, ProductItem]:
-        """Generate instances from the csv file"""
-        # get current project name and code from context.data
+        self,
+        preset_data: dict[str, Any],
+        csv_dir: str,
+        filename: str,
+    ) -> tuple[dict[str, ProductItem], dict[str, list[str]]]:
+        """Parse the CSV file and build product items.
+
+        Makes two targeted API calls:
+        1. If any rows have an empty ``Folder Path`` but a non-empty
+           ``Folder Name``, queries only those folder names to resolve
+           paths and backfill temporal attributes from folder entities.
+        2. After all rows are resolved, queries the final folder paths
+           for ID lookup and validation.
+
+        When the relevant validator in ``prevalidation`` is configured with
+        ``mode: \"ignore\"``, rows that fail folder resolution are skipped
+        instead of raising a ``CreatorError``.
+        The collected report messages are returned as the second element
+        of the tuple so the caller can store them on the CSV product
+        instance.
+
+        Args:
+            preset_data (dict): The selected CSV ingest preset.
+            csv_dir (str): Directory containing the CSV file.
+            filename (str): CSV filename.
+
+        Returns:
+            tuple: ``(product_items_by_name, report_data)`` where
+                *report_data* is a ``dict[str, list[str]]`` keyed
+                by report category, containing any skipped-row messages.
+        """
         project_name = self.create_context.get_current_project_name()
         csv_path = os.path.join(csv_dir, filename)
 
@@ -555,8 +861,9 @@ configuration in project settings.
         columns_config = preset_data["columns_config"]
         representations_config = preset_data["representations_config"]
         folder_creation_config = preset_data["folder_creation_config"]
+        prevalidation = preset_data["prevalidation"]
 
-        # make sure csv file contains columns from following list
+        # Make sure csv file contains all required columns.
         required_columns = [
             column["name"]
             for column in columns_config["columns"]
@@ -564,7 +871,7 @@ configuration in project settings.
         ]
 
         # read csv file
-        with open(csv_path, "r") as csv_file:
+        with open(csv_path, "r", encoding="utf-8-sig") as csv_file:
             csv_content = csv_file.read()
 
         # read csv file with DictReader
@@ -573,40 +880,137 @@ configuration in project settings.
             delimiter=columns_config["csv_delimiter"]
         )
 
-        # fix fieldnames
-        # sometimes someone can keep extra space at the start or end of
-        # the column name
+        # Fix fieldnames – strip accidental leading/trailing whitespace.
         all_columns = [
             " ".join(column.rsplit())
             for column in csv_reader.fieldnames
         ]
-
-        # return back fixed fieldnames
         csv_reader.fieldnames = all_columns
 
         # check if csv file contains all required columns
         if any(column not in all_columns for column in required_columns):
             raise CreatorError(
-                f"Missing required columns: {required_columns}"
+                f"Missing required columns: {required_columns}\n"
+                f"All columns: {all_columns}"
             )
 
+        # Read all rows upfront so we can make targeted API calls before
+        # building product items.
+        raw_rows: list[dict[str, Any]] = [dict(row) for row in csv_reader]
+
+        # Collect only the names that actually need path resolution (i.e.
+        # rows where Folder Path is absent/empty but Folder Name is set).
+        folder_names_to_query: set[str] = set()
+        for row in raw_rows:
+            folder_path = (row.get("Folder Path") or "").strip()
+            folder_name = (row.get("Folder Name") or "").strip()
+            if not folder_path and folder_name:
+                folder_names_to_query.add(folder_name)
+
+        folders_by_name: dict[str, list[Any]] = collections.defaultdict(list)
+        if folder_names_to_query:
+            for folder in ayon_api.get_folders(
+                project_name,
+                folder_names=folder_names_to_query,
+                fields={"id", "path", "name", "attrib", "folderType"},
+            ):
+                folders_by_name[folder["name"]].append(folder)
+
+        # Resolve rows and build product items.  Rows that fail folder
+        # resolution or frame range validation under "ignore_and_report" mode
+        # are skipped; their messages accumulate in report_data.
         product_items_by_name: dict[str, ProductItem] = {}
-        for row in csv_reader:
+        report_data: dict[str, list[str]] = {}
+        # CSV header is row 1, so data rows start at 2.
+        for row_index, row in enumerate(raw_rows, start=2):
+            # Resolve Folder Path from Folder Name when path is absent and
+            # inject temporal attrs from the matched folder entity.
+            resolved_row, report_entry = self._resolve_row_folder(
+                row, folders_by_name, prevalidation, row_index
+            )
+            if resolved_row is None and report_entry is not None:
+                # Row failed folder resolution; record and skip.
+                category, message = report_entry
+                report_data.setdefault(category, []).append(message)
+                log.warning(
+                    "Skipping row due to precreate validation (%s): %s",
+                    category,
+                    message,
+                )
+                continue
+
+            # Validate that frame range values are present after folder
+            # resolution (folder attribs may have been back-filled above).
+            frame_range_cols = [
+                "Frame Start", "Frame End",
+                "Handle Start", "Handle End", "FPS",
+            ]
+            missing_frame_cols = [
+                col for col in frame_range_cols
+                if not (resolved_row.get(col) or "").strip()
+            ]
+            if missing_frame_cols:
+                file_path = (resolved_row.get("File Path") or "").strip()
+                error_msg = (
+                    f"Row {row_index} (File Path: '{file_path}'): "
+                    f"Missing frame range values for column(s): \n\t"
+                    f"{missing_frame_cols}. \n"
+                    "Provide the values in the CSV or ensure the matched "
+                    "folder has these attributes set."
+                )
+                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa
+                    report_data.setdefault(
+                        "Missing Frame Range Values", []
+                    ).append(error_msg)
+                    log.warning(
+                        "Skipping row due to missing frame range values: %s",
+                        error_msg,
+                    )
+                    continue
+                raise CreatorError(error_msg)
+
             product_item_: ProductItem = ProductItem.from_csv_row(
-                columns_config, row
+                columns_config, resolved_row
             )
             unique_name = product_item_.unique_name
+            row_passing_data = _collect_passing_data_columns(
+                columns_config, resolved_row
+            )
+            row_repre_passing_data = [
+                item
+                for item in row_passing_data
+                if item["data_type"] == "representation_data"
+            ]
+            row_product_passing_data = [
+                item
+                for item in row_passing_data
+                if item["data_type"] != "representation_data"
+            ]
+
             if unique_name not in product_items_by_name:
+                product_item_.passing_data = row_product_passing_data
                 product_items_by_name[unique_name] = product_item_
+            else:
+                existing_product_item = product_items_by_name[unique_name]
+                existing_product_item.passing_data = _merge_passing_data_values(
+                    existing_product_item.passing_data,
+                    row_product_passing_data,
+                    unique_name,
+                    row_index,
+                )
+
             product_item: ProductItem = product_items_by_name[unique_name]
             product_item.add_repre_item(
                 RepreItem.from_csv_row(
                     columns_config,
                     representations_config,
-                    row
+                    resolved_row,
+                    passing_data=row_repre_passing_data,
                 )
             )
 
+        # Query only the resolved paths to build the ID map and detect
+        # missing folders.
         folder_paths: set[str] = {
             product_item.folder_path
             for product_item in product_items_by_name.values()
@@ -614,7 +1018,9 @@ configuration in project settings.
         folder_ids_by_path: dict[str, str] = {
             folder_entity["path"]: folder_entity["id"]
             for folder_entity in ayon_api.get_folders(
-                project_name, folder_paths=folder_paths, fields={"id", "path"}
+                project_name,
+                folder_paths=folder_paths,
+                fields={"id", "path"},
             )
         }
         missing_paths: set[str] = folder_paths - set(folder_ids_by_path.keys())
@@ -636,8 +1042,8 @@ configuration in project settings.
         missing_tasks: set[str] = set()
         if missing_paths and not folder_creation_config["enabled"]:
             error_msg = (
-                "Folder creation is disabled but found missing folder(s): %r" %
-                ",".join(missing_paths)
+                "Folder creation is disabled but found missing folder(s): %r"
+                % ",".join(missing_paths)
             )
             raise CreatorError(error_msg)
 
@@ -708,7 +1114,7 @@ configuration in project settings.
                     f"Duplicate filename{ending} in csv file.\n{joined_names}"
                 )
 
-        return product_items_by_name
+        return product_items_by_name, report_data
 
     def _add_thumbnail_repre(
         self,
@@ -904,6 +1310,14 @@ configuration in project settings.
         if explicit_output_name:
             representation_data["outputName"] = explicit_output_name
 
+        repre_passing_data = {
+            item["name"]: item["value"]
+            for item in repre_item.passing_data
+            if item["data_type"] == "representation_data"
+        }
+        if repre_passing_data:
+            representation_data["data"] = repre_passing_data
+
         if frame_start:
             representation_data["frameStart"] = frame_start
         if frame_end:
@@ -985,7 +1399,7 @@ configuration in project settings.
         preset_data: dict[str, Any],
         csv_dir: str,
         filename: str
-    ) -> list[CreatedInstance]:
+    ) -> tuple[list[CreatedInstance], dict[str, list[str]]]:
         """Create instances from csv data.
 
         Args:
@@ -994,11 +1408,13 @@ configuration in project settings.
             filename (str): The name of the CSV file.
 
         Returns:
-            list[CreatedInstance]. The created instances.
+            tuple: ``(instances, report_data)`` where
+                *report_data* holds any folder-resolution errors
+                that were configured to be reported rather than raised.
         """
         # from special function get all data from csv file and convert them
         # to new instances
-        product_items_by_name: dict[str, ProductItem] = (
+        product_items_by_name, report_data = (
             self._get_data_from_csv(preset_data, csv_dir, filename)
         )
 
@@ -1039,7 +1455,7 @@ configuration in project settings.
             if folder_entity is not None:
                 folder_type = folder_entity["folderType"]
             else:
-                # TODO find out how to define default folder type
+                # TODO: find out how to define default folder type
                 # - was hardcoded in pyblish plugin 'CollectShotInstances'
                 folder_type: str = "Shot"
                 if product_item.has_promised_context:
@@ -1058,6 +1474,7 @@ configuration in project settings.
             instance_tasks = None
             task_name = None
             task_entity = None
+            task_type = None
             if product_item.task_name:
                 task_name_low = product_item.task_name.lower()
                 for f_task_entity in task_entities_by_folder_path[folder_path]:
@@ -1141,11 +1558,12 @@ configuration in project settings.
                 "name": product_item.instance_name,
                 "label": label,
                 "folderPath": folder_path,
+                "csv_preset_name": preset_data["name"],
                 "task": task_name,
                 "folder_type": folder_type,
                 "families": families,
                 "variant": product_item.variant,
-                "source": "csv",
+                "source": Path(csv_dir, filename).as_posix(),
                 "frameStart": first_repre_item.frame_start,
                 "frameEnd": first_repre_item.frame_end,
                 "handleStart": first_repre_item.handle_start,
@@ -1155,8 +1573,12 @@ configuration in project settings.
                 "comment": version_comment,
                 "prepared_data_for_repres": [],
             }
+
             if instance_tasks:
                 instance_data["tasks"] = instance_tasks
+
+            if product_item.passing_data:
+                instance_data["csv_passing_data"] = product_item.passing_data
 
             if product_item.has_promised_context:
                 families.append("shot")
@@ -1207,4 +1629,4 @@ configuration in project settings.
 
             instances.append(new_instance)
 
-        return instances
+        return instances, report_data
