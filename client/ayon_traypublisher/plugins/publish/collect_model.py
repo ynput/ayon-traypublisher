@@ -11,13 +11,7 @@ from ayon_core.pipeline.traits import (
     Representation,
     Spatial,
     Static,
-    Tagged,
 )
-
-MODEL_KEY_PREFIX = "abs_model_path"
-UP_AXIS_KEY_PREFIX = "up_axis"
-HANDEDNESS_KEY_PREFIX = "handedness"
-METERS_PER_UNIT_KEY_PREFIX = "meters_per_unit"
 
 
 class CollectModel(pyblish.api.InstancePlugin, publish.AYONPyblishPluginMixin):
@@ -38,18 +32,15 @@ class CollectModel(pyblish.api.InstancePlugin, publish.AYONPyblishPluginMixin):
 
         reviewable_path = Path(creator_attributes["abs_reviewable_path"])
         file_extension = reviewable_path.suffix[1:]
-        representations = [
-            Representation(
-                name=file_extension,
-                traits=[
-                    Static(),
-                    FileLocation(file_path=reviewable_path),
-                    Persistent(),
-                    Image(),
-                    Tagged(tags=["reviewable"]),
-                ],
-            )
-        ]
+        review_representation_data = dict(
+            ext=file_extension,
+            name=file_extension,
+            stagingDir=reviewable_path.parent.as_posix(),
+            files=reviewable_path.name,
+            tags=["review"],
+            outputName="review",
+        )
+        instance.data["representations"].append(review_representation_data)
 
         if "review" not in instance.data["families"]:
             instance.data["families"].append("review")
@@ -57,28 +48,23 @@ class CollectModel(pyblish.api.InstancePlugin, publish.AYONPyblishPluginMixin):
         if not instance.data.get("thumbnailSource"):
             instance.data["thumbnailSource"] = str(reviewable_path)
 
-        # Collect all model files
-        model_path_by_suffix = {
-            key.replace(MODEL_KEY_PREFIX, ""): Path(model_path)
-            for key, model_path in creator_attributes.items()
-            if key.startswith(MODEL_KEY_PREFIX)
-        }
+        # sorry, couldn't work out why this wasn't being
+        # set elsewhere and extract review errors without these set
+        instance.data["frameStart"] = 1
+        instance.data["frameEnd"] = 1
+        instance.data["frameStartHandle"] = 1
+        instance.data["frameEndHandle"] = 1
+        instance.data["fps"] = 24
 
-        if len(model_path_by_suffix) == 0:
-            raise publish.PublishError("No model files found in creator attributes.")
-
-        # Create a representation per file.
-        for suffix, model_path in model_path_by_suffix.items():
-            file_extension = model_path.suffix[1:].lower()
-            up_axis = creator_attributes[f"{UP_AXIS_KEY_PREFIX}{suffix}"]
-            handedness = creator_attributes[f"{HANDEDNESS_KEY_PREFIX}{suffix}"]
-            meters_per_unit = creator_attributes[
-                f"{METERS_PER_UNIT_KEY_PREFIX}{suffix}"
-            ]
-            suffix = suffix if len(model_path_by_suffix) > 1 else ""
-            representations.append(
+        model_path = Path(creator_attributes["abs_model_path"])
+        up_axis = creator_attributes["up_axis"]
+        handedness = creator_attributes["handedness"]
+        meters_per_unit = creator_attributes["meters_per_unit"]
+        publish.add_trait_representations(
+            instance,
+            (
                 Representation(
-                    name=f"{file_extension}{suffix}",
+                    name=model_path.suffix[1:].lower(),
                     traits=[
                         Static(),
                         FileLocation(file_path=model_path),
@@ -90,6 +76,6 @@ class CollectModel(pyblish.api.InstancePlugin, publish.AYONPyblishPluginMixin):
                             meters_per_unit=meters_per_unit,
                         ),
                     ],
-                )
-            )
-        publish.add_trait_representations(instance, representations)
+                ),
+            ),
+        )
