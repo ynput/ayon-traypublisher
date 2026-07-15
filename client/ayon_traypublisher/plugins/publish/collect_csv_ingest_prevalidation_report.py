@@ -172,7 +172,7 @@ class CollectCSVIngestPrevalidationReport(
             int(version) < int(latest_version)
         ):
             return (
-                "Higher then current version found for the context: "
+                "Higher than current version found for the context: "
                 f"{instance_context_data}"
             )
 
