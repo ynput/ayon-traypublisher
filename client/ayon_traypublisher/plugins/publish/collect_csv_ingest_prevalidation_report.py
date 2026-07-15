@@ -159,11 +159,20 @@ class CollectCSVIngestPrevalidationReport(
         if version is None:
             return ""
         if (
-            latest_version is not None
-            and int(version) <= int(latest_version)
+            latest_version is not None and
+            int(version) == int(latest_version)
         ):
             return (
-                "Existing version found for context: "
+                "Existing version found for the context: "
+                f"{instance_context_data}"
+            )
+
+        if (
+            latest_version is not None and
+            int(version) < int(latest_version)
+        ):
+            return (
+                "Higher then current version found for the context: "
                 f"{instance_context_data}"
             )
 
