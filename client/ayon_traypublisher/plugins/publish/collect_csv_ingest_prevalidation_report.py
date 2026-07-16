@@ -163,7 +163,7 @@ class CollectCSVIngestPrevalidationReport(
             int(version) == int(latest_version)
         ):
             return (
-                "Existing version found for the context: "
+                f"Version '{version}' already exists for context: "
                 f"{instance_context_data}"
             )
 
@@ -172,8 +172,9 @@ class CollectCSVIngestPrevalidationReport(
             int(version) < int(latest_version)
         ):
             return (
-                "Higher than current version found for the context: "
-                f"{instance_context_data}"
+                f"Higher version '{latest_version}' already exists disallowing"
+                f" version '{version}' for context:"
+                f" {instance_context_data}"
             )
 
         return ""
