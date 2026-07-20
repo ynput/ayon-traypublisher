@@ -87,7 +87,9 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
-    "default_collect_video_framerange": True,
+    "CollectTraypublisherVideoFrameData": {
+        "default_collect_video_framerange": True,
+    },
     "CollectCSVIngestPrevalidationReport": {
         "enabled": True,
         "optional": True,
