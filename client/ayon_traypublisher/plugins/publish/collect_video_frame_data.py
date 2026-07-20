@@ -119,6 +119,7 @@ class CollectTraypublisherVideoFrameData(
     optional = True
     settings_category = "traypublisher"
     default_collect_video_framerange = True
+    
     @classmethod
     def get_attr_defs_for_instance(
         cls, create_context: "CreateContext", instance: "CreatedInstance"  # noqa: F821
