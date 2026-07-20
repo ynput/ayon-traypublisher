@@ -118,7 +118,6 @@ class CollectTraypublisherVideoFrameData(
     hosts = ["traypublisher"]
     optional = True
     settings_category = "traypublisher"
-    default_collect_video_framerange = True
     
     @classmethod
     def get_attr_defs_for_instance(
