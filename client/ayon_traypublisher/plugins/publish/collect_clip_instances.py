@@ -37,6 +37,8 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
             return
 
         instance.data["families"].append("clip")
+        # Mark instance for 'ExtractOTIOClipRanges'
+        instance.data["families"].append("otio.clip.ranges")
 
         parent_instance_id = instance.data["parent_instance_id"]
         edit_shared_data = instance.context.data["editorialSharedData"]
