@@ -57,6 +57,10 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
+    CollectTraypublisherVideoFrameData: ValidatePluginModel = SettingsField(
+        default_factory=ValidatePluginModel,
+        title="Collect Original Video Frame Data",
+    )
     CollectCSVIngestPrevalidationReport: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect CSV Ingest Prevalidation Report",
@@ -83,6 +87,11 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
+    "CollectTraypublisherVideoFrameData": {
+        "enabled": True,
+        "optional": False,
+        "active": True
+    },
     "CollectCSVIngestPrevalidationReport": {
         "enabled": True,
         "optional": True,

@@ -117,18 +117,21 @@ class CollectTraypublisherVideoFrameData(
     order = pyblish.api.CollectorOrder - 0.25
     hosts = ["traypublisher"]
     optional = True
-
+    active = True
+    settings_category = "traypublisher"
+    
     @classmethod
     def get_attr_defs_for_instance(
         cls, create_context: "CreateContext", instance: "CreatedInstance"  # noqa: F821
     ):
         if not cls.instance_supported(create_context, instance):
             return []
+
         return [
             BoolDef(
                 "collect_video_framerange",
                 label="Collect Original Video Frame Data",
-                default=True,
+                default=cls.active,
                 visible=cls.optional,
             )
         ]
@@ -157,6 +160,9 @@ class CollectTraypublisherVideoFrameData(
         return bool(extensions & _VIDEO_EXTENSIONS)
 
     def process(self, context):
+        if self.optional and not self.active:
+            return
+
         for instance in context:
             data = self.get_attr_values_from_data(instance.data)
             if data.get("collect_video_framerange"):
