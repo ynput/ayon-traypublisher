@@ -6,6 +6,7 @@ from typing import Union
 from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
 from ayon_core.lib import get_ffprobe_data, BoolDef
 
+from ayon_core.pipeline import OptionalPyblishPluginMixin
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 
 import pyblish.api
@@ -125,11 +126,12 @@ class CollectTraypublisherVideoFrameData(
     ):
         if not cls.instance_supported(create_context, instance):
             return []
+
         return [
             BoolDef(
                 "collect_video_framerange",
                 label="Collect Original Video Frame Data",
-                default=True,
+                default=create_context.get_current_project_settings()["traypublisher"]["publish"]["CollectVideoData"]["active"],
                 visible=cls.optional,
             )
         ]
@@ -165,7 +167,10 @@ class CollectTraypublisherVideoFrameData(
                 instance.data["families"].append("collect.video.framerange")
 
 
-class CollectVideoData(pyblish.api.InstancePlugin):
+class CollectVideoData(
+    pyblish.api.InstancePlugin,
+    OptionalPyblishPluginMixin
+):
     """Collect Original Video Frame Data
 
     If the representation includes video files then set `frameStart` and
@@ -176,6 +181,8 @@ class CollectVideoData(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Video Frame Data"
     families = ["collect.video.framerange"]
+    hosts = ["traypublisher"]
+    optional = True
 
     def process(self, instance):
         if all(

@@ -57,7 +57,7 @@ class ExtractEditorialPckgConversionModel(BaseSettingsModel):
 
 
 class TrayPublisherPublishPlugins(BaseSettingsModel):
-    CollectTraypublisherVideoFrameData: ValidatePluginModel = SettingsField(
+    CollectVideoData: ValidatePluginModel = SettingsField(
         default_factory=ValidatePluginModel,
         title="Collect Original Video Frame Data",
     )
@@ -87,7 +87,7 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_PLUGINS = {
-    "CollectTraypublisherVideoFrameData": {
+    "CollectVideoData": {
         "enabled": True,
         "optional": False,
         "active": True
