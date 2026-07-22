@@ -63,6 +63,7 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
             self.log.info("No representations, skipping.")
             return
 
+        frames = None # ensuring `frames` is declared for the final debug which references it
         for repre in repres:
             ext = repre['ext'].replace(".", '')
 
