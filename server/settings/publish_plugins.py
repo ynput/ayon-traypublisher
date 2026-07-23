@@ -96,7 +96,6 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         title="Validate Existing Version",
         default_factory=ValidatePluginModel,
     )
-
     ExtractEditorialPckgConversion: ExtractEditorialPckgConversionModel = (
         SettingsField(
             default_factory=ExtractEditorialPckgConversionModel,
@@ -117,6 +116,9 @@ DEFAULT_PUBLISH_PLUGINS = {
         "active": True,
         "families": ["*"],
     },
+    "CollectFrameDataFromAssetEntity": {
+        "families": ["*"],
+    },
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
@@ -127,6 +129,9 @@ DEFAULT_PUBLISH_PLUGINS = {
         "enabled": True,
         "optional": True,
         "active": True,
+        "families": ["*"],
+    },
+    "ValidateColorspace": {
         "families": ["*"],
     },
     "ValidateExistingVersion": {
