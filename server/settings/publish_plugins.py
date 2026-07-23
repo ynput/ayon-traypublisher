@@ -11,7 +11,13 @@ class ValidatePluginModel(BaseSettingsModel):
     active: bool = SettingsField(True, title="Active")
 
 
-class ValidateFrameRangeModel(ValidatePluginModel):
+class ValidateFamiliesModel(ValidatePluginModel):
+
+    families: list[str] = SettingsField(
+        title="Families",
+        default=["*"],
+    )
+
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
      'my_asset_to_publish.mov')"""
