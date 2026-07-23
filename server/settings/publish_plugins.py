@@ -67,6 +67,10 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         default_factory=ValidatePluginModel,
         title="Collect CSV Ingest Prevalidation Report",
     )
+    CollectColorspace: ValidateFamiliesModel = SettingsField(
+        default_factory=ValidateFamiliesModel,
+        title="Collect Colorspace",
+    )
     CollectSequenceFrameData: ValidateFamiliesModel = SettingsField(
         default_factory=ValidateFamiliesModel,
         title="Collect Original Sequence Frame Data",
@@ -93,6 +97,12 @@ DEFAULT_PUBLISH_PLUGINS = {
         "enabled": True,
         "optional": True,
         "active": True
+    },
+    "CollectColorspace": {
+        "enabled": True,
+        "optional": True,
+        "active": True,
+        "families": ["*"],
     },
     "CollectSequenceFrameData": {
         "enabled": True,
