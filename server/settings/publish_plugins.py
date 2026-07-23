@@ -11,12 +11,15 @@ class ValidatePluginModel(BaseSettingsModel):
     active: bool = SettingsField(True, title="Active")
 
 
-class ValidateFamiliesModel(ValidatePluginModel):
-
+class FamiliesModel(BaseSettingsModel):
     families: list[str] = SettingsField(
         title="Families",
         default=["*"],
     )
+
+
+class ValidateFamiliesModel(ValidatePluginModel, FamiliesModel):
+    pass
 
 
 class ValidateFrameRangeModel(ValidateFamiliesModel):
@@ -72,6 +75,10 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
     CollectColorspace: ValidateFamiliesModel = SettingsField(
         default_factory=ValidateFamiliesModel,
         title="Collect Colorspace",
+    )
+    CollectFrameDataFromAssetEntity: FamiliesModel = SettingsField(
+        default_factory=FamiliesModel,
+        title="Collect Missing Frame Data From Folder/Task",
     )
     CollectSequenceFrameData: ValidateFamiliesModel = SettingsField(
         default_factory=ValidateFamiliesModel,

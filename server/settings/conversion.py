@@ -74,6 +74,13 @@ def _convert_families_0_5_0(overrides: dict):
             "image",
             "online",
         ],
+        "CollectFrameDataFromAssetEntity": [
+            "plate",
+            "pointcache",
+            "vdbcache",
+            "online",
+            "render",
+        ],
         "CollectSequenceFrameData": [
             "plate",
             "pointcache",

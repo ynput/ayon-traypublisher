@@ -10,13 +10,6 @@ class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
 
     order = pyblish.api.CollectorOrder + 0.491
     label = "Collect Missing Frame Data From Folder/Task"
-    families = [
-        "plate",
-        "pointcache",
-        "vdbcache",
-        "online",
-        "render",
-    ]
     hosts = ["traypublisher"]
 
     def process(self, instance):
