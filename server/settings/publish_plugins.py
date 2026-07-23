@@ -67,8 +67,8 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         default_factory=ValidatePluginModel,
         title="Collect CSV Ingest Prevalidation Report",
     )
-    CollectSequenceFrameData: ValidatePluginModel = SettingsField(
-        default_factory=ValidatePluginModel,
+    CollectSequenceFrameData: ValidateFamiliesModel = SettingsField(
+        default_factory=ValidateFamiliesModel,
         title="Collect Original Sequence Frame Data",
     )
     ValidateFrameRange: ValidateFrameRangeModel = SettingsField(
@@ -97,7 +97,8 @@ DEFAULT_PUBLISH_PLUGINS = {
     "CollectSequenceFrameData": {
         "enabled": True,
         "optional": True,
-        "active": True
+        "active": True,
+        "families": ["*"],
     },
     "ValidateFrameRange": {
         "enabled": True,
