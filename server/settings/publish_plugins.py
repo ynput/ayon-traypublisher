@@ -18,6 +18,8 @@ class ValidateFamiliesModel(ValidatePluginModel):
         default=["*"],
     )
 
+
+class ValidateFrameRangeModel(ValidateFamiliesModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
      asset is parsed from file names ('asset.mov', 'asset_v001.mov',
      'my_asset_to_publish.mov')"""
@@ -96,7 +98,7 @@ DEFAULT_PUBLISH_PLUGINS = {
     "CollectCSVIngestPrevalidationReport": {
         "enabled": True,
         "optional": True,
-        "active": True
+        "active": True,
     },
     "CollectColorspace": {
         "enabled": True,
@@ -113,12 +115,13 @@ DEFAULT_PUBLISH_PLUGINS = {
     "ValidateFrameRange": {
         "enabled": True,
         "optional": True,
-        "active": True
+        "active": True,
+        "families": ["*"],
     },
     "ValidateExistingVersion": {
         "enabled": True,
         "optional": True,
-        "active": True
+        "active": True,
     },
     "ExtractEditorialPckgConversion": {
         "conversion_enabled": False,
@@ -128,14 +131,14 @@ DEFAULT_PUBLISH_PLUGINS = {
               "video_filters": [],
               "audio_filters": [],
               "input": [
-                "-apply_trc gamma22"
+                "-apply_trc gamma22",
               ],
               "output": [
                 "-pix_fmt yuv420p",
                 "-crf 18",
                 "-g 1",
-              ]
-            }
-        }
-    }
+              ],
+            },
+        },
+    },
 }
