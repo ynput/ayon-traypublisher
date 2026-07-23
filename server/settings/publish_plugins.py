@@ -88,6 +88,10 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         title="Validate Frame Range",
         default_factory=ValidateFrameRangeModel,
     )
+    ValidateColorspace: FamiliesModel = SettingsField(
+        default_factory=FamiliesModel,
+        title="Validate Colorspace",
+    )
     ValidateExistingVersion: ValidatePluginModel = SettingsField(
         title="Validate Existing Version",
         default_factory=ValidatePluginModel,

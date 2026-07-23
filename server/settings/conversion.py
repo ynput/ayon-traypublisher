@@ -88,6 +88,13 @@ def _convert_families_0_5_0(overrides: dict):
             "online",
             "render",
         ],
+        "ValidateColorspace": [
+            "render",
+            "plate",
+            "reference",
+            "image",
+            "online",
+        ],
         "ValidateFrameRange": [
             "render",
             "plate",
