@@ -881,20 +881,20 @@ configuration in project settings.
         )
 
         # Fix fieldnames – strip accidental leading/trailing whitespace.
-        all_columns: set[str] = {
+        csv_columns: set[str] = {
             column.strip() for column in csv_reader.fieldnames
         }
-        csv_reader.fieldnames = list(all_columns)
+        csv_reader.fieldnames = list(csv_columns)
 
         # check if csv file contains all required columns
-    missing = sorted(set(required_columns) - set(all_columns))
-    if missing:
-            all_columns: list[str] = sorted(all_columns)
+        missing = sorted(set(required_columns) - set(csv_columns))
+        if missing:
+            csv_columns: list[str] = sorted(csv_columns)
             required_columns = sorted(required_columns)
 
             raise CreatorError(
                 f"Missing required columns: {missing}\n\n"
-                f"Columns in CSV file: {all_columns}\n"
+                f"Columns in CSV file: {csv_columns}\n"
                 f"All required columns: {required_columns}"
             )
 
@@ -962,7 +962,7 @@ configuration in project settings.
                     "Provide the values in the CSV or ensure the matched "
                     "folder has these attributes set."
                 )
-                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa
+                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa: E501
                     report_data.setdefault(
                         "Missing Frame Range Values", []
                     ).append(error_msg)
