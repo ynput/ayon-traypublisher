@@ -895,7 +895,7 @@ configuration in project settings.
             raise CreatorError(
                 f"Missing required columns: {missing}\n\n"
                 f"Columns in CSV file: {all_columns}\n"
-                f"Required columns: {required_columns}"
+                f"All required columns: {required_columns}"
             )
 
         # Read all rows upfront so we can make targeted API calls before
