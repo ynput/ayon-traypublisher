@@ -881,13 +881,13 @@ configuration in project settings.
         )
 
         # Fix fieldnames – strip accidental leading/trailing whitespace.
-        csv_columns: set[str] = {
+        csv_reader.fieldnames = [
             column.strip() for column in csv_reader.fieldnames
-        }
-        csv_reader.fieldnames = list(csv_columns)
+        ]
+        csv_columns: set[str] = set(csv_reader.fieldnames)
 
         # check if csv file contains all required columns
-        missing = sorted(set(required_columns) - set(csv_columns))
+        missing = sorted(set(required_columns) - csv_columns)
         if missing:
             csv_columns: list[str] = sorted(csv_columns)
             required_columns = sorted(required_columns)
