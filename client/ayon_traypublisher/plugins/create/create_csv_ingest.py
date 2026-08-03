@@ -887,8 +887,8 @@ configuration in project settings.
         csv_reader.fieldnames = list(all_columns)
 
         # check if csv file contains all required columns
-        if any(column not in all_columns for column in required_columns):
-            missing = sorted(set(required_columns) - set(all_columns))
+    missing = sorted(set(required_columns) - set(all_columns))
+    if missing:
             all_columns: list[str] = sorted(all_columns)
             required_columns = sorted(required_columns)
 
