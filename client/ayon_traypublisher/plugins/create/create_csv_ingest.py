@@ -339,6 +339,7 @@ class ProductItem:
         self.width = width
         self.height = height
         self.pixel_aspect = pixel_aspect
+        self.folder_description = folder_description
         self.passing_data: list[PassingDataValue] = []
 
     @property
@@ -399,7 +400,23 @@ class ProductItem:
             product_base_type = kwargs.get("product_type", "")
         kwargs["product_base_type"] = product_base_type
 
-        return cls(**kwargs)
+        product_item = cls(**kwargs)
+
+        # Folder Description is an optional column; if present it is
+        # forwarded as passing_data so the publish pipeline can set it
+        # on the folder entity during folder creation.
+        folder_desc = (row.get("Folder Description") or "").strip()
+        if folder_desc:
+            product_item.passing_data.append(
+                PassingDataValue(
+                    name="folderDescription",
+                    value=folder_desc,
+                    data_type="instance_data",
+                )
+            )
+
+        return product_item
+
 
 
 class IngestCSV(TrayPublishCreator):
