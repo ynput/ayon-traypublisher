@@ -126,6 +126,11 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
 
     def collect_instances(self):
         super().collect_instances()
+        # Only clip instances have a "promised" context (resolved from the
+        # parent shot during publish). Shots keep an editable context so
+        # users can set the destination folder/task. See YN-0813.
+        if self.product_base_type == "shot":
+            return
         for instance in self.create_context.instances:
             if instance.creator_identifier == self.identifier:
                 instance.transient_data["has_promised_context"] = True
@@ -624,7 +629,6 @@ or updating already created. Publishing will create OTIO file.
                 "instance_label": label,
                 "instance_id": c_instance.data["instance_id"]
             })
-            c_instance.transient_data["has_promised_context"] = True
         else:
             # add review family if defined
             instance_data.update({
