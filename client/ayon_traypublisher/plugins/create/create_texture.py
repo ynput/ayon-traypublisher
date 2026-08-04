@@ -144,6 +144,11 @@ class TextureCreator(TrayPublishCreator):
             # Apply variant prefix/suffix if specified
             variant = f"{prefix}{variant}{suffix}"
 
+            # Normalize capitalization so variant names are case-insensitive
+            # e.g. Main -> main both produce the same product_name.
+            # See YN-0853.
+            variant = variant.capitalize()
+
             # Create instance
             product_name = self.get_product_name(
                 self.project_name,
