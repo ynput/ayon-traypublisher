@@ -114,6 +114,7 @@ VERSION_IN_FILE_PATTERN = r".*v(\d{2,4}).*"
 
 class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product base type creators."""
+
     host_name = "traypublisher"
 
     def create(self, instance_data, source_data=None):
@@ -379,7 +380,7 @@ or updating already created. Publishing will create OTIO file.
 
         ignore_clip_no_content = pre_create_data["ignore_clip_no_content"]
         for media_folder_path in media_folder_paths:
-            for (sequence_name, sequence_path, otio_timeline) in otio_timelines:
+            for sequence_name, sequence_path, otio_timeline in otio_timelines:
                 # create clip instances
                 self._get_clip_instances(
                     folder_entity,
@@ -707,11 +708,17 @@ or updating already created. Publishing will create OTIO file.
             extension = os.path.splitext(filtered_filenames[0])[1]
             product_data = deepcopy(product_data_base)
             suffix = differences[head + tail]
-            product_data.update({
-                "type": "collection" if extension in IMAGE_EXTENSIONS else "other",
-                "suffix": suffix,
-                "files": filtered_filenames,
-            })
+            type_ = (
+                "collection" if extension in IMAGE_EXTENSIONS else "other"
+            )
+
+            product_data.update(
+                {
+                    "type": type_,
+                    "suffix": suffix,
+                    "files": filtered_filenames,
+                }
+            )
 
             if strict and match:
                 product_data["product_name"] = match.group(1)
@@ -835,7 +842,7 @@ or updating already created. Publishing will create OTIO file.
                 for file in item["files"]:
                     # Validate content type matches item type mapping
                     if (
-                        pres_repr_content_type not in CONTENT_TYPE_MAPPING[item_type]  # noqa
+                        pres_repr_content_type not in CONTENT_TYPE_MAPPING[item_type]  # noqa: E501
                     ):
                         continue
 
@@ -1003,9 +1010,9 @@ or updating already created. Publishing will create OTIO file.
             product_name="shotMain",
         )
         instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
-        c_instance = self.create_context.creators["editorial_shot_advanced"].create(
-            instance_data
-        )
+        c_instance = self.create_context.creators[
+            "editorial_shot_advanced"
+        ].create(instance_data)
         c_instance.transient_data["has_promised_context"] = True
         parenting_data.update(
             {
@@ -1319,7 +1326,9 @@ or updating already created. Publishing will create OTIO file.
 def find_string_differences(files: List[str]) -> Dict[str, str]:
     """
     Find common parts and differences between all strings in a list.
-    Returns dictionary with original strings as keys and unique parts as values.
+    Returns dictionary with original strings as keys and unique parts as
+    values.
+
     The unique parts will:
     - not include file extensions
     - be stripped of whitespace

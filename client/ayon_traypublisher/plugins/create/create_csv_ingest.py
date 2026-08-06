@@ -100,8 +100,8 @@ def _collect_passing_data_columns(
 ) -> list[PassingDataValue]:
     """Collect columns with processing_type 'passing_data' from a CSV row.
 
-    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for each
-    matching column.
+    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for
+    each matching column.
 
     Args:
         columns_config (dict[str, Any]): The columns configuration.
@@ -958,7 +958,7 @@ configuration in project settings.
                     "Provide the values in the CSV or ensure the matched "
                     "folder has these attributes set."
                 )
-                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa
+                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa: E501
                     report_data.setdefault(
                         "Missing Frame Range Values", []
                     ).append(error_msg)
@@ -992,7 +992,7 @@ configuration in project settings.
                 product_items_by_name[unique_name] = product_item_
             else:
                 existing_product_item = product_items_by_name[unique_name]
-                existing_product_item.passing_data = _merge_passing_data_values(
+                existing_product_item.passing_data = _merge_passing_data_values(  # noqa: E501
                     existing_product_item.passing_data,
                     row_product_passing_data,
                     unique_name,
