@@ -880,17 +880,21 @@ configuration in project settings.
         )
 
         # Fix fieldnames – strip accidental leading/trailing whitespace.
-        all_columns = [
-            " ".join(column.rsplit())
-            for column in csv_reader.fieldnames
+        csv_reader.fieldnames = [
+            column.strip() for column in csv_reader.fieldnames
         ]
-        csv_reader.fieldnames = all_columns
+        csv_columns: set[str] = set(csv_reader.fieldnames)
 
         # check if csv file contains all required columns
-        if any(column not in all_columns for column in required_columns):
+        missing = sorted(set(required_columns) - csv_columns)
+        if missing:
+            csv_columns: list[str] = sorted(csv_columns)
+            required_columns = sorted(required_columns)
+
             raise CreatorError(
-                f"Missing required columns: {required_columns}\n"
-                f"All columns: {all_columns}"
+                f"Missing required columns: {missing}\n\n"
+                f"Columns in CSV file: {csv_columns}\n"
+                f"All required columns: {required_columns}"
             )
 
         # Read all rows upfront so we can make targeted API calls before
