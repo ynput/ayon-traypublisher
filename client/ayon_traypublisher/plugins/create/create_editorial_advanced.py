@@ -1015,9 +1015,8 @@ or updating already created. Publishing will create OTIO file.
             product_name="shotMain",
         )
         instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
-        c_instance = self.create_context.creators[
-            "editorial_shot_advanced"
-        ].create(instance_data)
+        creator = self.create_context.creators["editorial_shot_advanced"]
+        c_instance = creator.create(instance_data)
         c_instance.transient_data["has_promised_context"] = True
         parenting_data.update(
             {

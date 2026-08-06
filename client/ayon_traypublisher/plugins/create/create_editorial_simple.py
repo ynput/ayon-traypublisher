@@ -621,9 +621,8 @@ or updating already created. Publishing will create OTIO file.
         if product_base_type == "shot":
             instance_data["otioClip"] = (
                 otio.adapters.write_to_string(otio_clip))
-            c_instance = self.create_context.creators[
-                "editorial_shot"].create(
-                    instance_data)
+            creator = self.create_context.creators["editorial_shot"]
+            c_instance = creator.create(instance_data)
             parenting_data.update({
                 "instance_label": label,
                 "instance_id": c_instance.data["instance_id"]
