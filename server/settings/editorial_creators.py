@@ -113,7 +113,7 @@ class ShotRenameSubmodel(BaseSettingsModel):
     The template supports both the available
     [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys)
     and tokens defined under `Clip Name Tokenizer`.
-    """
+    """  # noqa: E501
     enabled: bool = True
     shot_rename_template: str = SettingsField(
         "",
