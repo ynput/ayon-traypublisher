@@ -339,7 +339,6 @@ class ProductItem:
         self.width = width
         self.height = height
         self.pixel_aspect = pixel_aspect
-        self.folder_description = folder_description
         self.passing_data: list[PassingDataValue] = []
 
     @property
