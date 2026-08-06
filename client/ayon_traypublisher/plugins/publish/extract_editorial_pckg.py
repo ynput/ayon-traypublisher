@@ -6,7 +6,7 @@ import opentimelineio
 
 import pyblish.api
 
-from ayon_core.lib import  get_ffmpeg_tool_args, run_subprocess
+from ayon_core.lib import get_ffmpeg_tool_args, run_subprocess
 from ayon_core.pipeline import publish
 
 
