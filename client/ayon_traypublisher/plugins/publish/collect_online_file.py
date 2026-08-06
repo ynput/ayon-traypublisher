@@ -10,7 +10,8 @@ class CollectOnlineFile(pyblish.api.InstancePlugin):
     hosts = ["traypublisher"]
 
     def process(self, instance: pyblish.api.Instance):
-        if instance.data.get("creator_identifier") != "io.ayon.creators.traypublisher.online":
+        identifier = "io.ayon.creators.traypublisher.online"
+        if instance.data.get("creator_identifier") != identifier:
             return
 
         instance.data["families"].append("simple.instance")

@@ -4,6 +4,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 def _convert_csv_ingest_0_3_9(overrides):
     csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
     if not csv_ingest_settings:

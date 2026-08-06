@@ -383,7 +383,9 @@ class RepresentationItemModel(BaseSettingsModel):
     def validate_extension(cls, value):
         for ext in value:
             if not ext.startswith("."):
-                raise BadRequestException(f"Extension must start with '.': {ext}")
+                raise BadRequestException(
+                    f"Extension must start with '.': {ext}"
+                )
         return value
 
 
@@ -453,9 +455,9 @@ class FolderCreationConfigModel(BaseSettingsModel):
     folder_type_regexes: list[FolderTypeRegexItem] = SettingsField(
         default_factory=list,
         description=(
-            "Using Regex expressions to create missing folders. \nThose can be used"
-            " to define which folder types are used for new folder creation"
-            " depending on their names."
+            "Using Regex expressions to create missing folders. \n"
+            "Those can be used to define which folder types are used for new "
+            "folder creation depending on their names."
         )
     )
     task_create_type: str = SettingsField(
@@ -469,9 +471,9 @@ class FolderCreationConfigModel(BaseSettingsModel):
     task_type_regexes: list[TaskTypeRegexItem] = SettingsField(
         default_factory=list,
         description=(
-            "Using Regex expressions to create missing tasks. \nThose can be used"
-            " to define which task types are used for new folder+task creation"
-            " depending on their names."
+            "Using Regex expressions to create missing tasks. \n"
+            "Those can be used to define which task types are used for new "
+            "folder+task creation depending on their names."
         )
     )
 
@@ -620,7 +622,7 @@ DEFAULT_CREATORS = {
                             "type": "text",
                             "default": "",
                             "required_column": True,
-                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
+                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"  # noqa: E501
                         },
                         {
                             "name": "Folder Path",
@@ -683,7 +685,7 @@ DEFAULT_CREATORS = {
                             "type": "text",
                             "default": "",
                             "required_column": False,
-                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"
+                            "validation_pattern": "^([a-zA-Z\\:\\ 0-9#\\-\\._\\\\/]*)$"  # noqa: E501
                         },
                         {
                             "name": "Frame Start",

@@ -257,7 +257,9 @@ class SettingsCreator(TrayPublishCreator):
         for instance in filtered_instance_data:
             folder_path = instance["folderPath"]
             product_name = instance["productName"]
-            version = product_entities_by_folder_path[folder_path][product_name]
+            version = (
+                product_entities_by_folder_path[folder_path][product_name]
+            )
             instance["creator_attributes"]["version_to_use"] = version
             instance["_previous_last_version"] = version
 

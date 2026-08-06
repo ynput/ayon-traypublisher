@@ -16,6 +16,7 @@ _VIDEO_EXTENSIONS = {
     for ext in VIDEO_EXTENSIONS
 }
 
+
 def get_video_info_metadata(
     path_to_file,
     logger,
@@ -178,7 +179,7 @@ class CollectVideoData(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         if all(
-            key in instance.data 
+            key in instance.data
             for key in ("frameStart", "frameEnd", "fps")
         ):
             self.log.debug(
@@ -196,11 +197,14 @@ class CollectVideoData(pyblish.api.InstancePlugin):
                 instance.data[key] = value
                 self.log.debug(f"Collected video data '{key}': {value}")
 
-    def get_frame_data_from_representations(self, instance: pyblish.api.Instance) -> dict:
+    def get_frame_data_from_representations(
+        self, instance: pyblish.api.Instance
+    ) -> dict:
         """Get frame data from a representation sequence.
 
         Args:
-            instance (pyblish.api.Instance): The instance to extract frame data from.
+            instance (pyblish.api.Instance): The instance to extract frame
+                data from.
 
         Returns:
             dict: A dictionary containing the frame data.
@@ -283,9 +287,9 @@ class CollectVideoData(pyblish.api.InstancePlugin):
 
         return VideoData(
             frame_start=start_frame,
-            frame_end=start_frame+num_frames+1,
+            frame_end=start_frame + num_frames + 1,
             fps=fps,
             # TODO: Also capture resolution?
-            #width=info["width"],
-            #height=info["height"],
+            # width=info["width"],
+            # height=info["height"],
         )
