@@ -66,7 +66,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Main"
         ],
         "description": "Backup of a working scene",
-        "detailed_description": "Workfiles are full scenes from any application that are directly edited by artists. They represent a state of work on a task at a given point and are usually not directly referenced into other scenes.",
+        "detailed_description": "Workfiles are full scenes from any application that are directly edited by artists. They represent a state of work on a task at a given point and are usually not directly referenced into other scenes.",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": False,
         "allow_version_control": False,
@@ -103,7 +103,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Sculpt"
         ],
         "description": "Clean models",
-        "detailed_description": "Models should only contain geometry data, without any extras like cameras, locators or bones.\n\nKeep in mind that models published from tray publisher are not validated for correctness. ",
+        "detailed_description": "Models should only contain geometry data, without any extras like cameras, locators or bones.\n\nKeep in mind that models published from tray publisher are not validated for correctness. ",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -155,7 +155,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Offline"
         ],
         "description": "Footage Plates",
-        "detailed_description": "Any type of image seqeuence coming from outside of the studio. Usually camera footage, but could also be animatics used for reference.",
+        "detailed_description": "Any type of image seqeuence coming from outside of the studio. Usually camera footage, but could also be animatics used for reference.",  # noqa: E501
         "allow_sequences": True,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -208,7 +208,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "icon": "fa.video-camera",
         "default_variants": [],
         "description": "3d Camera",
-        "detailed_description": "Ideally this should be only camera itself with baked animation, however, it can technically also include helper geometry.",
+        "detailed_description": "Ideally this should be only camera itself with baked animation, however, it can technically also include helper geometry.",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -234,7 +234,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Background"
         ],
         "description": "Single image",
-        "detailed_description": "Any image data can be published as image product type. References, textures, concept art, matte paints. This is a fallback 2d product type for everything that doesn't fit more specific product type.",
+        "detailed_description": "Any image data can be published as image product type. References, textures, concept art, matte paints. This is a fallback 2d product type for everything that doesn't fit more specific product type.",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -261,7 +261,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "icon": "fa.cloud",
         "default_variants": [],
         "description": "Sparse volumetric data",
-        "detailed_description": "Hierarchical data structure for the efficient storage and manipulation of sparse volumetric data discretized on three-dimensional grids",
+        "detailed_description": "Hierarchical data structure for the efficient storage and manipulation of sparse volumetric data discretized on three-dimensional grids",  # noqa: E501
         "allow_sequences": True,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -281,7 +281,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Mocap"
         ],
         "description": "Matchmoving script",
-        "detailed_description": "Script exported from matchmoving application to be later processed into a tracked camera with additional data",
+        "detailed_description": "Script exported from matchmoving application to be later processed into a tracked camera with additional data",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": True,
         "allow_version_control": False,
@@ -295,7 +295,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "icon": "fa.wheelchair",
         "default_variants": [],
         "description": "CG rig file",
-        "detailed_description": "CG rigged character or prop. Rig should be clean of any extra data and directly loadable into it's respective application\t",
+        "detailed_description": "CG rigged character or prop. Rig should be clean of any extra data and directly loadable into it's respective application\t",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": False,
         "allow_version_control": False,
@@ -314,7 +314,7 @@ DEFAULT_SIMPLE_CREATORS = [
         "icon": "fa.image",
         "default_variants": [],
         "description": "Simple Unreal Engine texture",
-        "detailed_description": "Texture files with Unreal Engine naming conventions",
+        "detailed_description": "Texture files with Unreal Engine naming conventions",  # noqa: E501
         "allow_sequences": False,
         "allow_multiple_items": True,
         "allow_version_control": False,
