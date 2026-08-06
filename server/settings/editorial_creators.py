@@ -33,7 +33,7 @@ def get_content_type_enum():
 
 
 def get_output_file_type_enum():
-   return [
+    return [
         {"value": ".mp4", "label": "MP4"},
         {"value": ".mov", "label": "MOV"},
         {"value": ".wav", "label": "WAV"},
@@ -228,12 +228,12 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     )
     clip_name_tokenizer: list[ClipNameTokenizerItem] = SettingsField(
         default_factory=ClipNameTokenizerItem,
-        description="""Clip Name Tokenizer Info.
+        description=("""Clip Name Tokenizer Info.
 
-                    Use regex expressions to create tokens.
-                    These tokens will be used later in the `Shot rename` creator or `Shot hierarchy`.
-                    Each token must be enclosed by underscores (`_`).
-                    """
+Use regex expressions to create tokens.
+These tokens will be used later in the `Shot rename` creator or `Shot hierarchy`.
+Each token must be enclosed by underscores (`_`)."""
+        )
     )
     shot_rename: ShotRenameSubmodel = SettingsField(
         title="Shot Rename",
