@@ -155,7 +155,7 @@ DEFAULT_SIMPLE_CREATORS = [
             "Offline"
         ],
         "description": "Footage Plates",
-        "detailed_description": "Any type of image seqeuence coming from outside of the studio. Usually camera footage, but could also be animatics used for reference.",  # noqa: E501
+        "detailed_description": "Any type of image sequence coming from outside of the studio. Usually camera footage, but could also be animatics used for reference.",  # noqa: E501
         "allow_sequences": True,
         "allow_multiple_items": True,
         "allow_version_control": False,
