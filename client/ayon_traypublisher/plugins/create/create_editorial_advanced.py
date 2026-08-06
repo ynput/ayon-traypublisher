@@ -713,17 +713,16 @@ or updating already created. Publishing will create OTIO file.
             extension = os.path.splitext(filtered_filenames[0])[1]
             product_data = deepcopy(product_data_base)
             suffix = differences[head + tail]
-            type_ = (
-                "collection" if extension in IMAGE_EXTENSIONS else "other"
-            )
 
-            product_data.update(
-                {
-                    "type": type_,
-                    "suffix": suffix,
-                    "files": filtered_filenames,
-                }
-            )
+            product_data.update({
+                "type": (
+                    "collection"
+                    if extension in IMAGE_EXTENSIONS
+                    else "other"
+                ),
+                "suffix": suffix,
+                "files": filtered_filenames,
+            })
 
             if strict and match:
                 product_data["product_name"] = match.group(1)
