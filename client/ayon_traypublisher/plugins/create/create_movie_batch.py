@@ -201,6 +201,7 @@ class BatchMovieCreator(TrayPublishCreator):
     def get_detail_description(self) -> str:
         return """# Publish batch of .mov to multiple folders.
 
-        File names must then contain only folder name, or folder name + version.
-        (eg. 'chair.mov', 'chair_v001.mov', not really safe `my_chair_v001.mov`
+        File names must then contain only folder name, or folder name +
+        version, eg. 'chair.mov', 'chair_v001.mov', not really safe
+        `my_chair_v001.mov`.
         """

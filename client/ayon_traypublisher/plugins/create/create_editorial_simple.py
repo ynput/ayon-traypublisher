@@ -44,7 +44,11 @@ CLIP_ATTR_DEFS = [
         ],
         label="FPS",
     ),
-    NumberDef("workfile_start_frame", default=1001, label="Workfile start frame"),
+    NumberDef(
+        "workfile_start_frame",
+        default=1001,
+        label="Workfile start frame"
+    ),
     NumberDef("handle_start", default=0, label="Handle start"),
     NumberDef("handle_end", default=0, label="Handle end"),
     NumberDef(
@@ -617,9 +621,8 @@ or updating already created. Publishing will create OTIO file.
         if product_base_type == "shot":
             instance_data["otioClip"] = (
                 otio.adapters.write_to_string(otio_clip))
-            c_instance = self.create_context.creators[
-                "editorial_shot"].create(
-                    instance_data)
+            creator = self.create_context.creators["editorial_shot"]
+            c_instance = creator.create(instance_data)
             parenting_data.update({
                 "instance_label": label,
                 "instance_id": c_instance.data["instance_id"]
@@ -882,42 +885,32 @@ or updating already created. Publishing will create OTIO file.
             FileDef(
                 "sequence_filepath_data",
                 folders=False,
-                extensions=[
-                    ".edl",
-                    ".xml",
-                    ".aaf",
-                    ".fcpxml"
-                ],
+                extensions=[".edl", ".xml", ".aaf", ".fcpxml"],
                 allow_sequences=False,
                 single_item=False,
                 label="Edit Decision List",
                 tooltip=(
-                    "An Edit Decision List (EDL) is a list of edits that includes reel and timecode data.\n"
-                    "This information shows where each video clip can be found to create the final cut.\n"
-                    "EDL files can be generated using apps like Nuke Studio and Resolve."
-                )
+                    "An Edit Decision List (EDL) is a list of edits that "
+                    "includes reel and timecode data.\n"
+                    "This information shows where each video clip can be "
+                    "found to create the final cut.\n"
+                    "EDL files can be generated using apps like Nuke Studio "
+                    "and Resolve."
+                ),
             ),
             FileDef(
                 "media_filepaths_data",
                 folders=False,
-                extensions=[
-                    ".mov",
-                    ".mp4",
-                    ".wav"
-                ],
+                extensions=[".mov", ".mp4", ".wav"],
                 allow_sequences=False,
                 single_item=False,
                 label="Media files",
             ),
             # TODO: perhaps better would be timecode and fps input
-            NumberDef(
-                "timeline_offset",
-                default=0,
-                label="Timeline offset"
-            ),
+            NumberDef("timeline_offset", default=0, label="Timeline offset"),
             UISeparatorDef(),
             UILabelDef("Add products for each discovered shot"),
-            UISeparatorDef()
+            UISeparatorDef(),
         ]
         # add variants swithers
         attr_defs.extend(

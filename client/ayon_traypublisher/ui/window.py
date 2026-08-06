@@ -59,7 +59,7 @@ class ChooseProjectController:
 
     def set_selected_project(self, project_name: str):
         """ProjectsWidget from ayon-core requires this method.
-        
+
         Tray Publisher does not need to implement it.
 
         """

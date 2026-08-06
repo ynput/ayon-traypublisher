@@ -58,11 +58,14 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
         handle_end = attributes["handleEnd"]
         duration = (frame_end - frame_start + 1) + handle_start + handle_end
 
+        self.log.debug(f"Expecting duration: '{duration}'")
+
         repres = instance.data.get("representations")
         if not repres:
             self.log.info("No representations, skipping.")
             return
 
+        frames: int = 0
         for repre in repres:
             ext = repre['ext'].replace(".", '')
 
@@ -87,15 +90,17 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
             frames = len(files)
 
             msg = (
-                "Frame duration from DB:'{}' doesn't match number of files:'{}'"
-                " Please change frame range for folder/task or limit no. of files"
-            ). format(int(duration), frames)
+                f"Frame duration from database: '{int(duration)}' doesn't "
+                f"match number of files: '{frames}'. Please change frame "
+                "range for folder/task or limit number of files."
+            )
 
-            formatting_data = {"duration": duration,
-                            "found": frames}
+            formatting_data = {"duration": duration, "found": frames}
             if frames != duration:
-                raise PublishXmlValidationError(self, msg,
-                                                formatting_data=formatting_data)
+                raise PublishXmlValidationError(
+                    self, msg, formatting_data=formatting_data
+                )
 
-        self.log.debug("Valid ranges expected '{}' - found '{}'".
-                       format(int(duration), frames))
+        self.log.debug(
+            f"Valid ranges expected '{int(duration)}' - found '{frames}'"
+        )
