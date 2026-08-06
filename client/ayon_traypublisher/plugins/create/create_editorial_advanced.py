@@ -826,10 +826,15 @@ or updating already created. Publishing will create OTIO file.
                     "representations": []
                 }
 
+            content_types = CONTENT_TYPE_MAPPING[item_type]
             # Check each representation preset against the item
             for repre_preset in pres_representations:
                 preset_repre_name = repre_preset["name"]
                 pres_repr_content_type = repre_preset["content_type"]
+                # Validate content type matches item type mapping
+                if pres_repr_content_type not in content_types:
+                    continue
+
                 pres_repr_tags = deepcopy(repre_preset.get("tags", []))
                 pres_repr_custom_tags = deepcopy(
                     repre_preset.get("custom_tags", []))
@@ -844,12 +849,6 @@ or updating already created. Publishing will create OTIO file.
                 # Filter matching files
                 matching_files = []
                 for file in item["files"]:
-                    # Validate content type matches item type mapping
-                    if (
-                        pres_repr_content_type not in CONTENT_TYPE_MAPPING[item_type]  # noqa: E501
-                    ):
-                        continue
-
                     # Filter by extension
                     if not any(
                         str(file).lower().endswith(ext)
