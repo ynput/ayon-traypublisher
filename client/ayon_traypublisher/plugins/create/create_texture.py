@@ -38,17 +38,17 @@ class TextureCreator(TrayPublishCreator):
     def get_detail_description(self):
         return inspect.cleandoc("""# Textures
 
-        This will create a publish instances for textures, that is 
-        either a single image, a sequence of UDIM tiles or multiple sets of 
-        textures (each either UDIMs or single image) - like 
+        This will create a publish instances for textures, that is
+        either a single image, a sequence of UDIM tiles or multiple sets of
+        textures (each either UDIMs or single image) - like
         diffuse+normal+roughness maps combined.
-        
+
         This can be used to quickly create publish instances for a set of files
         where the filenames then define the variant names. For example, using
         a texture set:
         - asset_diffuse.1001-1004.exr
         - asset_specular.1001-1004.exr
-        
+
         Which then creates `diffuse` and `specular` variant textures as a
         result.
         """)
@@ -239,7 +239,10 @@ class TextureCreator(TrayPublishCreator):
                 items=[
                     {"value": "variant", "label": "Use variant name"},
                     {"value": "filename", "label": "Use filename"},
-                    {"value": "filename_rsplit_underscore", "label": "Use filename (after last underscore)"},
+                    {
+                        "value": "filename_rsplit_underscore",
+                        "label": "Use filename (after last underscore)"
+                    },
                 ],
                 default="filename",
                 label="Variant Naming",

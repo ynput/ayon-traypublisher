@@ -130,7 +130,10 @@ class CollectCSVIngestPrevalidationReport(
             if failing_validation:
                 context.remove(instance)
 
-        self.log.debug(f"Collected {len(report_per_csv_ingest)} CSV ingest prevalidation reports")
+        self.log.debug(
+            f"Collected {len(report_per_csv_ingest)} CSV ingest "
+            f"prevalidation reports"
+        )
         self.log.debug(f"Report data: {pformat(report_per_csv_ingest)}")
 
         # only store report data if there are any

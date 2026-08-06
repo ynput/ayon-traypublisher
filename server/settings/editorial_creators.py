@@ -19,6 +19,7 @@ def get_product_base_type_enum():
         {"label": "Workfile", "value": "workfile"},
     ]
 
+
 def get_content_type_enum():
     return [
         {"label": "Thumbnail", "value": "thumbnail"},

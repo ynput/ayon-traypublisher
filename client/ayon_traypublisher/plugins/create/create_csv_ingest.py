@@ -26,7 +26,6 @@ from ayon_traypublisher.api.structures import PassingDataValue
 log = Logger.get_logger(__name__)
 
 
-
 def _get_row_value_with_validation(
     columns_config: dict[str, Any],
     column_name: str,

@@ -261,6 +261,7 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
             ),
         ]
 
+
 class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
     """Workfile product base type class
 
@@ -279,6 +280,7 @@ class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
                 disabled=True
             ),
         ]
+
 
 class EditorialAdvancedCreator(TrayPublishCreator):
     """Advanced Editorial creator class
@@ -370,7 +372,11 @@ or updating already created. Publishing will create OTIO file.
             sequence_name = os.path.basename(sequence_path)
             # get otio timeline
             otio_timeline = self._create_otio_timeline(sequence_path, fps)
-            otio_timelines.append((sequence_name, sequence_path, otio_timeline))
+            otio_timelines.append((
+                sequence_name,
+                sequence_path,
+                otio_timeline
+            ))
 
         # Create all clip instances
         clip_instance_properties.update({
@@ -499,7 +505,6 @@ or updating already created. Publishing will create OTIO file.
 
         # Get all tracks from otio timeline
         tracks = otio_timeline.video_tracks()
-
 
         # get all clipnames from otio timeline to list of strings
         clip_names_set = {clip.name for clip in otio_timeline.find_clips()}

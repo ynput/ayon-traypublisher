@@ -37,10 +37,10 @@ class PSDWorkfileCreator(TrayPublishCreator):
 
         Basic creator that creates image publish instances alongside the main
         workfile instance.
-        
+
         Matches existing workflow in WebPublisher
             ayon+settings://webpublisher/publish/CollectPublishedFiles/task_type_to_product_type/0/value/0/additional_product_types
-    
+
         .psd workfile could be used both as `workfile` and `image` product.
         Different combos are not currently expected.
         """)  # noqa: E501
