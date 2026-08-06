@@ -203,7 +203,8 @@ class CollectVideoData(pyblish.api.InstancePlugin):
         """Get frame data from a representation sequence.
 
         Args:
-            instance (pyblish.api.Instance): The instance to extract frame data from.
+            instance (pyblish.api.Instance): The instance to extract frame
+                data from.
 
         Returns:
             dict: A dictionary containing the frame data.

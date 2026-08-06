@@ -140,7 +140,9 @@ class TokenToParentConvertorItem(BaseSettingsModel):
     value: str = SettingsField(
         "",
         title="Token value",
-        description="Template where any text, Anatomy keys and Tokens could be used"  # noqa
+        description=(
+            "Template where any text, Anatomy keys and Tokens could be used"
+        ),
     )
     parent_type: str = SettingsField(
         "Project",
@@ -160,7 +162,7 @@ class ShotHierarchySubmodel(BaseSettingsModel):
     - Each token's value supports both the available
     [template keys](https://ayon.ynput.io/docs/admin_settings_project_anatomy#available-template-keys)
     and tokens defined under `Clip Name Tokenizer`.
-    """
+    """  # noqa: E501
     enabled: bool = True
     parents_path: str = SettingsField(
         "",
@@ -244,7 +246,9 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
         title="Add tasks to shot",
         default_factory=ShotAddTasksItem,
-        description="The following list of tasks will be added to each created shot."
+        description=(
+            "The following list of tasks will be added to each created shot."
+        ),
     )
     product_base_type_presets: list[ProductBaseTypePresetItem] = SettingsField(
         default_factory=list
@@ -273,7 +277,9 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     shot_add_tasks: list[ShotAddTasksItem] = SettingsField(
         title="Add tasks to shot", default_factory=ShotAddTasksItem
     )
-    product_base_type_advanced_presets: list[ProductBaseTypeAdvancedPresetItem] = (
+    product_base_type_advanced_presets: list[
+        ProductBaseTypeAdvancedPresetItem
+    ] = (
         SettingsField(
             title="Product base type presets",
             default_factory=list
