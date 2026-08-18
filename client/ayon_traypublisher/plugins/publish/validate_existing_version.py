@@ -51,8 +51,22 @@ class ValidateExistingVersion(
     def repair(cls, instance):
         create_context = instance.context.data["create_context"]
         created_instance = create_context.get_instance_by_id(
-            instance.data["instance_id"])
+            instance.data["instance_id"]
+        )
+
         creator_attributes = created_instance["creator_attributes"]
-        # Disable version override
-        creator_attributes["use_next_version"] = True
+
+        if "use_next_version" in creator_attributes:
+            # Settings creators with version control
+            creator_attributes["use_next_version"] = True
+            create_context.save_changes()
+            return
+
+        # Creators such as Batch Movies store the version directly
+        latest_version = instance.data.get("latestVersion") or 0
+        next_version = latest_version + 1
+
+        created_instance["version"] = next_version
+        instance.data["version"] = next_version
+
         create_context.save_changes()
