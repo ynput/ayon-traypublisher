@@ -62,7 +62,6 @@ class HiddenTrayPublishCreator(HiddenCreator):
         # Add instance to current context
         self._add_instance_to_context(new_instance)
 
-
     def repair_version_conflict(self, created_instance, publish_instance):
         """Repair an instance whose version was explicitly overridden."""
         latest_version = publish_instance.data["latestVersion"]
