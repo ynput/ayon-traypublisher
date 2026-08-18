@@ -54,19 +54,12 @@ class ValidateExistingVersion(
             instance.data["instance_id"]
         )
 
-        creator_attributes = created_instance["creator_attributes"]
-
-        if "use_next_version" in creator_attributes:
-            # Settings creators with version control
-            creator_attributes["use_next_version"] = True
-            create_context.save_changes()
-            return
-
-        # Creators such as Batch Movies store the version directly
-        latest_version = instance.data.get("latestVersion") or 0
-        next_version = latest_version + 1
-
-        created_instance["version"] = next_version
-        instance.data["version"] = next_version
+        # Get the creator responsible for the instance so its version
+        # repair implementation can be used.
+        creators = create_context.get_sorted_creators(
+            [created_instance.creator_identifier]
+        )
+        creator = creators[0]
+        creator.repair_version_conflict(created_instance, instance)
 
         create_context.save_changes()

@@ -162,6 +162,10 @@ class BatchMovieCreator(TrayPublishCreator):
 
         return product_name
 
+    def repair_version_conflict(self, created_instance, publish_instance):
+        """Repair the version parsed from the movie filename."""
+        super().repair_version_conflict(created_instance, publish_instance)
+
     def get_instance_attr_defs(self):
         return [
             BoolDef(

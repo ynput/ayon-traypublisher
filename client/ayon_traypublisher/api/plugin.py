@@ -63,6 +63,14 @@ class HiddenTrayPublishCreator(HiddenCreator):
         self._add_instance_to_context(new_instance)
 
 
+    def repair_version_conflict(self, created_instance, publish_instance):
+        """Repair an instance whose version was explicitly overridden."""
+        latest_version = publish_instance.data["latestVersion"]
+        next_version = int(latest_version) + 1
+        created_instance["version"] = next_version
+        publish_instance.data["version"] = next_version
+
+
 class TrayPublishCreator(Creator):
     create_allow_context_change = True
     host_name = "traypublisher"
@@ -102,6 +110,13 @@ class TrayPublishCreator(Creator):
 
         # Add instance to current context
         self._add_instance_to_context(new_instance)
+
+    def repair_version_conflict(self, created_instance, publish_instance):
+        """Repair an instance whose version was explicitly overridden."""
+        latest_version = publish_instance.data["latestVersion"]
+        next_version = int(latest_version) + 1
+        created_instance["version"] = next_version
+        publish_instance.data["version"] = next_version
 
 
 class SettingsCreator(TrayPublishCreator):
@@ -156,6 +171,14 @@ class SettingsCreator(TrayPublishCreator):
 
         if thumbnail_path:
             self.set_instance_thumbnail_path(new_instance.id, thumbnail_path)
+
+    def repair_version_conflict(self, created_instance, publish_instance):
+        creator_attributes = created_instance["creator_attributes"]
+        if "use_next_version" in creator_attributes:
+            creator_attributes["use_next_version"] = True
+            return
+
+        super().repair_version_conflict(created_instance, publish_instance)
 
     def _prepare_next_versions(self, folder_paths, product_names):
         """Prepare next versions for given folder and product names.
