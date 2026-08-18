@@ -56,10 +56,7 @@ class ValidateExistingVersion(
 
         # Get the creator responsible for the instance so its version
         # repair implementation can be used.
-        creators = create_context.get_sorted_creators(
-            [created_instance.creator_identifier]
-        )
-        creator = creators[0]
+        creator = create_context.creators[created_instance.creator_identifier]
         creator.repair_version_conflict(created_instance, instance)
 
         create_context.save_changes()
