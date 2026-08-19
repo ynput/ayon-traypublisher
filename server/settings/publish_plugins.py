@@ -13,7 +13,7 @@ class ValidatePluginModel(BaseSettingsModel):
 
 class ValidateFrameRangeModel(ValidatePluginModel):
     """Allows to publish multiple video files in one go. <br />Name of matching
-     folder name is parsed from file names ('folder.mov', 'folder_v001.mov',
+     folder is parsed from file names ('folder.mov', 'folder_v001.mov',
      'my_folder_to_publish.mov')"""
 
 
