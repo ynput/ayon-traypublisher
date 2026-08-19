@@ -25,7 +25,7 @@ class ProductTypeItemModel(BaseSettingsModel):
 
 
 class BatchMovieCreatorPlugin(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
+    """Allows to publish multiple video files in one go. Name of matching
      folder is parsed from file names ('folder.mov', 'folder_v001.mov',
      'my_folder_to_publish.mov')"""
 
@@ -84,7 +84,7 @@ def _value_type_enum() -> list[dict[str, str]]:
 
 
 class ColumnItemModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
+    """Allows to publish multiple video files in one go. Name of matching
      folder name is parsed from file names ('folder.mov', 'folder_v001.mov',
      'my_folder_to_publish.mov')"""
 
