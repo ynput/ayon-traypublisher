@@ -1,7 +1,7 @@
 import pyblish.api
 
 
-class CollectFrameDataFromAssetEntity(pyblish.api.InstancePlugin):
+class CollectFrameDataFromFolderEntity(pyblish.api.InstancePlugin):
     """Collect Frame Data From `taskEntity` or `folderEntity` of instance.
 
     Frame range data will only be collected if the keys are not yet

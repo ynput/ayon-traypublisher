@@ -260,9 +260,9 @@ class TextureCreator(TrayPublishCreator):
                 tooltip=(
                     "Remove common prefix from the variant name.\n\n"
                     "This is useful when publishing a batch of textures "
-                    "for an asset that all start with the asset name.\n"
+                    "for files that all start with the product name.\n"
                     "By stripping the common prefix, the variant name will "
-                    "then exclude the asset name."
+                    "then exclude the product name."
                 )
             ),
             BoolDef(

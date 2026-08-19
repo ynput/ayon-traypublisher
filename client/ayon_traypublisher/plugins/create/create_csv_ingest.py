@@ -485,7 +485,7 @@ configuration in project settings.
         """Create product from each row found in the CSV.
 
         Args:
-            product_name (str): The subset name.
+            product_name (str): The product name.
             instance_data (dict): The instance data.
             pre_create_data (dict):
         """
@@ -550,7 +550,7 @@ configuration in project settings.
 
         Args:
             preset_data (dict[str, Any]): The selected preset data.
-            product_name (str): The subset name.
+            product_name (str): The product name.
             instance_data (dict): The instance data.
             csv_dir (str): The csv directory.
             filename (str): The filename.
