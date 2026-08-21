@@ -399,22 +399,7 @@ class ProductItem:
             product_base_type = kwargs.get("product_type", "")
         kwargs["product_base_type"] = product_base_type
 
-        product_item = cls(**kwargs)
-
-        # Folder Description is an optional column; if present it is
-        # forwarded as passing_data so the publish pipeline can set it
-        # on the folder entity during folder creation.
-        folder_desc = (row.get("Folder Description") or "").strip()
-        if folder_desc:
-            product_item.passing_data.append(
-                PassingDataValue(
-                    name="folderDescription",
-                    value=folder_desc,
-                    data_type="instance_data",
-                )
-            )
-
-        return product_item
+        return cls(**kwargs)
 
 
 
