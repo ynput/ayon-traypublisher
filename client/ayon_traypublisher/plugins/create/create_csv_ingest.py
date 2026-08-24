@@ -26,7 +26,6 @@ from ayon_traypublisher.api.structures import PassingDataValue
 log = Logger.get_logger(__name__)
 
 
-
 def _get_row_value_with_validation(
     columns_config: dict[str, Any],
     column_name: str,
@@ -100,8 +99,8 @@ def _collect_passing_data_columns(
 ) -> list[PassingDataValue]:
     """Collect columns with processing_type 'passing_data' from a CSV row.
 
-    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for each
-    matching column.
+    Returns a list of dicts with ``name``, ``value``, and ``data_type`` for
+    each matching column.
 
     Args:
         columns_config (dict[str, Any]): The columns configuration.
@@ -881,17 +880,21 @@ configuration in project settings.
         )
 
         # Fix fieldnames – strip accidental leading/trailing whitespace.
-        all_columns = [
-            " ".join(column.rsplit())
-            for column in csv_reader.fieldnames
+        csv_reader.fieldnames = [
+            column.strip() for column in csv_reader.fieldnames
         ]
-        csv_reader.fieldnames = all_columns
+        csv_columns: set[str] = set(csv_reader.fieldnames)
 
         # check if csv file contains all required columns
-        if any(column not in all_columns for column in required_columns):
+        missing = sorted(set(required_columns) - csv_columns)
+        if missing:
+            csv_columns: list[str] = sorted(csv_columns)
+            required_columns = sorted(required_columns)
+
             raise CreatorError(
-                f"Missing required columns: {required_columns}\n"
-                f"All columns: {all_columns}"
+                f"Missing required columns: {missing}\n\n"
+                f"Columns in CSV file: {csv_columns}\n"
+                f"All required columns: {required_columns}"
             )
 
         # Read all rows upfront so we can make targeted API calls before
@@ -958,7 +961,7 @@ configuration in project settings.
                     "Provide the values in the CSV or ensure the matched "
                     "folder has these attributes set."
                 )
-                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa
+                if prevalidation["missing_frame_range_values"]["mode"] == "ignore":  # noqa: E501
                     report_data.setdefault(
                         "Missing Frame Range Values", []
                     ).append(error_msg)
@@ -992,7 +995,7 @@ configuration in project settings.
                 product_items_by_name[unique_name] = product_item_
             else:
                 existing_product_item = product_items_by_name[unique_name]
-                existing_product_item.passing_data = _merge_passing_data_values(
+                existing_product_item.passing_data = _merge_passing_data_values(  # noqa: E501
                     existing_product_item.passing_data,
                     row_product_passing_data,
                     unique_name,

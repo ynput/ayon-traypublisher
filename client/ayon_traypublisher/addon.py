@@ -129,15 +129,17 @@ class TrayPublishAddon(
         pass
 
     def _cli_launch(
-            self,
-            project: Optional[str] = None,
-            folder_path: Optional[str] = None,
-            task_name: Optional[str] = None,
-        )-> None:
+        self,
+        project: Optional[str] = None,
+        folder_path: Optional[str] = None,
+        task_name: Optional[str] = None,
+    ) -> None:
         from .api.main import launch_traypublisher_ui
 
         if task_name and not folder_path:
-            raise ValueError("`--folder-path` is required when `--task-name` is used.")
+            raise ValueError(
+                "`--folder-path` is required when `--task-name` is used."
+            )
 
         launch_traypublisher_ui(self, project, folder_path, task_name)
 

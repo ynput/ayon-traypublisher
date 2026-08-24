@@ -10,7 +10,7 @@ from ayon_core.pipeline import PublishError
 
 
 class CollectSettingsSimpleInstances(pyblish.api.ContextPlugin):
-    """Mark instances created by settings creators with the simple.instance family.
+    """Mark instances created by settings creators with simple.instance family.
 
     This context plugin identifies instances that were created by settings
     creators and tags them with the "simple.instance" family for further
