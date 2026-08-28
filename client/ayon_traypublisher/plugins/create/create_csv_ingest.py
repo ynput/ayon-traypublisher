@@ -59,28 +59,19 @@ def _get_row_value_with_validation(
             f"Value in column '{column_name}' is required."
         )
 
-    # Passing-data columns use their default for both missing and blank values.
-    # Processing columns retain the existing fallback behavior.
-    is_passing_data = column_data.get("processing_type") == "passing_data"
-    is_numeric_type = column_type in {"number", "decimal"}
-    default_is_zero = column_default in {0, "0"}
+    if (
+        column_data.get("processing_type") == "processing_data"
+        and column_type in ["number", "decimal"] and column_default in (0, '0')
+    ):
+        # In processing data values the defaults used to be e.g.
+        # "0" for FPS indicating to not set the value at all, so
+        # in that case, we should retain this behavior and default
+        # to None in that scenario.
+        column_default = None
 
-    value_is_blank = not column_value
-    value_is_missing = column_value is None
-
-    should_use_default = (
-        value_is_blank or (value_is_missing and is_passing_data)
-    ) and (
-        is_passing_data
-        or not is_numeric_type
-        or not default_is_zero
-    )
-
-    if should_use_default:
+    # set default value if column value is empty string
+    if column_value is None or column_value == "":
         column_value = column_default
-    elif not is_passing_data and is_numeric_type and default_is_zero:
-        column_value = None
-
 
     # set column value to correct type following column type
     if column_type == "number" and column_value is not None:
