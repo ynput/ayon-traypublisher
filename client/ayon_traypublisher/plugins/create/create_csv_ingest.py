@@ -120,7 +120,7 @@ def _collect_passing_data_columns(
         result.append(
             PassingDataValue(
                 name=passing_data_cfg["name"],
-                value=value,
+                value=value or column.get("default"),
                 data_type=passing_data_cfg["passing_data_type"],
             )
         )
