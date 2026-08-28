@@ -63,9 +63,6 @@ def _get_row_value_with_validation(
     if column_value is None or column_value == "":
         column_value = column_default
 
-    if column_type in ["number", "decimal"] and column_default in (0, '0'):
-        column_default = None
-
     # set column value to correct type following column type
     if column_type == "number" and column_value is not None:
         column_value = int(column_value)
