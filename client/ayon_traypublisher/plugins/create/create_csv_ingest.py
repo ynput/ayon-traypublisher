@@ -45,8 +45,11 @@ def _get_row_value_with_validation(
             f"Column '{column_name}' not found in column config."
         )
 
-    # get column value from row
-    column_value = row_data.get(column_name)
+    # get column value from row and if it does not exist, use default value
+    column_value = (
+        row_data.get(column_name)
+        if row_data.get(column_name) is not None else column_data["default"]
+    )
     column_required = column_data["required_column"]
 
     # check if column value is not empty string and column is required
@@ -120,7 +123,7 @@ def _collect_passing_data_columns(
         result.append(
             PassingDataValue(
                 name=passing_data_cfg["name"],
-                value=value if value is not None else column.get("default"),
+                value=value,
                 data_type=passing_data_cfg["passing_data_type"],
             )
         )
