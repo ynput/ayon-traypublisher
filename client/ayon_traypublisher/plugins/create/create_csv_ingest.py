@@ -59,8 +59,17 @@ def _get_row_value_with_validation(
             f"Value in column '{column_name}' is required."
         )
 
-    # set default value if column value is empty string
-    if column_value is None or column_value == "":
+    # Passing-data columns use their default for both missing and blank values.
+    # Processing columns retain the existing fallback behavior.
+    is_passing_data = column_data.get("processing_type") == "passing_data"
+    if (
+        (column_value == "" or (column_value is None and is_passing_data))
+        and (
+            is_passing_data
+            or column_type not in {"number", "decimal"}
+            or column_default not in (0, "0")
+        )
+    ):
         column_value = column_default
 
     # set column value to correct type following column type
