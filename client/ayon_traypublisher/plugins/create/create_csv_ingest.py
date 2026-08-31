@@ -45,29 +45,32 @@ def _get_row_value_with_validation(
             f"Column '{column_name}' not found in column config."
         )
 
-    # get column value from row
+    # get column value from row and if it does not exist, use default value
     column_value = row_data.get(column_name)
     column_required = column_data["required_column"]
+    column_type = column_data["type"]
+    column_default = column_data["default"]
+    # get column validation regex
+    column_validation = column_data["validation_pattern"]
 
     # check if column value is not empty string and column is required
-    if column_value == "" and column_required:
+    if column_required and (column_value == "" or column_value is None):
         raise CreatorError(
             f"Value in column '{column_name}' is required."
         )
 
-    # get column type
-    column_type = column_data["type"]
-    # get column validation regex
-    column_validation = column_data["validation_pattern"]
-    # get column default value
-    column_default = column_data["default"]
-
-    if column_type in ["number", "decimal"] and column_default in (0, '0'):
+    if (
+        column_data.get("processing_type") == "processing_data"
+        and column_type in ["number", "decimal"] and column_default in (0, '0')
+    ):
+        # In processing data values the defaults used to be e.g.
+        # "0" for FPS indicating to not set the value at all, so
+        # in that case, we should retain this behavior and default
+        # to None in that scenario.
         column_default = None
 
-    # check if column value is not empty string
-    if column_value == "":
-        # set default value if column value is empty string
+    # set default value if column value is empty string
+    if column_value is None or column_value == "":
         column_value = column_default
 
     # set column value to correct type following column type
