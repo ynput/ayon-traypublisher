@@ -4,6 +4,7 @@ import os
 import ayon_api
 
 from ayon_core.lib import Logger
+from ayon_core.pipeline.create import CreatorError
 
 
 def get_folder_entity_from_filename(
@@ -40,8 +41,17 @@ def get_folder_entity_from_filename(
                 all_selected_folder_ids
             )
         )
+
+    if len(matching_folder_entity) > 1:
+        raise CreatorError(
+            f"Ambiguous folder name '{folder_name}'.\n"
+            f"Matching folders: "
+            f"{', '.join(folder['path'] for folder in matching_folder_entity)}"
+        )
+    elif len(matching_folder_entity) == 1:
+        matching_folder_entity = matching_folder_entity[0]
     else:
-        matching_folder_entity = matching_folder_entity.pop()
+        matching_folder_entity = None
 
     if matching_folder_entity is None:
         matching_folder_entity = parse_containing(
@@ -84,7 +94,7 @@ def parse_with_version(
         )
         if matching_folder_entity:
             version_number = int(_version_number)
-            matching_folder_entity = matching_folder_entity.pop()
+            # matching_folder_entity = matching_folder_entity.pop()
 
     return matching_folder_entity, version_number
 
