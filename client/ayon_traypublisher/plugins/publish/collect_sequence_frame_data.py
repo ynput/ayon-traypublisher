@@ -8,7 +8,7 @@ class CollectSequenceFrameData(
     pyblish.api.InstancePlugin,
     OptionalPyblishPluginMixin
 ):
-    """Collect Original Sequence Frame Data
+    """Collect Original Sequence Frame Data.
 
     If the representation includes files with frame numbers,
     then set `frameStart` and `frameEnd` for the instance to the
@@ -17,9 +17,6 @@ class CollectSequenceFrameData(
 
     order = pyblish.api.CollectorOrder + 0.4905
     label = "Collect Original Sequence Frame Data"
-    families = ["plate", "pointcache",
-                "vdbcache", "online",
-                "render"]
     hosts = ["traypublisher"]
     optional = True
 

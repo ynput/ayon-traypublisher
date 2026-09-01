@@ -58,6 +58,57 @@ def _convert_editorial_0_4_0(overrides):
         editorial_simple["product_base_type_presets"] = presets
 
 
+def _convert_families_0_5_0(overrides: dict):
+    """Convert families settings for plugins.
+
+    v0.5 added settings for control the families of plugins.
+    This conversion fills in the previously hardcoded families to preserve
+    the previous behavior.
+
+    """
+    # old values, pre 0.5.0
+    old_families = {
+        "CollectColorspace": [
+            "render",
+            "plate",
+            "reference",
+            "image",
+            "online",
+        ],
+        "CollectFrameDataFromAssetEntity": [
+            "plate",
+            "pointcache",
+            "vdbcache",
+            "online",
+            "render",
+        ],
+        "CollectSequenceFrameData": [
+            "plate",
+            "pointcache",
+            "vdbcache",
+            "online",
+            "render",
+        ],
+        "ValidateColorspace": [
+            "render",
+            "plate",
+            "reference",
+            "image",
+            "online",
+        ],
+        "ValidateFrameRange": [
+            "render",
+            "plate",
+        ],
+    }
+
+    publish_settings = overrides.setdefault("publish", {})
+
+    for plugin_name, families in old_families.items():
+        plugin_settings = publish_settings.setdefault(plugin_name, {})
+        plugin_settings.setdefault("families", []).extend(families)
+
+
 def convert_settings_overrides(
     source_version: str,
     overrides: dict[str, Any],
@@ -65,4 +116,5 @@ def convert_settings_overrides(
     _convert_csv_ingest_0_3_9(overrides)
     _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
+    _convert_families_0_5_0(overrides)
     return overrides

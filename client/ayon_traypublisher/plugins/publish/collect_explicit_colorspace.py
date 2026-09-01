@@ -15,7 +15,6 @@ class CollectColorspace(
     label = "Choose representation colorspace"
     order = pyblish.api.CollectorOrder + 0.49
     hosts = ["traypublisher"]
-    families = ["render", "plate", "reference", "image", "online"]
     enabled = False
 
     default_colorspace_items = [
