@@ -81,7 +81,8 @@ def parse_with_version(
          format(folder_name)))
 
     matching_folder_entity = version_number = None
-
+    matching_folder_entities = []
+    version_number = None
     regex_result = version_regex.findall(folder_name)
     if regex_result:
         _folder_name, _version_number = regex_result[0]
