@@ -25,9 +25,9 @@ class ProductTypeItemModel(BaseSettingsModel):
 
 
 class BatchMovieCreatorPlugin(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Allows to publish multiple video files in one go. Name of matching
+     folder is parsed from file names ('folder.mov', 'folder_v001.mov',
+     'my_folder_to_publish.mov')"""
 
     default_variants: list[str] = SettingsField(
         title="Default variants",
@@ -84,9 +84,9 @@ def _value_type_enum() -> list[dict[str, str]]:
 
 
 class ColumnItemModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Allows to publish multiple video files in one go. Name of matching
+     folder name is parsed from file names ('folder.mov', 'folder_v001.mov',
+     'my_folder_to_publish.mov')"""
 
     _layout = "expanded"
     name: str = SettingsField(
@@ -364,8 +364,8 @@ class ListConfigModel(BaseSettingsModel):
 class RepresentationItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go.
 
-    Name of matching asset is parsed from file names
-    ('asset.mov', 'asset_v001.mov', 'my_asset_to_publish.mov')
+    Name of matching folder is parsed from file names
+    ('folder.mov', 'folder_v001.mov', 'my_folder_to_publish.mov')
     """
 
     _layout = "expanded"

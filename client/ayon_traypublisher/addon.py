@@ -108,12 +108,12 @@ class TrayPublishAddon(
             required=True
         ).option(
             "--folder-path",
-            help="Asset name in which the context will be used",
+            help="Folder path in which the context will be used",
             type=str,
             required=True
         ).option(
             "--task",
-            help="Task name under Asset in which the context will be used",
+            help="Task name under Folder in which the context will be used",
             type=str,
             required=False
         ).option(
