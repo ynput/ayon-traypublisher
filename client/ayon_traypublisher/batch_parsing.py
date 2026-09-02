@@ -43,10 +43,11 @@ def get_folder_entity_from_filename(
         )
 
     if len(matching_folder_entity) > 1:
+        paths = "\n".join(f"- {f['path']}" for f in matching_folder_entity)
         raise CreatorError(
             f"Ambiguous folder name '{folder_name}'.\n"
-            f"Matching folders: "
-            f"{', '.join(folder['path'] for folder in matching_folder_entity)}"
+            f"Matching folders:\n"
+            f"{paths}"
         )
     elif len(matching_folder_entity) == 1:
         matching_folder_entity = matching_folder_entity[0]
