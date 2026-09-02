@@ -648,13 +648,13 @@ or updating already created. Publishing will create OTIO file.
             creator_identifier = f"editorial_{product_base_type}"
             editorial_clip_creator = self.create_context.creators[
                 creator_identifier]
+            shot_tasks_settings = self._shot_metadata_solver.shot_add_tasks
+            allowed_task_names = [tsk["name"] for tsk in shot_tasks_settings]
+            instance_data["available_task_names"] = allowed_task_names
             c_instance = editorial_clip_creator.create(
                 instance_data)
             c_instance.transient_data["has_promised_context"] = True
-            shot_tasks_settings = self._shot_metadata_solver.shot_add_tasks
-            allowed_task_names = [tsk["name"] for tsk in shot_tasks_settings]
             c_instance.transient_data["promised_tasks"] = allowed_task_names
-            c_instance.data["available_task_names"] = allowed_task_names
 
         return c_instance
 
