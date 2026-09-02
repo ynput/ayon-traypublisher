@@ -97,7 +97,7 @@ def parse_with_version(
             version_number = int(_version_number)
             # matching_folder_entity = matching_folder_entity.pop()
 
-    return matching_folder_entity, version_number
+    return matching_folder_entities, version_number
 
 
 def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
