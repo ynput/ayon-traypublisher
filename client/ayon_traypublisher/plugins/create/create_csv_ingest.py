@@ -447,6 +447,10 @@ configuration in project settings.
             if instance.product_base_type == "csv_ingest_file":
                 instance.set_mandatory(True)
 
+    def repair_version_conflict(self, created_instance, publish_instance):
+        """Repair the explicit version read from CSV data."""
+        super().repair_version_conflict(created_instance, publish_instance)
+
     def get_pre_create_attr_defs(self):
         """Creating pre-create attributes at creator plugin.
 
