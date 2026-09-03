@@ -133,6 +133,10 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
         for instance in self.create_context.instances:
             if instance.creator_identifier == self.identifier:
                 instance.transient_data["has_promised_context"] = True
+                if instance.data.get("available_task_names"):
+                    instance.transient_data["promised_tasks"] = instance.data[
+                        "available_task_names"
+                    ]
 
     def get_attr_defs_for_instance(self, instance):
         parent_instance = instance.creator_attributes.get("parent_instance")
@@ -644,9 +648,13 @@ or updating already created. Publishing will create OTIO file.
             creator_identifier = f"editorial_{product_base_type}"
             editorial_clip_creator = self.create_context.creators[
                 creator_identifier]
+            shot_tasks_settings = self._shot_metadata_solver.shot_add_tasks
+            allowed_task_names = [tsk["name"] for tsk in shot_tasks_settings]
+            instance_data["available_task_names"] = allowed_task_names
             c_instance = editorial_clip_creator.create(
                 instance_data)
             c_instance.transient_data["has_promised_context"] = True
+            c_instance.transient_data["promised_tasks"] = allowed_task_names
 
         return c_instance
 
