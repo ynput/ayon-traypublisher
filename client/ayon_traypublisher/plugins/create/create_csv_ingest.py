@@ -405,6 +405,7 @@ class ProductItem:
         return cls(**kwargs)
 
 
+
 class IngestCSV(TrayPublishCreator):
     """CSV ingest creator class"""
 
@@ -994,7 +995,15 @@ configuration in project settings.
             ]
 
             if unique_name not in product_items_by_name:
-                product_item_.passing_data = row_product_passing_data
+                # Merge instead of overwrite: keep folderDescription (and any
+                # other instance_data set on the constructor) while adding the
+                # row's passing_data columns.
+                product_item_.passing_data = _merge_passing_data_values(
+                    product_item_.passing_data,
+                    row_product_passing_data,
+                    unique_name,
+                    row_index,
+                )
                 product_items_by_name[unique_name] = product_item_
             else:
                 existing_product_item = product_items_by_name[unique_name]

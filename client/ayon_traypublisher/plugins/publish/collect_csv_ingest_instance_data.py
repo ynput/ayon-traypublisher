@@ -92,5 +92,6 @@ class CollectCSVIngestInstancesData(
             existing = instance.data.get("versionData") or {}
             existing.update(version_data)
             instance.data["versionData"] = existing
-            for key, value in instance_data.items():
-                instance.data[key] = value
+
+        for key, value in instance_data.items():
+            instance.data[key] = value
