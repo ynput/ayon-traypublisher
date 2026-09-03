@@ -59,9 +59,17 @@ class BatchMovieCreator(TrayPublishCreator):
             filepath = os.path.join(file_info["directory"], file_name)
             instance_data["creator_attributes"] = {"filepath": filepath}
 
+            ambiguity_warnings = []
             folder_entity, version = get_folder_entity_from_filename(
-                self.project_name, file_name, self.version_regex
+                self.project_name,
+                file_name,
+                self.version_regex,
+                ambiguity_warnings=ambiguity_warnings,
             )
+            if ambiguity_warnings:
+                instance_data["batch_movie_path_warning"] = (
+                    ambiguity_warnings[0]
+                )
 
             if version:
                 instance_data["version"] = version
@@ -70,7 +78,7 @@ class BatchMovieCreator(TrayPublishCreator):
                 raise CreatorError(
                     f"Couldn't find folder entity for '{file_name}'"
                 )
-                continue
+
             data_by_folder_id[folder_entity["id"]].append(
                 (instance_data, folder_entity)
             )

@@ -4,14 +4,14 @@ import os
 import ayon_api
 
 from ayon_core.lib import Logger
-from ayon_core.pipeline.create import CreatorError
 
 
 def get_folder_entity_from_filename(
     project_name,
     source_filename,
     version_regex,
-    all_selected_folder_ids=None
+    all_selected_folder_ids=None,
+    ambiguity_warnings=None,
 ):
     """Try to parse out folder name from file name provided.
 
@@ -44,15 +44,14 @@ def get_folder_entity_from_filename(
 
     if len(matching_folder_entities) > 1:
         paths = "\n".join(f"- {f['path']}" for f in matching_folder_entities)
-        raise CreatorError(
-            f"Ambiguous folder name '{folder_name}'.\n"
-            f"Matching folders:\n"
-            f"{paths}"
-        )
+        if ambiguity_warnings is not None:
+            ambiguity_warnings.append(
+                f"'{folder_name}' matched multiple folders:\n{paths}"
+            )
 
-    matching_folder_entity = None
-    if len(matching_folder_entities) == 1:
-        matching_folder_entity = matching_folder_entities[0]
+    matching_folder_entity = (
+        matching_folder_entities[0] if matching_folder_entities else None
+    )
 
     if matching_folder_entity is None:
         matching_folder_entity = parse_containing(
