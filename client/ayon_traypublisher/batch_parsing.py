@@ -10,7 +10,8 @@ def get_folder_entity_from_filename(
     project_name,
     source_filename,
     version_regex,
-    all_selected_folder_ids=None
+    all_selected_folder_ids=None,
+    ambiguity_warnings=None,
 ):
     """Try to parse out folder name from file name provided.
 
@@ -24,15 +25,15 @@ def get_folder_entity_from_filename(
     folder_name = os.path.splitext(source_filename)[0]
     # Always first check if source filename is directly folder
     #   (eg. 'chair.mov')
-    matching_folder_entity = list(ayon_api.get_folders(
+    matching_folder_entities = list(ayon_api.get_folders(
         project_name,
         folder_ids=all_selected_folder_ids,
         folder_names=[folder_name]
     ))
 
-    if not matching_folder_entity:
+    if not matching_folder_entities:
         # name contains also a version
-        matching_folder_entity, version = (
+        matching_folder_entities, version = (
             parse_with_version(
                 project_name,
                 folder_name,
@@ -40,8 +41,17 @@ def get_folder_entity_from_filename(
                 all_selected_folder_ids
             )
         )
-    else:
-        matching_folder_entity = matching_folder_entity.pop()
+
+    if len(matching_folder_entities) > 1:
+        paths = "\n".join(f"- {f['path']}" for f in matching_folder_entities)
+        if ambiguity_warnings is not None:
+            ambiguity_warnings.append(
+                f"'{folder_name}' matched multiple folders:\n{paths}"
+            )
+
+    matching_folder_entity = (
+        matching_folder_entities[0] if matching_folder_entities else None
+    )
 
     if matching_folder_entity is None:
         matching_folder_entity = parse_containing(
@@ -70,23 +80,23 @@ def parse_with_version(
         ("Folder entity by \"{}\" was not found, trying version regex.".
          format(folder_name)))
 
-    matching_folder_entity = version_number = None
+    matching_folder_entities = []
+    version_number = None
 
     regex_result = version_regex.findall(folder_name)
     if regex_result:
         _folder_name, _version_number = regex_result[0]
-        matching_folder_entity = list(
+        matching_folder_entities = list(
             ayon_api.get_folders(
                 project_name,
                 folder_ids=all_selected_folder_ids,
                 folder_names=[_folder_name],
             )
         )
-        if matching_folder_entity:
+        if matching_folder_entities:
             version_number = int(_version_number)
-            matching_folder_entity = matching_folder_entity.pop()
 
-    return matching_folder_entity, version_number
+    return matching_folder_entities, version_number
 
 
 def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
