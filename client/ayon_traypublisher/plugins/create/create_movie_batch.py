@@ -52,6 +52,7 @@ class BatchMovieCreator(TrayPublishCreator):
         if not file_paths:
             return
 
+        ambiguity_warnings = []
         data_by_folder_id = collections.defaultdict(list)
         for file_info in file_paths:
             instance_data = copy.deepcopy(data)
@@ -59,17 +60,12 @@ class BatchMovieCreator(TrayPublishCreator):
             filepath = os.path.join(file_info["directory"], file_name)
             instance_data["creator_attributes"] = {"filepath": filepath}
 
-            ambiguity_warnings = []
             folder_entity, version = get_folder_entity_from_filename(
                 self.project_name,
                 file_name,
                 self.version_regex,
                 ambiguity_warnings=ambiguity_warnings,
             )
-            if ambiguity_warnings:
-                instance_data["batch_movie_path_warning"] = (
-                    ambiguity_warnings[0]
-                )
 
             if version:
                 instance_data["version"] = version
@@ -130,6 +126,14 @@ class BatchMovieCreator(TrayPublishCreator):
                     creator=self,
                 )
                 self._store_new_instance(new_instance)
+
+        if ambiguity_warnings:
+            raise CreatorError(
+                "Multiple folders matched one or more batch movie files:\n"
+                + "\n".join(ambiguity_warnings)
+                + "\n\nMake sure that it's attached to the correct folder "
+                + "in the next step."
+            )
 
     def _get_product_name(
         self,

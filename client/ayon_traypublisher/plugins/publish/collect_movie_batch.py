@@ -4,29 +4,6 @@ import pyblish.api
 from ayon_core.pipeline import AYONPyblishPluginMixin
 
 
-class CollectMovieBatchPathWarnings(pyblish.api.ContextPlugin):
-    """Report ambiguous batch movie folder matches to the publish report."""
-
-    label = "Collect Movie Batch Path Warnings"
-    order = pyblish.api.CollectorOrder - 0.1
-    hosts = ["traypublisher"]
-
-    def process(self, context):
-        warnings = [
-            instance.data["batch_movie_path_warning"]
-            for instance in context
-            if instance.data.get("batch_movie_path_warning")
-        ]
-        if warnings:
-            self.log.warning(
-                "Please check your instances - batch movie paths. "
-                "Multiple folders matched, so the first matching folder "
-                "was selected. The folder path can be adjusted in the "
-                "instance settings.\n%s",
-                "\n".join(warnings),
-            )
-
-
 class CollectMovieBatch(
     pyblish.api.InstancePlugin, AYONPyblishPluginMixin
 ):
