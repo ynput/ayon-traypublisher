@@ -57,8 +57,6 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
 
         repres = instance.data.pop("prep_representations", None)
 
-        self.log.debug(pformat(instance.data))
-
         if not repres:
             return
 
