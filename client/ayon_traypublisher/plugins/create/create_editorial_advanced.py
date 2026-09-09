@@ -180,7 +180,28 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
         return instance_attributes
 
 
-class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
+class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
+    """ An EditorialClipInstanceCreatorBase that allows to select a task.
+    """
+
+    def get_attr_defs_for_instance(self, instance):
+        task_items = [{"value": None, "label": "No task"}] + [
+            {"value": task_name, "label": task_name}
+            for task_name in instance.data.get("tasks", [])
+        ]
+
+        defs = super().get_attr_defs_for_instance(instance)
+        defs.append(
+            EnumDef(
+                "task",
+                items=task_items,
+                label="Task",
+            ),
+        )
+        return defs
+
+
+class EditorialPlateInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Plate product base type class
 
     Plate representation instance.
@@ -191,7 +212,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Plate product"
 
 
-class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialImageInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Image product base type class
 
     Plate representation instance.
@@ -202,7 +223,7 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Image product"
 
 
-class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialRenderInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Render product base type class
     Render representation instance.
     """
@@ -212,7 +233,7 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Render product"
 
 
-class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialAudioInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Audio product base type class
 
     Audio representation instance.
@@ -223,7 +244,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Audio product"
 
 
-class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialModelInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Model product base type class
 
     Model representation instance.
@@ -243,7 +264,7 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
         ]
 
 
-class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialCameraInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Camera product base type class
     Camera representation instance.
     """
@@ -262,7 +283,7 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
         ]
 
 
-class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialWorkfileInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Workfile product base type class
 
     Workfile representation instance.

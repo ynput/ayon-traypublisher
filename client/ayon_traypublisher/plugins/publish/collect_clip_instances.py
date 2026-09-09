@@ -36,6 +36,12 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
         ]:
             return
 
+        # Adjust target task from creator attributes.
+        instance.data["task"] = instance.data["creator_attributes"].pop(
+            "task",
+            None
+        )
+
         instance.data["families"].append("clip")
         # Mark instance for 'ExtractOTIOClipRanges'
         instance.data["families"].append("otio.clip.ranges")
@@ -50,6 +56,8 @@ class CollectClipInstance(pyblish.api.InstancePlugin):
             instance.data["families"].append("trimming")
 
         repres = instance.data.pop("prep_representations", None)
+
+        self.log.debug(pformat(instance.data))
 
         if not repres:
             return

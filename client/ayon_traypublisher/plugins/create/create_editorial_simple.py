@@ -173,7 +173,28 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
         return instance_attributes
 
 
-class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
+class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
+    """ An EditorialClipInstanceCreatorBase that allows to select a task.
+    """
+
+    def get_attr_defs_for_instance(self, instance):
+        task_items = [{"value": None, "label": "No task"}] + [
+            {"value": task_name, "label": task_name}
+            for task_name in instance.data.get("tasks", [])
+        ]
+
+        defs = super().get_attr_defs_for_instance(instance)
+        defs.append(
+            EnumDef(
+                "task",
+                items=task_items,
+                label="Task",
+            ),
+        )
+        return defs
+
+
+class EditorialPlateInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Plate product base type class
 
     Plate representation instance.
@@ -184,7 +205,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Editorial Plate"
 
 
-class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialAudioInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Audio product base type class
 
     Audio representation instance.
@@ -195,7 +216,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Editorial Audio"
 
 
-class EditorialReviewInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialReviewInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Review product base type class
 
     Review representation instance.
@@ -637,7 +658,7 @@ or updating already created. Publishing will create OTIO file.
                     "parent_instance": parenting_data["instance_label"],
                     "add_review_family": product_base_type_preset.get(
                         "review"
-                    )
+                    ),
                 }
             })
 
