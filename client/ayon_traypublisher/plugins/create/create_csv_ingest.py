@@ -25,11 +25,67 @@ from ayon_traypublisher.api.structures import PassingDataValue
 
 log = Logger.get_logger(__name__)
 
+COLUMN_INFO_MAPPING = {
+    "File Path": {"scope": ["repre"], "dst_key": "file_path"},
+    "Task Name": {"scope": ["product"], "dst_key": "task_name"},
+    "Folder Path": {"scope": ["product"], "dst_key": "folder_path"},
+    # known entity attributes
+    # adding attribute names where they exists
+    "Frame Start": {
+        "scope": ["repre"],
+        "dst_key": "frame_start",
+        "attr": "frameStart",
+    },
+    "Frame End": {
+        "scope": ["repre"],
+        "dst_key": "frame_end",
+        "attr": "frameEnd",
+    },
+    "Handle Start": {
+        "scope": ["repre"],
+        "dst_key": "handle_start",
+        "attr": "handleStart",
+    },
+    "Handle End": {
+        "scope": ["repre"],
+        "dst_key": "handle_end",
+        "attr": "handleEnd",
+    },
+    "FPS": {"scope": ["repre"], "dst_key": "fps", "attr": "fps"},
+    "Shot Width": {
+        "scope": ["product"],
+        "dst_key": "width",
+        "attr": "resolutionWidth",
+    },
+    "Shot Height": {
+        "scope": ["product"],
+        "dst_key": "height",
+        "attr": "resolutionHeight",
+    },
+    "Shot Pixel Aspect": {
+        "scope": ["product"],
+        "dst_key": "pixel_aspect",
+        "attr": "pixelAspect",
+    },
+    # Optional representation information
+    "Version Thumbnail": {"scope": ["repre"], "dst_key": "thumbnail_path"},
+    "Representation Colorspace": {"scope": ["repre"], "dst_key": "colorspace"},
+    "Version Comment": {"scope": ["repre"], "dst_key": "comment"},
+    "Representation": {"scope": ["repre"], "dst_key": "name"},
+    "Slate Exists": {"scope": ["repre"], "dst_key": "slate_exists"},
+    "Representation Tags": {"scope": ["repre"], "dst_key": "repre_tags"},
+    "Version": {"scope": ["product"], "dst_key": "version"},
+    "Variant": {"scope": ["product"], "dst_key": "variant"},
+    "Product Type": {"scope": ["product"], "dst_key": "product_type"},
+}
+
 
 def _get_row_value_with_validation(
     columns_config: dict[str, Any],
     column_name: str,
     row_data: dict[str, Any],
+    default_attributes: Optional[dict[str, Any]] = None,
+    attr_name: Optional[str] = None,
 ):
     """Get row value with validation"""
 
@@ -44,12 +100,13 @@ def _get_row_value_with_validation(
         raise CreatorError(
             f"Column '{column_name}' not found in column config."
         )
-
     # get column value from row and if it does not exist, use default value
     column_value = row_data.get(column_name)
     column_required = column_data["required_column"]
     column_type = column_data["type"]
     column_default = column_data["default"]
+    processing_type = column_data["processing_type"]
+
     # get column validation regex
     column_validation = column_data["validation_pattern"]
 
@@ -60,14 +117,25 @@ def _get_row_value_with_validation(
         )
 
     if (
-        column_data.get("processing_type") == "processing_data"
-        and column_type in ["number", "decimal"] and column_default in (0, '0')
+        processing_type == "processing_data"
+        and column_type in ["number", "decimal"]
+        and str(column_default) in ("0", "0.0")
     ):
         # In processing data values the defaults used to be e.g.
         # "0" for FPS indicating to not set the value at all, so
         # in that case, we should retain this behavior and default
         # to None in that scenario.
-        column_default = None
+
+        # Exception is made for handle_start, handle_end and fps since
+        # if 0 is set for those we should fall back to the default
+        # context level attributes instead of None.
+        if (
+            column_name in ["Handle Start", "Handle End", "FPS"]
+            and attr_name and default_attributes
+        ):
+            column_default = default_attributes.get(attr_name)
+        else:
+            column_default = None
 
     # set default value if column value is empty string
     if column_value is None or column_value == "":
@@ -265,28 +333,18 @@ class RepreItem:
         repre_config,
         row,
         passing_data: Optional[list[PassingDataValue]] = None,
+        default_attributes: Optional[dict[str, Any]] = None,
     ):
         kwargs = {
-            dst_key: _get_row_value_with_validation(
-                columns_config, column_name, row
+            column_info["dst_key"]: _get_row_value_with_validation(
+                columns_config,
+                column_name,
+                row,
+                default_attributes,
+                column_info.get("attr"),
             )
-            for dst_key, column_name in (
-                # Representation information
-                ("filepath", "File Path"),
-                ("frame_start", "Frame Start"),
-                ("frame_end", "Frame End"),
-                ("handle_start", "Handle Start"),
-                ("handle_end", "Handle End"),
-                ("fps", "FPS"),
-
-                # Optional representation information
-                ("thumbnail_path", "Version Thumbnail"),
-                ("colorspace", "Representation Colorspace"),
-                ("comment", "Version Comment"),
-                ("name", "Representation"),
-                ("slate_exists", "Slate Exists"),
-                ("repre_tags", "Representation Tags"),
-            )
+            for column_name, column_info in COLUMN_INFO_MAPPING.items()
+            if "repre" in column_info.get("scope", [])
         }
 
         # Convert frame/fps values to their expected types.
@@ -370,22 +428,19 @@ class ProductItem:
         self.repre_items.append(repre_item)
 
     @classmethod
-    def from_csv_row(cls, columns_config: dict[str, Any], row):
+    def from_csv_row(
+        cls,
+        columns_config: dict[str, Any],
+        row,
+        default_attributes: dict[str, Any]
+    ):
         kwargs = {
             dst_key: _get_row_value_with_validation(
-                columns_config, column_name, row
+                columns_config, column_name, row, default_attributes
             )
-            for dst_key, column_name in (
-                # Context information
-                ("folder_path", "Folder Path"),
-                ("width", "Shot Width"),
-                ("height", "Shot Height"),
-                ("pixel_aspect", "Shot Pixel Aspect"),
-                ("task_name", "Task Name"),
-                ("version", "Version"),
-                ("variant", "Variant"),
-                ("product_type", "Product Type"),
-            )
+            for column_name, column_info in COLUMN_INFO_MAPPING.items()
+            if (dst_key := column_info.get("dst_key")) is not None
+            and "product" in column_info.get("scope", [])
         }
 
         # Product base type is optional, for backwards compatibility. When
@@ -541,6 +596,23 @@ configuration in project settings.
             "stagingDir_persistent": True,
         })
 
+    def _get_default_context_attributes(
+        self,
+        instance_data: dict[str, Any],
+    ) -> dict[str, Any]:
+        folder_path: str = instance_data["folderPath"]
+        task_name: Optional[str] = instance_data.get("task")
+        # get_current_folder_entity returns None
+        folder_entity = self.create_context.get_folder_entity(folder_path)
+        task_entity = self.create_context.get_task_entity(
+            folder_path, task_name
+        )
+
+        entity = (
+            task_entity or folder_entity
+        )
+        return entity["attrib"]
+
     def _process_csv_file(
         self,
         preset_data: dict[str, Any],
@@ -559,6 +631,9 @@ configuration in project settings.
             filename (str): The filename.
 
         """
+        default_attributes = self._get_default_context_attributes(
+            instance_data
+        )
         # create new instance from the csv file via self function
         self._pass_data_to_csv_instance(
             instance_data,
@@ -582,7 +657,7 @@ configuration in project settings.
 
         # create instances from csv data via self function
         instances, report_data = self._create_instances_from_csv_data(
-            preset_data, csv_dir, filename)
+            preset_data, csv_dir, filename, default_attributes)
 
         if report_data:
             csv_instance["csvReportData"] = report_data
@@ -802,25 +877,19 @@ configuration in project settings.
 
         # Fill in temporal columns from folder entity attrs when absent.
         attrib = matched.get("attrib") or {}
-        attr_column_map = (
-            ("Frame Start", "frameStart"),
-            ("Frame End", "frameEnd"),
-            ("Handle Start", "handleStart"),
-            ("Handle End", "handleEnd"),
-            ("FPS", "fps"),
-        )
-        for csv_col, attr_key in attr_column_map:
-            if (row.get(csv_col) or "").strip():
-                continue  # CSV already has a value
-            attr_val = attrib.get(attr_key)
-            if attr_val is not None:
-                row[csv_col] = str(attr_val)
-                log.debug(
-                    "Filled '%s' = %s from folder '%s' attrib.",
-                    csv_col,
-                    attr_val,
-                    matched["path"],
-                )
+        for column_name, column_info in COLUMN_INFO_MAPPING.items():
+            if attr_name := column_info.get("attr"):
+                if (row.get(column_name) or "").strip():
+                    continue  # CSV already has a value
+                attr_val = attrib.get(attr_name)
+                if attr_val is not None:
+                    row[column_name] = str(attr_val)
+                    log.debug(
+                        "Filled '%s' = %s from folder '%s' attrib.",
+                        column_name,
+                        attr_val,
+                        matched["path"],
+                    )
 
         return row, None
 
@@ -829,6 +898,7 @@ configuration in project settings.
         preset_data: dict[str, Any],
         csv_dir: str,
         filename: str,
+        default_attributes: dict[str, Any],
     ) -> tuple[dict[str, ProductItem], dict[str, list[str]]]:
         """Parse the CSV file and build product items.
 
@@ -850,6 +920,7 @@ configuration in project settings.
             preset_data (dict): The selected CSV ingest preset.
             csv_dir (str): Directory containing the CSV file.
             filename (str): CSV filename.
+            default_attributes (dict[str, Any]): The default attributes.
 
         Returns:
             tuple: ``(product_items_by_name, report_data)`` where
@@ -947,9 +1018,11 @@ configuration in project settings.
 
             # Validate that frame range values are present after folder
             # resolution (folder attribs may have been back-filled above).
+            #
+            # TODO: perhaps release the restrictions if default
+            #   attributes can be used
             frame_range_cols = [
                 "Frame Start", "Frame End",
-                "Handle Start", "Handle End", "FPS",
             ]
             missing_frame_cols = [
                 col for col in frame_range_cols
@@ -976,7 +1049,7 @@ configuration in project settings.
                 raise CreatorError(error_msg)
 
             product_item_: ProductItem = ProductItem.from_csv_row(
-                columns_config, resolved_row
+                columns_config, resolved_row, default_attributes
             )
             unique_name = product_item_.unique_name
             row_passing_data = _collect_passing_data_columns(
@@ -1012,6 +1085,7 @@ configuration in project settings.
                     representations_config,
                     resolved_row,
                     passing_data=row_repre_passing_data,
+                    default_attributes=default_attributes,
                 )
             )
 
@@ -1404,7 +1478,8 @@ configuration in project settings.
         self,
         preset_data: dict[str, Any],
         csv_dir: str,
-        filename: str
+        filename: str,
+        default_attributes: dict[str, Any],
     ) -> tuple[list[CreatedInstance], dict[str, list[str]]]:
         """Create instances from csv data.
 
@@ -1412,6 +1487,7 @@ configuration in project settings.
             preset_data (dict[str, Any]): The preset data.
             csv_dir (str): The directory of the CSV file.
             filename (str): The name of the CSV file.
+            default_attributes (dict[str, Any]): The default attributes.
 
         Returns:
             tuple: ``(instances, report_data)`` where
@@ -1421,7 +1497,9 @@ configuration in project settings.
         # from special function get all data from csv file and convert them
         # to new instances
         product_items_by_name, report_data = (
-            self._get_data_from_csv(preset_data, csv_dir, filename)
+            self._get_data_from_csv(
+                preset_data, csv_dir, filename, default_attributes
+            )
         )
 
         instances = []
