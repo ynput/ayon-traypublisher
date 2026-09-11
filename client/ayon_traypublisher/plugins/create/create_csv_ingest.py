@@ -81,9 +81,13 @@ def _get_row_value_with_validation(
     elif column_type == "bool":
         column_value = column_value in ["true", "True"]
 
-    # check if column value matches validation regex
+    # check if column value matches validation regex - only validate
+    # values that were actually provided in the row. Default values
+    # substituted for empty optional columns must not raise validation
+    # errors (see YN-1079).
     if (
         column_value is not None and
+        str(column_value) != str(column_default) and
         not re.match(str(column_validation), str(column_value))
     ):
         raise CreatorError(
