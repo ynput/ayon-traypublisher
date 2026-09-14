@@ -51,8 +51,12 @@ class ValidateExistingVersion(
     def repair(cls, instance):
         create_context = instance.context.data["create_context"]
         created_instance = create_context.get_instance_by_id(
-            instance.data["instance_id"])
-        creator_attributes = created_instance["creator_attributes"]
-        # Disable version override
-        creator_attributes["use_next_version"] = True
+            instance.data["instance_id"]
+        )
+
+        # Get the creator responsible for the instance so its version
+        # repair implementation can be used.
+        creator = create_context.creators[created_instance.creator_identifier]
+        creator.repair_version_conflict(created_instance, instance)
+
         create_context.save_changes()
