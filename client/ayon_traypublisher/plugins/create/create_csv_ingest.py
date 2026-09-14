@@ -26,7 +26,7 @@ from ayon_traypublisher.api.structures import PassingDataValue
 log = Logger.get_logger(__name__)
 
 COLUMN_INFO_MAPPING = {
-    "File Path": {"scope": ["repre"], "dst_key": "file_path"},
+    "File Path": {"scope": ["repre"], "dst_key": "filepath"},
     "Task Name": {"scope": ["product"], "dst_key": "task_name"},
     "Folder Path": {"scope": ["product"], "dst_key": "folder_path"},
     # known entity attributes
