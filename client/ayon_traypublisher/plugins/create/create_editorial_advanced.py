@@ -203,6 +203,7 @@ class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
                 "task",
                 items=task_items,
                 label="Task",
+                default=instance.data.get("task"),
             ))
         return defs
 
@@ -852,6 +853,7 @@ or updating already created. Publishing will create OTIO file.
         pres_product_name = product_preset["product_name"]
         pres_versioning = product_preset["versioning_type"]
         pres_representations = product_preset["representations"]
+        pres_task = product_preset["default_task"]
 
         # Dictionary to group files by product name
         grouped_representations = {}
@@ -991,6 +993,7 @@ or updating already created. Publishing will create OTIO file.
                 },
                 "version": version,
                 "prep_representations": representations,
+                "task": pres_task,
             })
 
             if pres_product_base_type not in ["model", "workfile", "camera"]:

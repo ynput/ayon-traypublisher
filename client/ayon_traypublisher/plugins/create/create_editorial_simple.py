@@ -194,6 +194,7 @@ class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
             defs.append(EnumDef(
                 "task",
                 items=task_items,
+                default=instance.data.get("task"),
                 label="Task",
             ))
         return defs
@@ -673,6 +674,7 @@ or updating already created. Publishing will create OTIO file.
             # add review family if defined
             instance_data.update({
                 "outputFileType": product_base_type_preset["output_file_type"],
+                "task": product_base_type_preset["default_task"],
                 "parent_instance_id": parenting_data["instance_id"],
                 "creator_attributes": {
                     "parent_instance": parenting_data["instance_label"],

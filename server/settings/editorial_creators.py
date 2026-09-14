@@ -1,4 +1,4 @@
-from pydantic import validator
+from pydantic import root_validator, validator
 
 from ayon_server.settings import (
     BaseSettingsModel,
@@ -104,6 +104,18 @@ class ShotAddTasksItem(BaseSettingsModel):
         enum_resolver=task_types_enum
     )
 
+    @validator("name")
+    def validate_name(cls, value):
+        if not value:
+            raise ValueError("Missing task name")
+        return value
+
+    @validator("task_type")
+    def validate_task_type(cls, value):
+        if not value:
+            raise ValueError("Missing task type")
+        return value
+
 
 class ShotRenameSubmodel(BaseSettingsModel):
     """Shot Rename Info
@@ -185,6 +197,14 @@ class ProductBaseTypePresetItem(BaseSettingsModel):
         ".mp4",
         enum_resolver=get_output_file_type_enum
     )
+    default_task: str = SettingsField(
+        "",
+        title="Default task",
+        description=(
+            "Default task to use when publishing. "
+            "Must be part of 'Add tasks to shot'."
+        )
+    )
 
 
 class ProductBaseTypeAdvancedPresetItem(BaseSettingsModel):
@@ -195,6 +215,14 @@ class ProductBaseTypeAdvancedPresetItem(BaseSettingsModel):
         enum_resolver=get_product_base_type_enum
     )
     variant: str = SettingsField("", title="Variant")
+    default_task: str = SettingsField(
+        "",
+        title="Default task",
+        description=(
+            "Default task to use when publishing. "
+            "Must be part of 'Add tasks to shot'."
+        )
+    )
     versioning_type: str = SettingsField(
         "incremental",
         title="Versioning type",
@@ -255,6 +283,20 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
         default_factory=list
     )
 
+    @root_validator
+    def validate_default_task_part_of_added_shot_tasks(cls, values):
+        shot_names = [task.name for task in values.get("shot_add_tasks", [])]
+        for entry in values.get("product_base_type_presets", []):
+            if (
+                entry.default_task
+                and entry.default_task not in shot_names
+            ):
+                raise ValueError(
+                    f"Default task '{entry.default_task}' "
+                    "is not part of 'Add tasks to shot'."
+                )
+        return values
+
 
 class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     enabled: bool = True
@@ -300,6 +342,20 @@ class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
                 )
             product_names.append(product_name)
         return value
+
+    @root_validator
+    def validate_default_task_part_of_added_shot_tasks(cls, values):
+        shot_names = [task.name for task in values.get("shot_add_tasks", [])]
+        for entry in values.get("product_base_type_advanced_presets", []):
+            if (
+                entry.default_task
+                and entry.default_task not in shot_names
+            ):
+                raise ValueError(
+                    f"Default task '{entry.default_task}' "
+                    "is not part of 'Add tasks to shot'."
+                )
+        return values
 
 
 class TraypublisherEditorialCreatorPlugins(BaseSettingsModel):
