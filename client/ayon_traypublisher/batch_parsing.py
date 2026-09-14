@@ -1,18 +1,18 @@
 """Functions to parse folder names and versions from file names."""
 import os
+from typing import Any, Optional
 
 import ayon_api
 
 from ayon_core.lib import Logger
 
 
-def get_folder_entity_from_filename(
+def get_folder_entities_from_filename(
     project_name,
     source_filename,
     version_regex,
     all_selected_folder_ids=None,
-    ambiguity_warnings=None,
-):
+) -> tuple[list[dict[str, Any]], Optional[int]]:
     """Try to parse out folder name from file name provided.
 
     Artists might provide various file name formats.
@@ -21,7 +21,6 @@ def get_folder_entity_from_filename(
         - chair_v001.mov
         - my_chair_to_upload.mov
     """
-    version = None
     folder_name = os.path.splitext(source_filename)[0]
     # Always first check if source filename is directly folder
     #   (eg. 'chair.mov')
@@ -31,36 +30,48 @@ def get_folder_entity_from_filename(
         folder_names=[folder_name]
     ))
 
-    if not matching_folder_entities:
-        # name contains also a version
-        matching_folder_entities, version = (
-            parse_with_version(
-                project_name,
-                folder_name,
-                version_regex,
-                all_selected_folder_ids
-            )
-        )
+    if matching_folder_entities:
+        return matching_folder_entities, None
 
-    if len(matching_folder_entities) > 1:
-        paths = "\n".join(f"- {f['path']}" for f in matching_folder_entities)
-        if ambiguity_warnings is not None:
-            ambiguity_warnings.append(
-                f"'{folder_name}' matched multiple folders:\n{paths}"
-            )
-
-    matching_folder_entity = (
-        matching_folder_entities[0] if matching_folder_entities else None
+    # name contains also a version
+    matching_folder_entities, version = parse_with_version(
+        project_name,
+        folder_name,
+        version_regex,
+        all_selected_folder_ids
     )
 
-    if matching_folder_entity is None:
-        matching_folder_entity = parse_containing(
-            project_name,
-            folder_name,
-            all_selected_folder_ids
-        )
+    if matching_folder_entities:
+        return matching_folder_entities, version
 
-    return matching_folder_entity, version
+    matching_folder_entity = parse_containing(
+        project_name,
+        folder_name,
+        all_selected_folder_ids
+    )
+    matching_folder_entities = []
+    if matching_folder_entity:
+        matching_folder_entities.append(matching_folder_entity)
+
+    return matching_folder_entities, None
+
+
+def get_folder_entity_from_filename(
+    project_name,
+    source_filename,
+    version_regex,
+    all_selected_folder_ids=None,
+) -> tuple[Optional[dict[str, Any]], Optional[int]]:
+    result = get_folder_entities_from_filename(
+        project_name,
+        source_filename,
+        version_regex,
+        all_selected_folder_ids=all_selected_folder_ids,
+    )
+    matching_folder_entities, version = result
+    if matching_folder_entities:
+        return matching_folder_entities[0], version
+    return None, None
 
 
 def parse_with_version(
