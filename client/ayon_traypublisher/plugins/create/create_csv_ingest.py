@@ -5,9 +5,10 @@ import csv
 import os
 import re
 from copy import copy, deepcopy
+from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import ayon_api
 import clique
@@ -25,59 +26,42 @@ from ayon_traypublisher.api.structures import PassingDataValue
 
 log = Logger.get_logger(__name__)
 
-COLUMN_INFO_MAPPING = {
-    "File Path": {"scope": ["repre"], "dst_key": "filepath"},
-    "Task Name": {"scope": ["product"], "dst_key": "task_name"},
-    "Folder Path": {"scope": ["product"], "dst_key": "folder_path"},
+
+@dataclass
+class ColumnInfo:
+    scope: Literal["repre", "product"]
+    column_name: str
+    dst_key: str
+    attr: str | None = None
+
+
+COLUMN_INFO_MAPPING = [
+    ColumnInfo("repre", "File Path", "filepath"),
+    ColumnInfo("product", "Task Name", "task_name"),
+    ColumnInfo("product", "Folder Path", "folder_path"),
     # known entity attributes
     # adding attribute names where they exists
-    "Frame Start": {
-        "scope": ["repre"],
-        "dst_key": "frame_start",
-        "attr": "frameStart",
-    },
-    "Frame End": {
-        "scope": ["repre"],
-        "dst_key": "frame_end",
-        "attr": "frameEnd",
-    },
-    "Handle Start": {
-        "scope": ["repre"],
-        "dst_key": "handle_start",
-        "attr": "handleStart",
-    },
-    "Handle End": {
-        "scope": ["repre"],
-        "dst_key": "handle_end",
-        "attr": "handleEnd",
-    },
-    "FPS": {"scope": ["repre"], "dst_key": "fps", "attr": "fps"},
-    "Shot Width": {
-        "scope": ["product"],
-        "dst_key": "width",
-        "attr": "resolutionWidth",
-    },
-    "Shot Height": {
-        "scope": ["product"],
-        "dst_key": "height",
-        "attr": "resolutionHeight",
-    },
-    "Shot Pixel Aspect": {
-        "scope": ["product"],
-        "dst_key": "pixel_aspect",
-        "attr": "pixelAspect",
-    },
+    ColumnInfo("repre", "Frame Start", "frame_start", "frameStart"),
+    ColumnInfo("repre", "Frame End", "frame_end", "frameEnd"),
+    ColumnInfo("repre", "Handle Start", "handle_start", "handleStart"),
+    ColumnInfo("repre", "Handle End", "handle_end", "handleEnd"),
+    ColumnInfo("repre", "FPS", "fps", "fps"),
+    ColumnInfo("product", "Shot Width", "width", "resolutionWidth"),
+    ColumnInfo("product", "Shot Height", "height", "resolutionHeight"),
+    ColumnInfo(
+        "product", "Shot Pixel Aspect", "pixel_aspect", "pixelAspect"
+    ),
     # Optional representation information
-    "Version Thumbnail": {"scope": ["repre"], "dst_key": "thumbnail_path"},
-    "Representation Colorspace": {"scope": ["repre"], "dst_key": "colorspace"},
-    "Version Comment": {"scope": ["repre"], "dst_key": "comment"},
-    "Representation": {"scope": ["repre"], "dst_key": "name"},
-    "Slate Exists": {"scope": ["repre"], "dst_key": "slate_exists"},
-    "Representation Tags": {"scope": ["repre"], "dst_key": "repre_tags"},
-    "Version": {"scope": ["product"], "dst_key": "version"},
-    "Variant": {"scope": ["product"], "dst_key": "variant"},
-    "Product Type": {"scope": ["product"], "dst_key": "product_type"},
-}
+    ColumnInfo("repre", "Version Thumbnail", "thumbnail_path"),
+    ColumnInfo("repre", "Representation Colorspace", "colorspace"),
+    ColumnInfo("repre", "Version Comment", "comment"),
+    ColumnInfo("repre", "Representation", "name"),
+    ColumnInfo("repre", "Slate Exists", "slate_exists"),
+    ColumnInfo("repre", "Representation Tags", "repre_tags"),
+    ColumnInfo("repre", "Version", "version"),
+    ColumnInfo("repre", "Variant", "variant"),
+    ColumnInfo("repre", "Product Type", "product_type"),
+]
 
 
 def _get_row_value_with_validation(
@@ -336,15 +320,15 @@ class RepreItem:
         default_attributes: Optional[dict[str, Any]] = None,
     ):
         kwargs = {
-            column_info["dst_key"]: _get_row_value_with_validation(
+            column_info.dst_key: _get_row_value_with_validation(
                 columns_config,
-                column_name,
+                column_info.column_name,
                 row,
                 default_attributes,
-                column_info.get("attr"),
+                column_info.attr,
             )
-            for column_name, column_info in COLUMN_INFO_MAPPING.items()
-            if "repre" in column_info.get("scope", [])
+            for column_info in COLUMN_INFO_MAPPING
+            if column_info.scope == "repre"
         }
 
         # Convert frame/fps values to their expected types.
@@ -436,11 +420,14 @@ class ProductItem:
     ):
         kwargs = {
             dst_key: _get_row_value_with_validation(
-                columns_config, column_name, row, default_attributes
+                columns_config,
+                column_info.column_name,
+                row,
+                default_attributes
             )
-            for column_name, column_info in COLUMN_INFO_MAPPING.items()
-            if (dst_key := column_info.get("dst_key")) is not None
-            and "product" in column_info.get("scope", [])
+            for column_info in COLUMN_INFO_MAPPING
+            if (dst_key := column_info.dst_key) is not None
+            and column_info.scope == "product"
         }
 
         # Product base type is optional, for backwards compatibility. When
@@ -877,16 +864,16 @@ configuration in project settings.
 
         # Fill in temporal columns from folder entity attrs when absent.
         attrib = matched.get("attrib") or {}
-        for column_name, column_info in COLUMN_INFO_MAPPING.items():
-            if attr_name := column_info.get("attr"):
-                if (row.get(column_name) or "").strip():
+        for column_info in COLUMN_INFO_MAPPING:
+            if attr_name := column_info.attr:
+                if (row.get(column_info.column_name) or "").strip():
                     continue  # CSV already has a value
                 attr_val = attrib.get(attr_name)
                 if attr_val is not None:
-                    row[column_name] = str(attr_val)
+                    row[column_info.column_name] = str(attr_val)
                     log.debug(
                         "Filled '%s' = %s from folder '%s' attrib.",
-                        column_name,
+                        column_info.column_name,
                         attr_val,
                         matched["path"],
                     )
@@ -1018,9 +1005,6 @@ configuration in project settings.
 
             # Validate that frame range values are present after folder
             # resolution (folder attribs may have been back-filled above).
-            #
-            # TODO: perhaps release the restrictions if default
-            #   attributes can be used
             frame_range_cols = [
                 "Frame Start", "Frame End",
             ]
