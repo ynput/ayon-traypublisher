@@ -52,8 +52,6 @@ def get_folder_entities_from_filename(
 
     return matching_folder_entities, None
 
-    return [], None
-
 
 def get_folder_entity_from_filename(
     project_name,
