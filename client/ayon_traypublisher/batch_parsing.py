@@ -59,13 +59,12 @@ def get_folder_entity_from_filename(
     version_regex,
     all_selected_folder_ids=None,
 ) -> tuple[Optional[dict[str, Any]], Optional[int]]:
-    result = get_folder_entities_from_filename(
+    matching_folder_entities, version = get_folder_entities_from_filename(
         project_name,
         source_filename,
         version_regex,
         all_selected_folder_ids=all_selected_folder_ids,
     )
-    matching_folder_entities, version = result
     if matching_folder_entities:
         return matching_folder_entities[0], version
     return None, None
@@ -109,17 +108,19 @@ def parse_with_version(
 
 def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
     """Return folder entities whose names are contained in the file name."""
-    matching_folder_entities = []
+    folder_ids = set()
     for folder_entity in ayon_api.get_folders(
         project_name,
         folder_ids=all_selected_folder_ids,
         fields={"id", "name"}
     ):
         if folder_entity["name"].lower() in folder_name.lower():
-            matching_folder_entities.append(
-                ayon_api.get_folder_by_id(
-                    project_name,
-                    folder_entity["id"]
-                )
-            )
-    return matching_folder_entities
+            folder_ids.add(folder_entity["id"])
+
+    if not folder_ids:
+        return []
+
+    return list(ayon_api.get_folders(
+        project_name,
+        folder_ids=folder_ids,
+    ))
