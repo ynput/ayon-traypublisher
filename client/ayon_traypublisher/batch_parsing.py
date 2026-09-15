@@ -44,16 +44,16 @@ def get_folder_entities_from_filename(
     if matching_folder_entities:
         return matching_folder_entities, version
 
-    matching_folder_entity = parse_containing(
+    matching_folder_entities = parse_containing(
         project_name,
         folder_name,
         all_selected_folder_ids
     )
-    matching_folder_entities = []
-    if matching_folder_entity:
-        matching_folder_entities.append(matching_folder_entity)
 
-    return matching_folder_entities, None
+    if matching_folder_entities:
+        return matching_folder_entities, None
+
+    return [], None
 
 
 def get_folder_entity_from_filename(
@@ -111,14 +111,18 @@ def parse_with_version(
 
 
 def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
-    """Look if file name contains any existing folder name"""
+    """Return folder entities whose names are contained in the file name."""
+    matching_folder_entities = []
     for folder_entity in ayon_api.get_folders(
         project_name,
         folder_ids=all_selected_folder_ids,
         fields={"id", "name"}
     ):
         if folder_entity["name"].lower() in folder_name.lower():
-            return ayon_api.get_folder_by_id(
-                project_name,
-                folder_entity["id"]
+            matching_folder_entities.append(
+                ayon_api.get_folder_by_id(
+                    project_name,
+                    folder_entity["id"]
+                )
             )
+    return matching_folder_entities
