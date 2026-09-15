@@ -50,8 +50,7 @@ def get_folder_entities_from_filename(
         all_selected_folder_ids
     )
 
-    if matching_folder_entities:
-        return matching_folder_entities, None
+    return matching_folder_entities, None
 
     return [], None
 
