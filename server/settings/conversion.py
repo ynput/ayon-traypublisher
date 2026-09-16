@@ -1,8 +1,33 @@
 import logging
 from typing import Any
 
+from semver import VersionInfo
 
 logger = logging.getLogger(__name__)
+
+
+def _convert_csv_ingest_0_4_5(overrides):
+    csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
+    if not csv_ingest_settings:
+        return
+
+    presets = csv_ingest_settings.get("presets", [])
+
+    for preset in presets:
+        columns_config = preset.get("columns_config", [])
+        for column_conf in columns_config:
+            column_type = column_conf["type"]
+            default_value = column_conf.get("default")
+            processing_type = column_conf["processing_type"]
+            if processing_type != "processing_data":
+                continue
+
+            if column_type not in ["number", "decimal"] or str(
+                default_value
+            ) not in ("0", "0.0"):
+                continue
+
+            column_conf["default"] = ""
 
 
 def _convert_csv_ingest_0_3_9(overrides):
@@ -65,4 +90,8 @@ def convert_settings_overrides(
     _convert_csv_ingest_0_3_9(overrides)
     _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
+
+    if VersionInfo.parse(source_version).compare("0.4.5") < 0:
+        _convert_csv_ingest_0_4_5(overrides)
+
     return overrides
