@@ -19,6 +19,10 @@ def _convert_csv_ingest_0_4_5(overrides):
             column_type = column_conf["type"]
             default_value = column_conf.get("default")
             processing_type = column_conf["processing_type"]
+
+            if column_conf.get("validation_pattern") == r"^(\d)$":
+                column_conf["validation_pattern"] = r"^(\d+)$"
+
             if processing_type != "processing_data":
                 continue
 

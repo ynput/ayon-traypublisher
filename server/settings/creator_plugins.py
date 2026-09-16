@@ -706,14 +706,14 @@ DEFAULT_CREATORS = {
                             "type": "number",
                             "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "Handle End",
                             "type": "number",
                             "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "FPS",
