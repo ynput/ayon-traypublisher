@@ -27,12 +27,18 @@ from ayon_traypublisher.api.structures import PassingDataValue
 log = Logger.get_logger(__name__)
 
 
-@dataclass
 class ColumnInfo:
-    scope: Literal["repre", "product"]
-    column_name: str
-    dst_key: str
-    attr: str | None = None
+    def __init__(
+        self,
+        scope: Literal["repre", "product"]
+        column_name: str
+        dst_key: str
+        attr: str | None = None
+    ) -> None:
+        self.scope = scope
+        self.column_name = column_name
+        self.dst_key = dst_key
+        self.attr = attr
 
 
 COLUMN_INFO_MAPPING = [
