@@ -69,7 +69,6 @@ COLUMN_INFO_MAPPING = [
 ]
 
 
-
 def _get_row_value_with_validation(
     columns_config: dict[str, Any],
     column_name: str,
