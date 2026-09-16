@@ -63,10 +63,11 @@ COLUMN_INFO_MAPPING = [
     ColumnInfo("repre", "Representation", "name"),
     ColumnInfo("repre", "Slate Exists", "slate_exists"),
     ColumnInfo("repre", "Representation Tags", "repre_tags"),
-    ColumnInfo("repre", "Version", "version"),
-    ColumnInfo("repre", "Variant", "variant"),
-    ColumnInfo("repre", "Product Type", "product_type"),
+    ColumnInfo("product", "Version", "version"),
+    ColumnInfo("product", "Variant", "variant"),
+    ColumnInfo("product", "Product Type", "product_type"),
 ]
+
 
 
 def _get_row_value_with_validation(
