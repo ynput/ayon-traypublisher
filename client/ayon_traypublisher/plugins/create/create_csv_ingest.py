@@ -30,10 +30,10 @@ log = Logger.get_logger(__name__)
 class ColumnInfo:
     def __init__(
         self,
-        scope: Literal["repre", "product"]
-        column_name: str
-        dst_key: str
-        attr: str | None = None
+        scope: Literal["repre", "product"],
+        column_name: str,
+        dst_key: str,
+        attr: str | None = None,
     ) -> None:
         self.scope = scope
         self.column_name = column_name
