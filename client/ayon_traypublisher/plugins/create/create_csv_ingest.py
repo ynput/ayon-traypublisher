@@ -5,7 +5,6 @@ import csv
 import os
 import re
 from copy import copy, deepcopy
-from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
