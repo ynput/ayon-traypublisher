@@ -105,23 +105,13 @@ def _get_row_value_with_validation(
             f"Value in column '{column_name}' is required."
         )
 
+    # try to set default values from default context attributes
+    # this only works for numerical attributes
     if (
         processing_type == "processing_data"
         and column_type in ["number", "decimal"]
-        and str(column_default) in ("0", "0.0")
     ):
-        # In processing data values the defaults used to be e.g.
-        # "0" for FPS indicating to not set the value at all, so
-        # in that case, we should retain this behavior and default
-        # to None in that scenario.
-
-        # Exception is made for handle_start, handle_end and fps since
-        # if 0 is set for those we should fall back to the default
-        # context level attributes instead of None.
-        if (
-            column_name in ["Handle Start", "Handle End", "FPS"]
-            and attr_name and default_attributes
-        ):
+        if attr_name and default_attributes:
             column_default = default_attributes.get(attr_name)
         else:
             column_default = None
