@@ -105,14 +105,16 @@ def _get_row_value_with_validation(
             f"Value in column '{column_name}' is required."
         )
 
-    # try to set default values from default context attributes
-    # this only works for numerical attributes
+    # Try to set default values from currently set context attributes.
+    # This only works for numerical attributes. Context based attributes
+    # are resolved hierarchically, starting from the project's default
+    # attributes.
     if (
         processing_type == "processing_data"
         and column_type in ["number", "decimal"]
     ):
         if attr_name and default_attributes:
-            column_default = default_attributes.get(attr_name)
+            column_default = default_attributes[attr_name]
         else:
             column_default = None
 
