@@ -14,8 +14,8 @@ def _convert_csv_ingest_0_4_5(overrides):
     presets = csv_ingest_settings.get("presets", [])
 
     for preset in presets:
-        columns_config = preset.get("columns_config", [])
-        for column_conf in columns_config:
+        columns = preset["columns_config"]["columns"]
+        for column_conf in columns:
             column_type = column_conf["type"]
             default_value = column_conf.get("default")
             processing_type = column_conf["processing_type"]
