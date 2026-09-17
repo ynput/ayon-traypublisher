@@ -21,10 +21,20 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
     order = ValidateContentsOrder
 
     optional = True
-    # published data might be sequence (.mov, .mp4) in that counting files
+    # published data might be video (.mov, .mp4) in that counting files
     # doesn't make sense
-    check_extensions = ["exr", "dpx", "jpg", "jpeg", "png", "tiff", "tga",
-                        "gif", "svg", "sxr"]
+    check_extensions = [
+        "exr",
+        "dpx",
+        "jpg",
+        "jpeg",
+        "png",
+        "tiff",
+        "tga",
+        "gif",
+        "svg",
+        "sxr",
+    ]
     skip_timelines_check = []  # skip for specific task names (regex)
 
     def process(self, instance):
@@ -69,19 +79,8 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
         for repre in repres:
             ext = repre.get("ext", "").lstrip(".")
 
-            if not ext or ext.lower() not in {
-                "exr",
-                "dpx",
-                "jpg",
-                "jpeg",
-                "png",
-                "tiff",
-                "tga",
-                "gif",
-                "svg",
-                "sxr"
-            }:
-                self.log.debug("Cannot check for extension {}".format(ext))
+            if not ext or ext.lower() not in self.check_extensions:
+                self.log.debug(f"Cannot check for extension '{ext}'.")
                 continue
 
             files = repre["files"]
