@@ -96,7 +96,7 @@ def convert_settings_overrides(
     _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
 
-    if VersionInfo.parse(source_version) < (0, 4, 7):
-        _convert_csv_ingest_0_4_7(overrides)
+    if VersionInfo.parse(source_version) < (0, 4, 6):
+        _convert_csv_ingest_0_4_6(overrides)
 
     return overrides
