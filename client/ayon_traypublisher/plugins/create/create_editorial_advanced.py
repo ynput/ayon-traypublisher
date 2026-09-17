@@ -116,6 +116,7 @@ class EditorialClipInstanceCreatorBase(HiddenTrayPublishCreator):
     """Wrapper class for clip product base type creators."""
 
     host_name = "traypublisher"
+    skip_discovery = True
 
     def create(self, instance_data, source_data=None):
         product_name = instance_data["productName"]
@@ -180,7 +181,49 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
         return instance_attributes
 
 
-class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
+class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
+    """ An EditorialClipInstanceCreatorBase that allows to select a task.
+    """
+    skip_discovery = True
+
+    def register_callbacks(self):
+        super().register_callbacks()
+        self.create_context.add_value_changed_callback(self._on_value_change)
+
+    def get_attr_defs_for_instance(self, instance):
+        defs = super().get_attr_defs_for_instance(instance)
+        task_items = [
+            {"value": task_name, "label": task_name}
+            for task_name in instance.data.get("tasks", [])
+        ]
+
+        if task_items:
+            task_items.insert(0, {"value": None, "label": "No task"})
+            defs.append(EnumDef(
+                "task",
+                items=task_items,
+                label="Task",
+                default=instance.data.get("task"),
+            ))
+        return defs
+
+    def _on_value_change(self, event):
+        for item in event["changes"]:
+            instance = item["instance"]
+            if (
+                instance is None
+                or instance.creator_identifier != self.identifier
+            ):
+                continue
+
+            changes = item["changes"].get("creator_attributes", {})
+            if "task" not in changes:
+                continue
+
+            instance.data["task"] = changes["task"]
+
+
+class EditorialPlateInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Plate product base type class
 
     Plate representation instance.
@@ -191,7 +234,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Plate product"
 
 
-class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialImageInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Image product base type class
 
     Plate representation instance.
@@ -202,7 +245,7 @@ class EditorialImageInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Image product"
 
 
-class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialRenderInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Render product base type class
     Render representation instance.
     """
@@ -212,7 +255,7 @@ class EditorialRenderInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Render product"
 
 
-class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialAudioInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Audio product base type class
 
     Audio representation instance.
@@ -223,7 +266,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Audio product"
 
 
-class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialModelInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Model product base type class
 
     Model representation instance.
@@ -243,7 +286,7 @@ class EditorialModelInstanceCreator(EditorialClipInstanceCreatorBase):
         ]
 
 
-class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialCameraInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Camera product base type class
     Camera representation instance.
     """
@@ -262,7 +305,7 @@ class EditorialCameraInstanceCreator(EditorialClipInstanceCreatorBase):
         ]
 
 
-class EditorialWorkfileInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialWorkfileInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Workfile product base type class
 
     Workfile representation instance.
@@ -810,6 +853,7 @@ or updating already created. Publishing will create OTIO file.
         pres_product_name = product_preset["product_name"]
         pres_versioning = product_preset["versioning_type"]
         pres_representations = product_preset["representations"]
+        pres_task = product_preset["default_task"]
 
         # Dictionary to group files by product name
         grouped_representations = {}
@@ -949,6 +993,7 @@ or updating already created. Publishing will create OTIO file.
                 },
                 "version": version,
                 "prep_representations": representations,
+                "task": pres_task,
             })
 
             if pres_product_base_type not in ["model", "workfile", "camera"]:
