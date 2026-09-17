@@ -67,7 +67,7 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
 
         frames: int = 0
         for repre in repres:
-            ext = repre['ext'].replace(".", '')
+            ext = repre.get("ext", "").lstrip(".")
 
             if not ext or ext.lower() not in {
                 "exr",
