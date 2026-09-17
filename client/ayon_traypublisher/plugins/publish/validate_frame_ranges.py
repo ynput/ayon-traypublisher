@@ -76,7 +76,6 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
             self.log.info("No representations, skipping.")
             return
 
-        frames: int = 0
         for repre in repres:
             ext = repre.get("ext", "").lstrip(".")
 
