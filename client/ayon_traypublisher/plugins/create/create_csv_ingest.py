@@ -441,7 +441,24 @@ class ProductItem:
             product_base_type = kwargs.get("product_type", "")
         kwargs["product_base_type"] = product_base_type
 
-        return cls(**kwargs)
+        product_item = cls(**kwargs)
+
+        # Folder Description is an optional column; if present it is
+        # forwarded as passing_data so the publish pipeline can set it
+        # on the folder entity during folder creation.
+        folder_desc = (row.get("Folder Description") or "").strip()
+        if folder_desc:
+            product_item.passing_data.append(
+                PassingDataValue(
+                    name="folderDescription",
+                    value=folder_desc,
+                    data_type="instance_data",
+                )
+            )
+
+        return product_item
+
+
 
 
 class IngestCSV(TrayPublishCreator):
@@ -1048,7 +1065,15 @@ configuration in project settings.
             ]
 
             if unique_name not in product_items_by_name:
-                product_item_.passing_data = row_product_passing_data
+                # Merge instead of overwrite: keep folderDescription (and any
+                # other instance_data set on the constructor) while adding the
+                # row's passing_data columns.
+                product_item_.passing_data = _merge_passing_data_values(
+                    product_item_.passing_data,
+                    row_product_passing_data,
+                    unique_name,
+                    row_index,
+                )
                 product_items_by_name[unique_name] = product_item_
             else:
                 existing_product_item = product_items_by_name[unique_name]

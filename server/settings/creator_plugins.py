@@ -771,6 +771,18 @@ DEFAULT_CREATORS = {
                             "required_column": False,
                             "validation_pattern": "^(\\d*.?\\d*)$"
                         },
+                        {
+                            "name": "Folder Description",
+                            "type": "text",
+                            "default": "",
+                            "required_column": False,
+                            "validation_pattern": "^(.*)$",
+                            "processing_type": "passing_data",
+                            "passing_data": {
+                                "name": "folderDescription",
+                                "passing_data_type": "instance_data"
+                            }
+                        },
                     ]
                 },
                 "representations_config": {
