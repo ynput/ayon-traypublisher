@@ -55,7 +55,8 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
         if (self.skip_timelines_check and
             any(re.search(pattern, instance.data["task"])
                 for pattern in self.skip_timelines_check)):
-            self.log.info("Skipping for {} task".format(instance.data["task"]))
+            self.log.info(f"Skipping for {instance.data['task']} task")
+            return
 
         # Use attributes from task entity if set, otherwise from folder entity
         entity = (
