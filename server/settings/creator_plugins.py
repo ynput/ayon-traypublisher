@@ -669,7 +669,7 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Version",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d{1,3})$"
                         },
@@ -690,35 +690,35 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Frame Start",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^(\\d{1,8})$"
                         },
                         {
                             "name": "Frame End",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^(\\d{1,8})$"
                         },
                         {
                             "name": "Handle Start",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "Handle End",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "FPS",
                             "type": "decimal",
-                            "default": "0.0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^[0-9]*\\.[0-9]+$|^[0-9]+$"
                         },
@@ -753,21 +753,21 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Shot Height",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*)$"
                         },
                         {
                             "name": "Shot Width",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*)$"
                         },
                         {
                             "name": "Shot Pixel Aspect",
                             "type": "decimal",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*.?\\d*)$"
                         },
