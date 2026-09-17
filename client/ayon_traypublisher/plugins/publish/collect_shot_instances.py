@@ -33,6 +33,9 @@ class CollectShotInstance(pyblish.api.InstancePlugin):
     ]
 
     def process(self, instance):
+        # Mark instance for 'ExtractOTIOClipRanges'
+        instance.data["families"].append("otio.clip.ranges")
+
         creator_identifier = instance.data["creator_identifier"]
         if "editorial" not in creator_identifier:
             return

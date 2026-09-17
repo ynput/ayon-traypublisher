@@ -1,4 +1,4 @@
-"""Functions to parse asset names, versions from file names"""
+"""Functions to parse folder names and versions from file names."""
 import os
 
 import ayon_api

@@ -25,9 +25,9 @@ class ProductTypeItemModel(BaseSettingsModel):
 
 
 class BatchMovieCreatorPlugin(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Allows to publish multiple video files in one go. Name of matching
+     folder is parsed from file names ('folder.mov', 'folder_v001.mov',
+     'my_folder_to_publish.mov')"""
 
     default_variants: list[str] = SettingsField(
         title="Default variants",
@@ -84,9 +84,9 @@ def _value_type_enum() -> list[dict[str, str]]:
 
 
 class ColumnItemModel(BaseSettingsModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Allows to publish multiple video files in one go. Name of matching
+     folder name is parsed from file names ('folder.mov', 'folder_v001.mov',
+     'my_folder_to_publish.mov')"""
 
     _layout = "expanded"
     name: str = SettingsField(
@@ -364,8 +364,8 @@ class ListConfigModel(BaseSettingsModel):
 class RepresentationItemModel(BaseSettingsModel):
     """Allows to publish multiple video files in one go.
 
-    Name of matching asset is parsed from file names
-    ('asset.mov', 'asset_v001.mov', 'my_asset_to_publish.mov')
+    Name of matching folder is parsed from file names
+    ('folder.mov', 'folder_v001.mov', 'my_folder_to_publish.mov')
     """
 
     _layout = "expanded"
@@ -669,7 +669,7 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Version",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d{1,3})$"
                         },
@@ -690,35 +690,35 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Frame Start",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^(\\d{1,8})$"
                         },
                         {
                             "name": "Frame End",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^(\\d{1,8})$"
                         },
                         {
                             "name": "Handle Start",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "Handle End",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": True,
-                            "validation_pattern": "^(\\d)$"
+                            "validation_pattern": "^(\\d+)$"
                         },
                         {
                             "name": "FPS",
                             "type": "decimal",
-                            "default": "0.0",
+                            "default": "",
                             "required_column": True,
                             "validation_pattern": "^[0-9]*\\.[0-9]+$|^[0-9]+$"
                         },
@@ -753,21 +753,21 @@ DEFAULT_CREATORS = {
                         {
                             "name": "Shot Height",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*)$"
                         },
                         {
                             "name": "Shot Width",
                             "type": "number",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*)$"
                         },
                         {
                             "name": "Shot Pixel Aspect",
                             "type": "decimal",
-                            "default": "0",
+                            "default": "",
                             "required_column": False,
                             "validation_pattern": "^(\\d*.?\\d*)$"
                         },

@@ -12,9 +12,9 @@ class ValidatePluginModel(BaseSettingsModel):
 
 
 class ValidateFrameRangeModel(ValidatePluginModel):
-    """Allows to publish multiple video files in one go. <br />Name of matching
-     asset is parsed from file names ('asset.mov', 'asset_v001.mov',
-     'my_asset_to_publish.mov')"""
+    """Allows to publish multiple video files in one go. Name of matching
+     folder is parsed from file names ('folder.mov', 'folder_v001.mov',
+     'my_folder_to_publish.mov')"""
 
 
 class ExtractEditorialPckgFFmpegModel(BaseSettingsModel):
