@@ -173,7 +173,49 @@ class EditorialShotInstanceCreator(EditorialClipInstanceCreatorBase):
         return instance_attributes
 
 
-class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
+class _EditorialTaskSelectInstanceCreator(EditorialClipInstanceCreatorBase):
+    """ An EditorialClipInstanceCreatorBase that allows to select a task.
+    """
+    skip_discovery = True
+
+    def register_callbacks(self):
+        super().register_callbacks()
+        self.create_context.add_value_changed_callback(self._on_value_change)
+
+    def get_attr_defs_for_instance(self, instance):
+        defs = super().get_attr_defs_for_instance(instance)
+        task_items = [
+            {"value": task_name, "label": task_name}
+            for task_name in instance.data.get("tasks", [])
+        ]
+
+        if task_items:
+            task_items.insert(0, {"value": None, "label": "No task"})
+            defs.append(EnumDef(
+                "task",
+                items=task_items,
+                default=instance.data.get("task"),
+                label="Task",
+            ))
+        return defs
+
+    def _on_value_change(self, event):
+        for item in event["changes"]:
+            instance = item["instance"]
+            if (
+                instance is None
+                or instance.creator_identifier != self.identifier
+            ):
+                continue
+
+            changes = item["changes"].get("creator_attributes", {})
+            if "task" not in changes:
+                continue
+
+            instance.data["task"] = changes["task"]
+
+
+class EditorialPlateInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Plate product base type class
 
     Plate representation instance.
@@ -184,7 +226,7 @@ class EditorialPlateInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Editorial Plate"
 
 
-class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialAudioInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Audio product base type class
 
     Audio representation instance.
@@ -195,7 +237,7 @@ class EditorialAudioInstanceCreator(EditorialClipInstanceCreatorBase):
     label = "Editorial Audio"
 
 
-class EditorialReviewInstanceCreator(EditorialClipInstanceCreatorBase):
+class EditorialReviewInstanceCreator(_EditorialTaskSelectInstanceCreator):
     """Review product base type class
 
     Review representation instance.
@@ -632,12 +674,13 @@ or updating already created. Publishing will create OTIO file.
             # add review family if defined
             instance_data.update({
                 "outputFileType": product_base_type_preset["output_file_type"],
+                "task": product_base_type_preset["default_task"],
                 "parent_instance_id": parenting_data["instance_id"],
                 "creator_attributes": {
                     "parent_instance": parenting_data["instance_label"],
                     "add_review_family": product_base_type_preset.get(
                         "review"
-                    )
+                    ),
                 }
             })
 
