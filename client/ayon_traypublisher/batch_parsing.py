@@ -1,17 +1,18 @@
 """Functions to parse folder names and versions from file names."""
 import os
+from typing import Any, Optional
 
 import ayon_api
 
 from ayon_core.lib import Logger
 
 
-def get_folder_entity_from_filename(
+def get_folder_entities_from_filename(
     project_name,
     source_filename,
     version_regex,
-    all_selected_folder_ids=None
-):
+    all_selected_folder_ids=None,
+) -> tuple[list[dict[str, Any]], Optional[int]]:
     """Try to parse out folder name from file name provided.
 
     Artists might provide various file name formats.
@@ -20,37 +21,53 @@ def get_folder_entity_from_filename(
         - chair_v001.mov
         - my_chair_to_upload.mov
     """
-    version = None
     folder_name = os.path.splitext(source_filename)[0]
     # Always first check if source filename is directly folder
     #   (eg. 'chair.mov')
-    matching_folder_entity = list(ayon_api.get_folders(
+    matching_folder_entities = list(ayon_api.get_folders(
         project_name,
         folder_ids=all_selected_folder_ids,
         folder_names=[folder_name]
     ))
 
-    if not matching_folder_entity:
-        # name contains also a version
-        matching_folder_entity, version = (
-            parse_with_version(
-                project_name,
-                folder_name,
-                version_regex,
-                all_selected_folder_ids
-            )
-        )
-    else:
-        matching_folder_entity = matching_folder_entity.pop()
+    if matching_folder_entities:
+        return matching_folder_entities, None
 
-    if matching_folder_entity is None:
-        matching_folder_entity = parse_containing(
-            project_name,
-            folder_name,
-            all_selected_folder_ids
-        )
+    # name contains also a version
+    matching_folder_entities, version = parse_with_version(
+        project_name,
+        folder_name,
+        version_regex,
+        all_selected_folder_ids
+    )
 
-    return matching_folder_entity, version
+    if matching_folder_entities:
+        return matching_folder_entities, version
+
+    matching_folder_entities = parse_containing(
+        project_name,
+        folder_name,
+        all_selected_folder_ids
+    )
+
+    return matching_folder_entities, None
+
+
+def get_folder_entity_from_filename(
+    project_name,
+    source_filename,
+    version_regex,
+    all_selected_folder_ids=None,
+) -> tuple[Optional[dict[str, Any]], Optional[int]]:
+    matching_folder_entities, version = get_folder_entities_from_filename(
+        project_name,
+        source_filename,
+        version_regex,
+        all_selected_folder_ids=all_selected_folder_ids,
+    )
+    if matching_folder_entities:
+        return matching_folder_entities[0], version
+    return None, None
 
 
 def parse_with_version(
@@ -70,34 +87,40 @@ def parse_with_version(
         ("Folder entity by \"{}\" was not found, trying version regex.".
          format(folder_name)))
 
-    matching_folder_entity = version_number = None
+    matching_folder_entities = []
+    version_number = None
 
     regex_result = version_regex.findall(folder_name)
     if regex_result:
         _folder_name, _version_number = regex_result[0]
-        matching_folder_entity = list(
+        matching_folder_entities = list(
             ayon_api.get_folders(
                 project_name,
                 folder_ids=all_selected_folder_ids,
                 folder_names=[_folder_name],
             )
         )
-        if matching_folder_entity:
+        if matching_folder_entities:
             version_number = int(_version_number)
-            matching_folder_entity = matching_folder_entity.pop()
 
-    return matching_folder_entity, version_number
+    return matching_folder_entities, version_number
 
 
 def parse_containing(project_name, folder_name, all_selected_folder_ids=None):
-    """Look if file name contains any existing folder name"""
+    """Return folder entities whose names are contained in the file name."""
+    folder_ids = set()
     for folder_entity in ayon_api.get_folders(
         project_name,
         folder_ids=all_selected_folder_ids,
         fields={"id", "name"}
     ):
         if folder_entity["name"].lower() in folder_name.lower():
-            return ayon_api.get_folder_by_id(
-                project_name,
-                folder_entity["id"]
-            )
+            folder_ids.add(folder_entity["id"])
+
+    if not folder_ids:
+        return []
+
+    return list(ayon_api.get_folders(
+        project_name,
+        folder_ids=folder_ids,
+    ))
