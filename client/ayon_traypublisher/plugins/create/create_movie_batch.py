@@ -22,7 +22,7 @@ from ayon_core.pipeline.create import (
 
 from ayon_traypublisher.api.plugin import TrayPublishCreator
 from ayon_traypublisher.batch_parsing import (
-    get_folder_entity_from_filename
+    get_folder_entities_from_filename
 )
 
 
@@ -52,6 +52,7 @@ class BatchMovieCreator(TrayPublishCreator):
         if not file_paths:
             return
 
+        ambiguity_warnings = []
         data_by_folder_id = collections.defaultdict(list)
         for file_info in file_paths:
             instance_data = copy.deepcopy(data)
@@ -59,20 +60,29 @@ class BatchMovieCreator(TrayPublishCreator):
             filepath = os.path.join(file_info["directory"], file_name)
             instance_data["creator_attributes"] = {"filepath": filepath}
 
-            folder_entity, version = get_folder_entity_from_filename(
-                self.project_name, file_name, self.version_regex
+            folder_entities, version = get_folder_entities_from_filename(
+                self.project_name,
+                file_name,
+                self.version_regex
             )
 
-            if version:
+            if version is not None:
                 instance_data["version"] = version
 
-            if not folder_entity:
+            if not folder_entities:
                 raise CreatorError(
                     f"Couldn't find folder entity for '{file_name}'"
                 )
-                continue
-            data_by_folder_id[folder_entity["id"]].append(
-                (instance_data, folder_entity)
+
+            if len(folder_entities) > 1:
+                paths = "\n".join(f"- {f['path']}" for f in folder_entities)
+                ambiguity_warnings.append(
+                    f"'{file_name}' matched multiple folders:\n{paths}"
+                )
+
+            # take first folder entity, if multiple matched
+            data_by_folder_id[folder_entities[0]["id"]].append(
+                (instance_data, folder_entities[0])
             )
 
         all_task_entities = ayon_api.get_tasks(
@@ -122,6 +132,14 @@ class BatchMovieCreator(TrayPublishCreator):
                     creator=self,
                 )
                 self._store_new_instance(new_instance)
+
+        if ambiguity_warnings:
+            raise CreatorError(
+                "Multiple folders matched one or more batch movie files:\n"
+                + "\n".join(ambiguity_warnings)
+                + "\n\nMake sure that it's attached to the correct folder "
+                + "in the next step."
+            )
 
     def _get_product_name(
         self,
