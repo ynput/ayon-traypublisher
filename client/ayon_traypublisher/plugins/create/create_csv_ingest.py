@@ -586,16 +586,16 @@ configuration in project settings.
     ) -> dict[str, Any]:
         folder_path: str = instance_data["folderPath"]
         task_name: Optional[str] = instance_data.get("task")
-        # get_current_folder_entity returns None
-        folder_entity = self.create_context.get_folder_entity(folder_path)
-        task_entity = self.create_context.get_task_entity(
-            folder_path, task_name
-        )
+        if task_name:
+            task_entity = self.create_context.get_task_entity(
+                folder_path, task_name
+            )
+            if task_entity:
+                return task_entity["attrib"]
 
-        entity = (
-            task_entity or folder_entity
-        )
-        return entity["attrib"]
+        # If not a valid task, use the folder entityu
+        folder_entity = self.create_context.get_folder_entity(folder_path)
+        return folder_entity ["attrib"]
 
     def _process_csv_file(
         self,
