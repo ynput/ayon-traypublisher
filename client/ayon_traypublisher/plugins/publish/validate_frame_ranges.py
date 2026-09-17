@@ -100,6 +100,6 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
                     self, msg, formatting_data=formatting_data
                 )
 
-        self.log.debug(
-            f"Valid ranges expected '{int(duration)}' - found '{frames}'"
-        )
+            self.log.debug(
+                f"Valid ranges expected '{int(duration)}' - found '{frames}'."
+            )
