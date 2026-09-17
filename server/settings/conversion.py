@@ -6,7 +6,7 @@ from semver import VersionInfo
 logger = logging.getLogger(__name__)
 
 
-def _convert_csv_ingest_0_4_7(overrides):
+def _convert_csv_ingest_0_4_6(overrides):
     csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
     if not csv_ingest_settings:
         return
