@@ -595,7 +595,7 @@ configuration in project settings.
 
         # If not a valid task, use the folder entityu
         folder_entity = self.create_context.get_folder_entity(folder_path)
-        return folder_entity ["attrib"]
+        return folder_entity["attrib"]
 
     def _process_csv_file(
         self,
