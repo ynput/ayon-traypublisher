@@ -6,7 +6,7 @@ from semver import VersionInfo
 logger = logging.getLogger(__name__)
 
 
-def _convert_csv_ingest_0_4_5(overrides):
+def _convert_csv_ingest_0_4_6(overrides):
     csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
     if not csv_ingest_settings:
         return
@@ -82,6 +82,8 @@ def _convert_editorial_0_4_0(overrides):
     if "product_base_type_presets" in editorial_simple:
         presets = editorial_simple.pop("product_base_type_presets")
         for preset in presets:
+            if "product_type" not in preset:
+                break
             preset["product_base_type"] = preset.pop("product_type")
         editorial_simple["product_base_type_presets"] = presets
 
@@ -94,7 +96,7 @@ def convert_settings_overrides(
     _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
 
-    if VersionInfo.parse(source_version).compare("0.4.5") < 0:
-        _convert_csv_ingest_0_4_5(overrides)
+    if VersionInfo.parse(source_version) < (0, 4, 6):
+        _convert_csv_ingest_0_4_6(overrides)
 
     return overrides
