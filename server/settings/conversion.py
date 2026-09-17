@@ -26,12 +26,12 @@ def _convert_csv_ingest_0_4_5(overrides):
             if processing_type != "processing_data":
                 continue
 
-            if column_type not in ["number", "decimal"] or str(
-                default_value
-            ) not in ("0", "0.0"):
-                continue
+            if (
+                column_type in ["number", "decimal"]
+                and str(default_value) in ("0", "0.0")
+            ):
+                column_conf["default"] = ""
 
-            column_conf["default"] = ""
 
 
 def _convert_csv_ingest_0_3_9(overrides):
