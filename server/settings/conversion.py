@@ -83,7 +83,7 @@ def _convert_editorial_0_4_0(overrides):
         presets = editorial_simple.pop("product_base_type_presets")
         for preset in presets:
             if "product_type" not in preset:
-                continue
+                break
             preset["product_base_type"] = preset.pop("product_type")
         editorial_simple["product_base_type_presets"] = presets
 
