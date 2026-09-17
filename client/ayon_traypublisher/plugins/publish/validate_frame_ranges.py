@@ -88,14 +88,13 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
                 continue
             frames = len(files)
 
-            msg = (
-                f"Frame duration from database: '{int(duration)}' doesn't "
-                f"match number of files: '{frames}'. Please change frame "
-                "range for folder/task or limit number of files."
-            )
-
-            formatting_data = {"duration": duration, "found": frames}
             if frames != duration:
+                msg = (
+                    f"Frame duration from database: '{int(duration)}' doesn't "
+                    f"match number of files: '{frames}'. Please change frame "
+                    "range for folder/task or limit number of files."
+                )
+                formatting_data = {"duration": duration, "found": frames}
                 raise PublishXmlValidationError(
                     self, msg, formatting_data=formatting_data
                 )
