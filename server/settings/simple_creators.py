@@ -166,6 +166,7 @@ DEFAULT_SIMPLE_CREATORS = [
             ".dng",
             ".dpx",
             ".jpg",
+            ".jpeg",
             ".tiff",
             ".tif",
             ".mov",
