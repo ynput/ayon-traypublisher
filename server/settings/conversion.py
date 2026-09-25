@@ -1,8 +1,37 @@
 import logging
 from typing import Any
 
+from semver import VersionInfo
 
 logger = logging.getLogger(__name__)
+
+
+def _convert_csv_ingest_0_4_6(overrides):
+    csv_ingest_settings = overrides.get("create", {}).get("IngestCSV", {})
+    if not csv_ingest_settings:
+        return
+
+    presets = csv_ingest_settings.get("presets", [])
+
+    for preset in presets:
+        columns = preset["columns_config"]["columns"]
+        for column_conf in columns:
+            column_type = column_conf["type"]
+            default_value = column_conf.get("default")
+            processing_type = column_conf.get("processing_type",
+                                              "processing_data")
+
+            if column_conf.get("validation_pattern") == r"^(\d)$":
+                column_conf["validation_pattern"] = r"^(\d+)$"
+
+            if processing_type != "processing_data":
+                continue
+
+            if (
+                column_type in ["number", "decimal"]
+                and str(default_value) in ("0", "0.0")
+            ):
+                column_conf["default"] = ""
 
 
 def _convert_csv_ingest_0_3_9(overrides):
@@ -54,6 +83,8 @@ def _convert_editorial_0_4_0(overrides):
     if "product_base_type_presets" in editorial_simple:
         presets = editorial_simple.pop("product_base_type_presets")
         for preset in presets:
+            if "product_type" not in preset:
+                break
             preset["product_base_type"] = preset.pop("product_type")
         editorial_simple["product_base_type_presets"] = presets
 
@@ -65,4 +96,8 @@ def convert_settings_overrides(
     _convert_csv_ingest_0_3_9(overrides)
     _convert_simple_creators_0_4_0(overrides)
     _convert_editorial_0_4_0(overrides)
+
+    if VersionInfo.parse(source_version) < (0, 4, 6):
+        _convert_csv_ingest_0_4_6(overrides)
+
     return overrides
