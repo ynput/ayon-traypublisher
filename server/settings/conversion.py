@@ -18,7 +18,8 @@ def _convert_csv_ingest_0_4_6(overrides):
         for column_conf in columns:
             column_type = column_conf["type"]
             default_value = column_conf.get("default")
-            processing_type = column_conf["processing_type"]
+            processing_type = column_conf.get("processing_type",
+                                              "processing_data")
 
             if column_conf.get("validation_pattern") == r"^(\d)$":
                 column_conf["validation_pattern"] = r"^(\d+)$"
