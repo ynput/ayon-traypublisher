@@ -53,6 +53,10 @@ class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder - 0.49
     families = ["simple.instance"]
     hosts = ["traypublisher"]
+    settings_category = "traypublisher"
+
+    # Settings
+    use_reviewable_as_thumbnail_source = True
 
     def process(self, instance):
         instance_label = instance.data["name"]
@@ -214,6 +218,8 @@ class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
             return
 
         item_dir = review_file_item["directory"]
+        first_filepath = os.path.join(item_dir, filenames[0])
+
         filepaths = {
             os.path.join(item_dir, filename)
             for filename in filenames
@@ -243,6 +249,14 @@ class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
 
         if "review" not in instance.data["families"]:
             instance.data["families"].append("review")
+
+        # Without it 'ExtractThumbnail' (ayon-core) makes the thumbnail
+        #   from the transcoded review.
+        if (
+            self.use_reviewable_as_thumbnail_source
+            and not instance.data.get("thumbnailSource")
+        ):
+            instance.data["thumbnailSource"] = first_filepath
 
         review_representation["tags"].append("review")
 
