@@ -17,6 +17,10 @@ class CollectMovieBatch(
     order = pyblish.api.CollectorOrder
 
     hosts = ["traypublisher"]
+    settings_category = "traypublisher"
+
+    # Settings
+    use_reviewable_as_thumbnail_source = True
 
     def process(self, instance):
         if instance.data.get("creator_identifier") != "render_movie_batch":
@@ -40,7 +44,10 @@ class CollectMovieBatch(
         if creator_attributes["add_review_family"]:
             repre["tags"].append("review")
             instance.data["families"].append("review")
-            if not instance.data.get("thumbnailSource"):
+            if (
+                self.use_reviewable_as_thumbnail_source
+                and not instance.data.get("thumbnailSource")
+            ):
                 instance.data["thumbnailSource"] = file_url
 
         instance.data["source"] = file_url

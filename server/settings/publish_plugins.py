@@ -89,6 +89,14 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
             title="Collect Simple Instance Representations",
         )
     )
+    CollectMovieBatch: CollectThumbnailSourceModel = SettingsField(
+        default_factory=CollectThumbnailSourceModel,
+        title="Collect Movie Batch Files",
+    )
+    CollectPSDWorkfile: CollectThumbnailSourceModel = SettingsField(
+        default_factory=CollectThumbnailSourceModel,
+        title="Collect PSD Workfile + Image Files",
+    )
     ValidateFrameRange: ValidateFrameRangeModel = SettingsField(
         title="Validate Frame Range",
         default_factory=ValidateFrameRangeModel,
@@ -118,6 +126,12 @@ DEFAULT_PUBLISH_PLUGINS = {
         "active": True
     },
     "CollectSimpleInstanceRepresentations": {
+        "use_reviewable_as_thumbnail_source": True
+    },
+    "CollectMovieBatch": {
+        "use_reviewable_as_thumbnail_source": True
+    },
+    "CollectPSDWorkfile": {
         "use_reviewable_as_thumbnail_source": True
     },
     "ValidateFrameRange": {
