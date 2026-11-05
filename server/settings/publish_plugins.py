@@ -18,9 +18,10 @@ class ValidateFrameRangeModel(ValidatePluginModel):
 
 
 class CollectThumbnailSourceModel(BaseSettingsModel):
-    """Use the first file of the reviewable as the thumbnail source.
+    """Use the reviewable file as the thumbnail source.
 
-    Enabled: the thumbnail is made from the reviewable file as it is,
+    Enabled: the thumbnail is made from the reviewable file (its first
+    file for a sequence) as it is,
     before any transcoding, resized by 'Extract Thumbnail From Source'
     (ayon-core). Disabled: the thumbnail is made by 'Extract Thumbnail'
     (ayon-core) from the transcoded review, so it follows the colorspace
