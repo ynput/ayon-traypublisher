@@ -17,6 +17,9 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
     """Validate representation colorspaces"""
 
     label = "Validate representation colorspace"
+    # Display/view keys per config path, kept between instances as AYON
+    #   Core does not cache the views (it can run a subprocess per call)
+    _config_views_cache = {}
     order = pyblish.api.ValidatorOrder
     hosts = ["traypublisher"]
     families = ["render", "plate", "reference", "image", "online"]
@@ -24,7 +27,7 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
     def process(self, instance):
 
         config_colorspaces = {}  # cache of colorspaces per config path
-        config_views = {}  # cache of display/view keys per config path
+        config_views = self._config_views_cache
         for repre in instance.data.get("representations", {}):
 
             colorspace_data = repre.get("colorspaceData", {})
@@ -49,12 +52,20 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
                     description=message
                 )
 
+            if display and view and colorspace:
+                message = (
+                    f"Representation '{repre['name']}' colorspace data has "
+                    f"colorspace '{colorspace}' and display '{display}' with "
+                    f"view '{view}'. It must have a colorspace or a display "
+                    "and view, not both."
+                )
+                raise PublishValidationError(
+                    title="Representation colorspace",
+                    message=message,
+                    description=message
+                )
+
             if display and view:
-                if colorspace:
-                    self.log.debug(
-                        f"Representation '{repre['name']}' has display and "
-                        f"view set, colorspace '{colorspace}' is ignored."
-                    )
                 self._validate_display_view(
                     repre["name"], config_path, display, view, config_views
                 )
