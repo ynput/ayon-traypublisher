@@ -205,6 +205,29 @@ class MissingFrameRangeValuesPrevalidationItemModel(BaseSettingsModel):
     )
 
 
+def _csv_video_readable_mode_enum() -> list:
+    return [
+        {"label": "Disabled", "value": "disabled"},
+        {"label": "Raise Error", "value": "error"},
+        {"label": "Ignore and report", "value": "ignore"},
+    ]
+
+
+class UnreadableVideosPrevalidationItemModel(BaseSettingsModel):
+    """Prevalidation item model.
+
+    Runs `ffprobe` on every ingested video before extraction starts. It is
+    heavy for big batches, so it is disabled by default.
+    """
+    _layout = "expanded"
+
+    mode: str = SettingsField(
+        title="Unreadable Videos (ffprobe)",
+        default="disabled",
+        enum_resolver=_csv_video_readable_mode_enum,
+    )
+
+
 class PrevalidationModel(BaseSettingsModel):
     """Prevalidation model."""
 
@@ -227,6 +250,10 @@ class PrevalidationModel(BaseSettingsModel):
     missing_frame_range_values: MissingFrameRangeValuesPrevalidationItemModel = SettingsField(  # noqa
         title="Missing Frame Range Values",
         default_factory=MissingFrameRangeValuesPrevalidationItemModel,
+    )
+    unreadable_videos: UnreadableVideosPrevalidationItemModel = SettingsField(
+        title="Unreadable Videos (ffprobe)",
+        default_factory=UnreadableVideosPrevalidationItemModel,
     )
 
 
@@ -613,6 +640,7 @@ DEFAULT_CREATORS = {
                     "folder_not_exists": {"mode": "error"},
                     "folder_name_duplicity": {"mode": "error"},
                     "missing_frame_range_values": {"mode": "error"},
+                    "unreadable_videos": {"mode": "disabled"},
                 },
                 "columns_config": {
                     "csv_delimiter": ",",
