@@ -276,7 +276,7 @@ class CollectCSVIngestPrevalidationReport(
         if rows:
             self.log.debug(
                 f"Checked {len(filepaths)} video file(s) of "
-                f"'{product_name}', {len(rows)} unreadable."
+                f"'{product_name}', {len(rows)}/{len(filepaths)} unreadable."
             )
         else:
             self.log.debug(
