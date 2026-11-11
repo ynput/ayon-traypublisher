@@ -207,23 +207,24 @@ class MissingFrameRangeValuesPrevalidationItemModel(BaseSettingsModel):
 
 def _csv_video_readable_mode_enum() -> list:
     return [
-        {"label": "Disabled", "value": "disabled"},
+        {"label": "Skip", "value": "skip"},
         {"label": "Raise Error", "value": "error"},
         {"label": "Ignore and report", "value": "ignore"},
     ]
 
 
-class UnreadableVideosPrevalidationItemModel(BaseSettingsModel):
+class ReadableVideosPrevalidationItemModel(BaseSettingsModel):
     """Prevalidation item model.
 
-    Runs `ffprobe` on every ingested video before extraction starts. It is
-    heavy for big batches, so it is disabled by default.
+    Checks that every ingested video can be read by `ffprobe` before
+    extraction starts. It is heavy for big batches, so it is skipped by
+    default.
     """
     _layout = "expanded"
 
     mode: str = SettingsField(
-        title="Unreadable Videos (ffprobe)",
-        default="disabled",
+        title="Readable Videos (ffprobe)",
+        default="skip",
         enum_resolver=_csv_video_readable_mode_enum,
     )
 
@@ -251,9 +252,9 @@ class PrevalidationModel(BaseSettingsModel):
         title="Missing Frame Range Values",
         default_factory=MissingFrameRangeValuesPrevalidationItemModel,
     )
-    unreadable_videos: UnreadableVideosPrevalidationItemModel = SettingsField(
-        title="Unreadable Videos (ffprobe)",
-        default_factory=UnreadableVideosPrevalidationItemModel,
+    readable_videos: ReadableVideosPrevalidationItemModel = SettingsField(
+        title="Readable Videos (ffprobe)",
+        default_factory=ReadableVideosPrevalidationItemModel,
     )
 
 
@@ -640,7 +641,7 @@ DEFAULT_CREATORS = {
                     "folder_not_exists": {"mode": "error"},
                     "folder_name_duplicity": {"mode": "error"},
                     "missing_frame_range_values": {"mode": "error"},
-                    "unreadable_videos": {"mode": "disabled"},
+                    "readable_videos": {"mode": "skip"},
                 },
                 "columns_config": {
                     "csv_delimiter": ",",
