@@ -140,8 +140,7 @@ class CollectCSVIngestPrevalidationReport(
                     wrongrange_rows.append(report_row)
                     failing_validation = True
 
-            unreadable_mode = prevalidation.get(
-                "unreadable_videos", {}).get("mode", "disabled")
+            unreadable_mode = prevalidation["unreadable_videos"]["mode"]
             if unreadable_mode in {"error", "ignore"}:
                 report_rows = self._unreadable_videos_check(instance)
                 if report_rows and unreadable_mode == "ignore":
