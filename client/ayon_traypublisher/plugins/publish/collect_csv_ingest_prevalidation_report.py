@@ -293,8 +293,11 @@ class CollectCSVIngestPrevalidationReport(
             data = get_ffprobe_data(filepath, self.log)
         except Exception as exc:
             return str(exc) or exc.__class__.__name__
-        if data.get("error"):
-            return str(data["error"].get("string") or data["error"])
+        error = data.get("error")
+        if error:
+            if isinstance(error, dict):
+                return str(error.get("string") or error)
+            return str(error)
         if not any(
             stream.get("codec_type") == "video"
             for stream in data.get("streams") or []
