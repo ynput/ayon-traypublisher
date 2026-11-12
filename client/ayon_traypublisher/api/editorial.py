@@ -3,7 +3,87 @@ from copy import deepcopy
 
 import ayon_api
 
-from ayon_core.pipeline.create import CreatorError
+from ayon_core.pipeline.create import (
+    CreatorError,
+    TaskNotSetError,
+    get_product_name,
+)
+
+
+def upper_first(value):
+    """Upper-case only the first character, keep the rest as it is.
+
+    Unlike 'str.capitalize' it does not lower-case the remaining
+    characters, so "EditReference" stays "EditReference".
+
+    Args:
+        value (str): Value to change.
+
+    Returns:
+        str: Value with upper-cased first character.
+    """
+    return value[:1].upper() + value[1:]
+
+
+def get_editorial_product_name(
+    creator,
+    folder_path,
+    product_base_type,
+    variant,
+    task_name=None,
+):
+    """Get product name of editorial instance using product name templates.
+
+    The folder of a new shot and its tasks do not exist yet when editorial
+    instances are created. Folder entity is faked from the folder path
+    in that case and the task is only known by name.
+
+    If the template requires a task that is not known (as for shot
+    instances) default product name '<product base type><Variant>' is
+    used and warning is logged. Other template errors are raised, they
+    are settings mistakes that should be visible.
+
+    Args:
+        creator (Creator): Creator which creates the instance.
+        folder_path (str): Folder path of the instance.
+        product_base_type (str): Product base type.
+        variant (str): Variant, case is kept.
+        task_name (Optional[str]): Task name of the instance.
+
+    Returns:
+        str: Product name.
+    """
+    folder_entity = None
+    if folder_path:
+        folder_entity = creator.create_context.get_folder_entity(folder_path)
+        if folder_entity is None:
+            folder_entity = {
+                "name": folder_path.rstrip("/").rsplit("/", 1)[-1],
+                "folderType": "",
+            }
+
+    task_entity = None
+    if task_name:
+        task_entity = {"name": task_name, "taskType": ""}
+
+    try:
+        return str(get_product_name(
+            creator.project_name,
+            folder_entity,
+            task_entity,
+            product_base_type,
+            product_base_type,
+            creator.create_context.host_name,
+            variant,
+            project_settings=creator.project_settings,
+        ))
+    except TaskNotSetError:
+        product_name = f"{product_base_type}{upper_first(variant)}"
+        creator.log.warning(
+            "Product name template requires a task, which is not known for"
+            f" '{product_base_type}'. Using '{product_name}'."
+        )
+        return product_name
 
 
 class ShotMetadataSolver:
