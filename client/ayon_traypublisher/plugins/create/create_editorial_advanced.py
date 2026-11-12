@@ -21,7 +21,11 @@ from ayon_core.lib.transcoding import (
     VIDEO_EXTENSIONS,
 )
 from ayon_core.pipeline import CreatedInstance, CreatorError
-from ayon_traypublisher.api.editorial import ShotMetadataSolver
+from ayon_traypublisher.api.editorial import (
+    ShotMetadataSolver,
+    get_editorial_product_name,
+    upper_first,
+)
 from ayon_traypublisher.api.plugin import (
     HiddenTrayPublishCreator,
     TrayPublishCreator,
@@ -339,6 +343,7 @@ class EditorialAdvancedCreator(TrayPublishCreator):
     product_base_type = "editorial"
     product_type = product_base_type
     identifier = "editorial_advanced"
+    use_product_name_templates = False
     default_variants = [
         "main"
     ]
@@ -371,6 +376,9 @@ or updating already created. Publishing will create OTIO file.
         self.product_base_type_presets = creator_settings[
             "product_base_type_advanced_presets"]
         self.default_variants = creator_settings["default_variants"]
+        self.use_product_name_templates = creator_settings.get(
+            "use_product_name_templates", False
+        )
 
     def create(self, product_name, instance_data, pre_create_data):
         allowed_product_base_type_presets = (
@@ -983,6 +991,7 @@ or updating already created. Publishing will create OTIO file.
                 instance_data,
                 pres_product_base_type,
                 product_name=product_name,
+                task_name=pres_task,
             )
 
             # Add review family and other data
@@ -1052,10 +1061,14 @@ or updating already created. Publishing will create OTIO file.
             CreatedInstance: creator instance object
         """
         instance_data = deepcopy(base_instance_data)
+        if self.use_product_name_templates:
+            shot_kwargs = {"variant": "Main"}
+        else:
+            shot_kwargs = {"product_name": "shotMain"}
         label = self._set_product_data_to_instance(
             instance_data,
             "shot",
-            product_name="shotMain",
+            **shot_kwargs,
         )
         instance_data["otioClip"] = otio.adapters.write_to_string(otio_clip)
         creator = self.create_context.creators["editorial_shot_advanced"]
@@ -1075,29 +1088,52 @@ or updating already created. Publishing will create OTIO file.
         product_base_type,
         variant=None,
         product_name=None,
+        task_name=None,
     ):
         """Product name maker
+
+        With 'use_product_name_templates' enabled the product name is
+        created from product name templates and the variant keeps its case.
 
         Args:
             instance_data (dict): instance data
             product_base_type (str): product base type
             variant (Optional[str]): product variant
                 default is "main"
-            product_name (Optional[str]): product name
+            product_name (Optional[str]): name found in source files,
+                used to get the variant if the variant is not passed
+            task_name (Optional[str]): task name of the instance
 
         Returns:
             str: label string
         """
-        if not variant:
-            variant = "main"
-            if product_name:
-                variant = product_name.split(product_base_type)[-1].lower()
-
         folder_path = instance_data["creator_attributes"]["folderPath"]
 
-        # product name
-        if not product_name:
-            product_name = f"{product_base_type}{variant.capitalize()}"
+        if self.use_product_name_templates:
+            if not variant:
+                variant = "Main"
+                if product_name:
+                    # Split only on first occurrence, the variant may
+                    #   contain the product base type
+                    variant = (
+                        product_name.split(product_base_type, 1)[-1]
+                        or variant
+                    )
+            product_name = get_editorial_product_name(
+                self,
+                folder_path,
+                product_base_type,
+                variant,
+                task_name,
+            )
+        else:
+            if not variant:
+                variant = "main"
+                if product_name:
+                    variant = product_name.split(product_base_type)[-1].lower()
+
+            if not product_name:
+                product_name = f"{product_base_type}{variant.capitalize()}"
         label = f"{folder_path} {product_name}"
 
         instance_data.update(
@@ -1362,10 +1398,12 @@ or updating already created. Publishing will create OTIO file.
         """
         output = {}
         for item in self.product_base_type_presets:
-            product_name = (
-                f"{item['product_base_type']}"
-                f"{(item['variant']).capitalize()}"
-            )
+            variant = item["variant"]
+            if self.use_product_name_templates:
+                variant = upper_first(variant)
+            else:
+                variant = variant.capitalize()
+            product_name = f"{item['product_base_type']}{variant}"
             output[product_name] = item
         return output
 
