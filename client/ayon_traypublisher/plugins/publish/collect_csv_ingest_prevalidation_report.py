@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import os
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
 
 import pyblish.api
+from ayon_core.lib import get_ffprobe_data
+from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
     PublishError,
 )
+
+
+_VIDEO_EXTENSIONS = {ext.lower().lstrip(".") for ext in VIDEO_EXTENSIONS}
+_FFPROBE_WORKERS = 4
 
 
 class CollectCSVIngestPrevalidationReport(
@@ -34,6 +42,11 @@ class CollectCSVIngestPrevalidationReport(
        - **Wrong Frame Range** – Flags instances where the number of
          ingested files does not match the frame range duration defined
          in the database (when the preset mode is set to ``"ignore"``).
+       - **Readable Videos** – Runs ``ffprobe`` on the video files of
+         each instance, so unreadable ones are found before extraction
+         starts. With mode ``"error"`` publishing stops with the list of
+         all unreadable files, with ``"ignore"`` the instances are removed
+         and reported. Skipped by default, it is heavy for big batches.
 
     Instances that fail any of the above validations are removed from the
     publish context and their failure details are recorded in the report.
@@ -47,6 +60,7 @@ class CollectCSVIngestPrevalidationReport(
 
     def process(self, context: pyblish.api.Context):
         report_per_csv_ingest = defaultdict(dict)
+        unreadable_errors: list[str] = []
         # at first we need to get csv_ingest_file instance and distribute
         # its csvReportData from creating phase to context data
         for instance in context:
@@ -126,9 +140,42 @@ class CollectCSVIngestPrevalidationReport(
                     wrongrange_rows.append(report_row)
                     failing_validation = True
 
+            readable_mode = prevalidation["readable_videos"]["mode"]
+            if readable_mode in {"error", "ignore"}:
+                report_rows = self._unreadable_videos_check(
+                    instance, readable_mode)
+                if report_rows and readable_mode == "ignore":
+                    unreadable_rows: list[str] = report_data.setdefault(
+                        "Unreadable Videos", []
+                    )
+                    unreadable_rows.extend(report_rows)
+                    failing_validation = True
+                elif report_rows:
+                    unreadable_errors.extend(report_rows)
+
             # Skip publishing if ignored with report is chosen
             if failing_validation:
                 context.remove(instance)
+
+        if unreadable_errors:
+            # all unreadable videos are reported at once, before any
+            # extraction work is done
+            raise PublishError(
+                f"Detected {len(unreadable_errors)} broken video file(s).",
+                title="Broken video files",
+                description=(
+                    "## Broken video files detected\n"
+                    "Some of the ingested video files cannot be read by "
+                    "`ffprobe`, so publishing was stopped before any "
+                    "extraction started.\n\n"
+                    "Replace or remove the broken files, or set the preset "
+                    "`Readable Videos (ffprobe)` to `Ignore and report` to "
+                    "publish the rest.\n\n"
+                    "The affected file paths are listed in the details "
+                    "and in the publish log."
+                ),
+                detail="\n".join(unreadable_errors),
+            )
 
         self.log.debug(
             f"Collected {len(report_per_csv_ingest)} CSV ingest "
@@ -180,6 +227,82 @@ class CollectCSVIngestPrevalidationReport(
                 f" {instance_context_data}"
             )
 
+        return ""
+
+    def _unreadable_videos_check(
+        self,
+        instance: pyblish.api.Instance,
+        mode: str,
+    ) -> list[str]:
+        """Find video files of the instance that ffprobe cannot read.
+
+        Each unreadable file is logged, as an error for mode ``"error"``
+        and as a warning for mode ``"ignore"``, so it shows in the
+        publish report.
+
+        Returns:
+            list[str]: One report row per unreadable file.
+        """
+        # Skip the instance if is not active by data on the instance
+        if not self.is_active(instance.data):
+            return []
+
+        filepaths = []
+        for repre in instance.data.get("representations") or []:
+            ext = str(repre.get("ext") or "").lower().lstrip(".")
+            if ext not in _VIDEO_EXTENSIONS:
+                continue
+            files = repre["files"]
+            if isinstance(files, str):
+                files = [files]
+            staging_dir = repre["stagingDir"]
+            filepaths.extend(os.path.join(staging_dir, name) for name in files)
+
+        if not filepaths:
+            return []
+
+        with ThreadPoolExecutor(max_workers=_FFPROBE_WORKERS) as executor:
+            results = list(executor.map(self._ffprobe_problem, filepaths))
+
+        product_name = instance.data.get("productName")
+        log_method = self.log.error if mode == "error" else self.log.warning
+        rows = []
+        for filepath, problem in zip(filepaths, results):
+            if problem:
+                row = f"File '{filepath}' cannot be read by ffprobe: {problem}"
+                log_method(row)
+                rows.append(row)
+
+        if rows:
+            self.log.debug(
+                f"Checked {len(filepaths)} video file(s) of "
+                f"'{product_name}', {len(rows)}/{len(filepaths)} unreadable."
+            )
+        else:
+            self.log.debug(
+                f"Checked {len(filepaths)} video file(s) of "
+                f"'{product_name}'. All readable."
+            )
+        return rows
+
+    def _ffprobe_problem(self, filepath: str) -> str:
+        """Return the reason ffprobe cannot read the file, else empty."""
+        if not os.path.isfile(filepath):
+            return "file does not exist"
+        try:
+            data = get_ffprobe_data(filepath, self.log)
+        except Exception as exc:
+            return str(exc) or exc.__class__.__name__
+        error = data.get("error")
+        if error:
+            if isinstance(error, dict):
+                return str(error.get("string") or error)
+            return str(error)
+        if not any(
+            stream.get("codec_type") == "video"
+            for stream in data.get("streams") or []
+        ):
+            return "no video stream found"
         return ""
 
     def _wrong_framerange_check(
