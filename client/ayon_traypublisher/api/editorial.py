@@ -25,6 +25,26 @@ def upper_first(value):
     return value[:1].upper() + value[1:]
 
 
+def _get_planned_task_type(creator, task_name):
+    """Get type of a task that will be added to a created shot.
+
+    Tasks are added to shots from 'Add tasks to shot' in the settings of
+    the creator, which defines the type of each task.
+
+    Args:
+        creator (Creator): Creator which creates the instance.
+        task_name (str): Task name.
+
+    Returns:
+        str: Task type, empty if the task is not among the added tasks.
+    """
+    solver = getattr(creator, "_shot_metadata_solver", None)
+    for task_item in getattr(solver, "shot_add_tasks", None) or []:
+        if task_item["name"] == task_name:
+            return task_item["task_type"]
+    return ""
+
+
 def get_editorial_product_name(
     creator,
     folder_path,
@@ -36,7 +56,8 @@ def get_editorial_product_name(
 
     The folder of a new shot and its tasks do not exist yet when editorial
     instances are created. Folder entity is faked from the folder path
-    in that case and the task is only known by name.
+    in that case and the task type is taken from the tasks that are added
+    to created shots.
 
     If the template requires a task that is not known (as for shot
     instances) default product name '<product base type><Variant>' is
@@ -64,7 +85,10 @@ def get_editorial_product_name(
 
     task_entity = None
     if task_name:
-        task_entity = {"name": task_name, "taskType": ""}
+        task_entity = {
+            "name": task_name,
+            "taskType": _get_planned_task_type(creator, task_name),
+        }
 
     try:
         return str(get_product_name(

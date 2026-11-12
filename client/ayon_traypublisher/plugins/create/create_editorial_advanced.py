@@ -1113,8 +1113,11 @@ or updating already created. Publishing will create OTIO file.
             if not variant:
                 variant = "Main"
                 if product_name:
+                    # Split only on first occurrence, the variant may
+                    #   contain the product base type
                     variant = (
-                        product_name.split(product_base_type)[-1] or variant
+                        product_name.split(product_base_type, 1)[-1]
+                        or variant
                     )
             product_name = get_editorial_product_name(
                 self,
