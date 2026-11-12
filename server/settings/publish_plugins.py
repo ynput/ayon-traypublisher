@@ -17,6 +17,24 @@ class ValidateFrameRangeModel(ValidatePluginModel):
      'my_folder_to_publish.mov')"""
 
 
+class CollectThumbnailSourceModel(BaseSettingsModel):
+    """Use the reviewable file as the thumbnail source.
+
+    Enabled: the thumbnail is made from the reviewable file (its first
+    file for a sequence) as it is,
+    before any transcoding, resized by 'Extract Thumbnail From Source'
+    (ayon-core). Disabled: the thumbnail is made by 'Extract Thumbnail'
+    (ayon-core) from the transcoded review, so it follows the colorspace
+    conversion. It is then made only for the product types that plugin
+    accepts, at its own size settings. An explicit thumbnail dropped in
+    the publisher is always used.
+    """
+    use_reviewable_as_thumbnail_source: bool = SettingsField(
+        True,
+        title="Use reviewable as thumbnail source",
+    )
+
+
 class ExtractEditorialPckgFFmpegModel(BaseSettingsModel):
     video_filters: list[str] = SettingsField(
         default_factory=list,
@@ -65,6 +83,20 @@ class TrayPublisherPublishPlugins(BaseSettingsModel):
         default_factory=ValidatePluginModel,
         title="Collect Original Sequence Frame Data",
     )
+    CollectSimpleInstanceRepresentations: CollectThumbnailSourceModel = (
+        SettingsField(
+            default_factory=CollectThumbnailSourceModel,
+            title="Collect Simple Instance Representations",
+        )
+    )
+    CollectMovieBatch: CollectThumbnailSourceModel = SettingsField(
+        default_factory=CollectThumbnailSourceModel,
+        title="Collect Movie Batch Files",
+    )
+    CollectPSDWorkfile: CollectThumbnailSourceModel = SettingsField(
+        default_factory=CollectThumbnailSourceModel,
+        title="Collect PSD Workfile + Image Files",
+    )
     ValidateFrameRange: ValidateFrameRangeModel = SettingsField(
         title="Validate Frame Range",
         default_factory=ValidateFrameRangeModel,
@@ -92,6 +124,15 @@ DEFAULT_PUBLISH_PLUGINS = {
         "enabled": True,
         "optional": True,
         "active": True
+    },
+    "CollectSimpleInstanceRepresentations": {
+        "use_reviewable_as_thumbnail_source": True
+    },
+    "CollectMovieBatch": {
+        "use_reviewable_as_thumbnail_source": True
+    },
+    "CollectPSDWorkfile": {
+        "use_reviewable_as_thumbnail_source": True
     },
     "ValidateFrameRange": {
         "enabled": True,

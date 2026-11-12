@@ -18,6 +18,10 @@ class CollectPSDWorkfile(
 
     hosts = ["traypublisher"]
     families = ["workfile", "image"]
+    settings_category = "traypublisher"
+
+    # Settings
+    use_reviewable_as_thumbnail_source = True
 
     def process(self, instance):
         if "psd_workfile_image" not in instance.data.get("creator_identifier"):
@@ -44,7 +48,10 @@ class CollectPSDWorkfile(
         if instance.data["productBaseType"] == "image" and add_review_family:
             repre["tags"].append("review")
             instance.data["families"].append("review")
-            if not instance.data.get("thumbnailSource"):
+            if (
+                self.use_reviewable_as_thumbnail_source
+                and not instance.data.get("thumbnailSource")
+            ):
                 instance.data["thumbnailSource"] = file_url
 
         instance.data["source"] = file_url
