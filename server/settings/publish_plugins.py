@@ -12,9 +12,8 @@ class ValidatePluginModel(BaseSettingsModel):
 
 
 class ValidateFrameRangeModel(ValidatePluginModel):
-    """Allows to publish multiple video files in one go. Name of matching
-     folder is parsed from file names ('folder.mov', 'folder_v001.mov',
-     'my_folder_to_publish.mov')"""
+    """Validates the frame range of image sequences against the parent
+    folder/task range."""
 
 
 class ExtractEditorialPckgFFmpegModel(BaseSettingsModel):
