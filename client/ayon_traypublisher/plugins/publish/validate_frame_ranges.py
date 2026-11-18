@@ -21,10 +21,20 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
     order = ValidateContentsOrder
 
     optional = True
-    # published data might be sequence (.mov, .mp4) in that counting files
+    # published data might be video (.mov, .mp4) in that counting files
     # doesn't make sense
-    check_extensions = ["exr", "dpx", "jpg", "jpeg", "png", "tiff", "tga",
-                        "gif", "svg", "sxr"]
+    check_extensions = [
+        "exr",
+        "dpx",
+        "jpg",
+        "jpeg",
+        "png",
+        "tiff",
+        "tga",
+        "gif",
+        "svg",
+        "sxr",
+    ]
     skip_timelines_check = []  # skip for specific task names (regex)
 
     def process(self, instance):
@@ -45,7 +55,8 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
         if (self.skip_timelines_check and
             any(re.search(pattern, instance.data["task"])
                 for pattern in self.skip_timelines_check)):
-            self.log.info("Skipping for {} task".format(instance.data["task"]))
+            self.log.info(f"Skipping for {instance.data['task']} task")
+            return
 
         # Use attributes from task entity if set, otherwise from folder entity
         entity = (
@@ -65,23 +76,11 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
             self.log.info("No representations, skipping.")
             return
 
-        frames: int = 0
         for repre in repres:
-            ext = repre['ext'].replace(".", '')
+            ext = repre.get("ext", "").lstrip(".")
 
-            if not ext or ext.lower() not in {
-                "exr",
-                "dpx",
-                "jpg",
-                "jpeg",
-                "png",
-                "tiff",
-                "tga",
-                "gif",
-                "svg",
-                "sxr"
-            }:
-                self.log.debug("Cannot check for extension {}".format(ext))
+            if not ext or ext.lower() not in self.check_extensions:
+                self.log.debug(f"Cannot check for extension '{ext}'.")
                 continue
 
             files = repre["files"]
@@ -89,18 +88,17 @@ class ValidateFrameRange(OptionalPyblishPluginMixin,
                 continue
             frames = len(files)
 
-            msg = (
-                f"Frame duration from database: '{int(duration)}' doesn't "
-                f"match number of files: '{frames}'. Please change frame "
-                "range for folder/task or limit number of files."
-            )
-
-            formatting_data = {"duration": duration, "found": frames}
             if frames != duration:
+                msg = (
+                    f"Frame duration from database: '{int(duration)}' doesn't "
+                    f"match number of files: '{frames}'. Please change frame "
+                    "range for folder/task or limit number of files."
+                )
+                formatting_data = {"duration": duration, "found": frames}
                 raise PublishXmlValidationError(
                     self, msg, formatting_data=formatting_data
                 )
 
-        self.log.debug(
-            f"Valid ranges expected '{int(duration)}' - found '{frames}'"
-        )
+            self.log.debug(
+                f"Valid ranges expected '{int(duration)}' - found '{frames}'."
+            )
