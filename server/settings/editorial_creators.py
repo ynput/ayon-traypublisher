@@ -250,6 +250,18 @@ class ProductBaseTypeAdvancedPresetItem(BaseSettingsModel):
 
 class EditorialSimpleCreatorPlugin(BaseSettingsModel):
     enabled: bool = True
+    use_product_name_templates: bool = SettingsField(
+        False,
+        title="Use product name templates",
+        description=(
+            "Create product names with the product name templates from "
+            "Core settings and keep the case of the variant. When "
+            "disabled, the product name is the product base type with "
+            "the capitalized variant, e.g. 'review' + 'EditReference' "
+            "gives 'reviewEditreference'. Changing this may change the "
+            "product names of new publishes."
+        ),
+    )
     default_variants: list[str] = SettingsField(
         default_factory=list,
         title="Default Variants"
@@ -300,6 +312,18 @@ class EditorialSimpleCreatorPlugin(BaseSettingsModel):
 
 class EditorialAdvancedCreatorPlugin(BaseSettingsModel):
     enabled: bool = True
+    use_product_name_templates: bool = SettingsField(
+        False,
+        title="Use product name templates",
+        description=(
+            "Create product names with the product name templates from "
+            "Core settings and keep the case of the variant. When "
+            "disabled, the product name is the product base type with "
+            "the capitalized variant, e.g. 'review' + 'EditReference' "
+            "gives 'reviewEditreference'. Changing this may change the "
+            "product names of new publishes."
+        ),
+    )
     default_variants: list[str] = SettingsField(
         default_factory=list, title="Default Variants"
     )
@@ -372,6 +396,7 @@ class TraypublisherEditorialCreatorPlugins(BaseSettingsModel):
 DEFAULT_EDITORIAL_CREATORS = {
     "editorial_simple": {
         "enabled": True,
+        "use_product_name_templates": False,
         "default_variants": ["Main"],
         "clip_name_tokenizer": [
             {"name": "_sequence_", "regex": "(sc\\d{3})"},
@@ -422,6 +447,7 @@ DEFAULT_EDITORIAL_CREATORS = {
     },
     "editorial_advanced": {
         "enabled": True,
+        "use_product_name_templates": False,
         "default_variants": ["Main"],
         "clip_name_tokenizer": [
             {"name": "_sequence_", "regex": "(\\d{4})(?=_\\d{4})"},

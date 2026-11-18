@@ -9,7 +9,8 @@ from ayon_traypublisher.api.plugin import (
     HiddenTrayPublishCreator
 )
 from ayon_traypublisher.api.editorial import (
-    ShotMetadataSolver
+    ShotMetadataSolver,
+    get_editorial_product_name,
 )
 from ayon_core.pipeline import CreatedInstance
 from ayon_core.lib import (
@@ -273,6 +274,7 @@ or updating already created. Publishing will create OTIO file.
 """
     icon = "fa.file"
     product_base_type_presets = []
+    use_product_name_templates = False
 
     def __init__(self, *args, **kwargs):
         self._shot_metadata_solver = ShotMetadataSolver(self.log)
@@ -294,6 +296,9 @@ or updating already created. Publishing will create OTIO file.
         )
         self.product_base_type_presets = (
             creator_settings["product_base_type_presets"]
+        )
+        self.use_product_name_templates = creator_settings.get(
+            "use_product_name_templates", False
         )
         default_variants = creator_settings.get("default_variants")
         if default_variants:
@@ -711,10 +716,21 @@ or updating already created. Publishing will create OTIO file.
         # get variant name from preset or from inheritance
         _variant_name = product_base_type_preset.get("variant") or variant_name
 
-        # product name
-        product_name = "{}{}".format(
-            product_base_type, _variant_name.capitalize()
-        )
+        if self.use_product_name_templates:
+            task_name = None
+            if product_base_type != "shot":
+                task_name = product_base_type_preset.get("default_task")
+            product_name = get_editorial_product_name(
+                self,
+                folder_path,
+                product_base_type,
+                _variant_name,
+                task_name,
+            )
+        else:
+            product_name = "{}{}".format(
+                product_base_type, _variant_name.capitalize()
+            )
         label = f"{folder_path} {product_name}"
 
         instance_data.update({
