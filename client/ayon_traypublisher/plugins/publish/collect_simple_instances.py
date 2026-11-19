@@ -214,6 +214,7 @@ class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
             return
 
         item_dir = review_file_item["directory"]
+        first_filepath = os.path.join(item_dir, filenames[0])
         filepaths = {
             os.path.join(item_dir, filename)
             for filename in filenames
@@ -245,6 +246,9 @@ class CollectSimpleInstanceRepresentations(pyblish.api.InstancePlugin):
             instance.data["families"].append("review")
 
         review_representation["tags"].append("review")
+
+        if not instance.data.get("traypublisherThumbnailSource"):
+            instance.data["traypublisherThumbnailSource"] = first_filepath
 
         # Adding "review" to representation name since it can clash with main
         # representation if they share the same extension.
