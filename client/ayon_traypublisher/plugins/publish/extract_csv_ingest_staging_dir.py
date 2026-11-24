@@ -1,12 +1,17 @@
 import os
 import platform
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 import pyblish.api
 
 from ayon_core.lib import create_hard_link
+from ayon_core.lib.file_transaction import wait_for_future_errors
 from ayon_core.pipeline import publish
 from ayon_core.pipeline.publish.lib import add_repre_files_for_cleanup
+
+# tried in this order, each one when the previous fails
+TRANSFER_METHODS = ("hardlink", "symlink", "copy")
 
 
 class ExtractCSVIngestStagingDir(publish.Extractor):
@@ -27,6 +32,10 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
     copied. To keep a large ingest from being copied to a local temp
     drive, set a custom staging dir profile on the source volume:
     `ayon+settings://core/tools/publish/custom_staging_dir_profiles`.
+
+    The first file of a representation finds the method that works, the
+    other files (frames of a sequence) start from it and are transferred
+    in a thread pool, like the core 'FileTransaction'.
     """
 
     label = "Extract CSV Ingest Staging Dir"
@@ -70,13 +79,28 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
         if isinstance(files, str):
             files = [files]
 
-        copied = []
-        for filename in files:
-            src_path = os.path.join(src_dir, filename)
-            dst_path = os.path.join(dst_dir, filename)
-            if not self._link_file(src_path, dst_path):
-                copied.append(src_path)
+        transfers = [
+            (os.path.join(src_dir, filename), os.path.join(dst_dir, filename))
+            for filename in files
+        ]
+        # the first file finds the method, so the others do not retry the
+        # ones that fail for this volume pair
+        method = self._link_file(*transfers[0])
+        methods = [method]
+        if len(transfers) > 1:
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                futures = [
+                    executor.submit(self._link_file, src, dst, method)
+                    for src, dst in transfers[1:]
+                ]
+                wait_for_future_errors(executor, futures, logger=self.log)
+            methods.extend(future.result() for future in futures)
 
+        copied = [
+            src
+            for (src, _), used in zip(transfers, methods)
+            if used == "copy"
+        ]
         self.log.debug(
             f"Representation '{repre['name']}' staging dir moved"
             f" from '{src_dir}' to '{dst_dir}'."
@@ -85,11 +109,17 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
         repre["stagingDir_persistent"] = False
         return copied
 
-    def _link_file(self, src_path, dst_path):
+    def _link_file(self, src_path, dst_path, method="hardlink"):
         """Link or copy the source file to the staging dir.
 
+        Args:
+            src_path (str): Source file.
+            dst_path (str): File in the staging dir.
+            method (str): Transfer method to try first, the ones after it
+                in 'TRANSFER_METHODS' are the fallbacks.
+
         Returns:
-            bool: False when the file had to be copied.
+            str: The method used, one of 'TRANSFER_METHODS'.
 
         """
         if os.path.lexists(dst_path):
@@ -97,22 +127,22 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
             if os.path.exists(dst_path) and os.path.samefile(
                 src_path, dst_path
             ):
-                return True
+                return method
             # a stale copy or a broken link, never the source itself
             os.remove(dst_path)
 
-        try:
-            create_hard_link(src_path, dst_path)
-            return True
-        except OSError:
-            pass
-
-        if platform.system().lower() != "windows":
+        links = TRANSFER_METHODS[TRANSFER_METHODS.index(method):-1]
+        for candidate in links:
+            if candidate == "symlink" and platform.system() == "Windows":
+                continue
             try:
-                os.symlink(src_path, dst_path)
-                return True
+                if candidate == "hardlink":
+                    create_hard_link(src_path, dst_path)
+                else:
+                    os.symlink(src_path, dst_path)
+                return candidate
             except OSError:
                 pass
 
         shutil.copyfile(src_path, dst_path)
-        return False
+        return "copy"
