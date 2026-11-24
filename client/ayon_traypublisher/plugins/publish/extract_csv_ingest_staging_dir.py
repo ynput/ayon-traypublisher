@@ -97,9 +97,7 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
             methods.extend(future.result() for future in futures)
 
         copied = [
-            src
-            for (src, _), used in zip(transfers, methods)
-            if used == "copy"
+            src for (src, _), used in zip(transfers, methods) if used == "copy"
         ]
         self.log.debug(
             f"Representation '{repre['name']}' staging dir moved"
@@ -131,7 +129,7 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
             # a stale copy or a broken link, never the source itself
             os.remove(dst_path)
 
-        links = TRANSFER_METHODS[TRANSFER_METHODS.index(method):-1]
+        links = TRANSFER_METHODS[TRANSFER_METHODS.index(method) : -1]
         for candidate in links:
             if candidate == "symlink" and platform.system() == "Windows":
                 continue
