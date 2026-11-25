@@ -44,7 +44,7 @@ class CollectPSDWorkfile(
         if instance.data["productBaseType"] == "image" and add_review_family:
             repre["tags"].append("review")
             instance.data["families"].append("review")
-            if not instance.data.get("thumbnailSource"):
-                instance.data["thumbnailSource"] = file_url
+            if not instance.data.get("traypublisherThumbnailSource"):
+                instance.data["traypublisherThumbnailSource"] = file_url
 
         instance.data["source"] = file_url
