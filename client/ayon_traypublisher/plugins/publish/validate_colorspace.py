@@ -75,9 +75,9 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
                 )
 
     def _validate_display_view(
-        self, repre_name, config_path, display, view, config_views
+        self, repre_name, config_path, display, view
     ):
-        if config_path not in config_views:
+        if config_path not in self._config_views_cache:
             views = get_ocio_config_views(config_path)
             if not views:
                 message = (
@@ -90,13 +90,13 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
                     message=message,
                     description=message
                 )
-            config_views[config_path] = set(views)
+            self._config_views_cache[config_path] = set(views)
 
         self.log.debug(
             f"Validating representation '{repre_name}' "
             f"display '{display}' and view '{view}'"
         )
-        if f"{display}/{view}" not in config_views[config_path]:
+        if f"{display}/{view}" not in self._config_views_cache[config_path]:
             message = (
                 f"Representation '{repre_name}' display '{display}' and "
                 f"view '{view}' do not exist in OCIO config: {config_path}"
