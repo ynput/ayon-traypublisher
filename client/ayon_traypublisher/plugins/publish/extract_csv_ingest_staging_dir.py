@@ -8,10 +8,12 @@ import pyblish.api
 from ayon_core.lib import create_hard_link
 from ayon_core.lib.file_transaction import wait_for_future_errors
 from ayon_core.pipeline import publish
+from ayon_core.pipeline.publish import PublishError
 from ayon_core.pipeline.publish.lib import add_repre_files_for_cleanup
 
 # tried in this order, each one when the previous fails
 TRANSFER_METHODS = ("hardlink", "symlink", "copy")
+IS_WINDOWS = platform.system() == "Windows"
 
 
 class ExtractCSVIngestStagingDir(publish.Extractor):
@@ -33,6 +35,10 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
     drive, set a custom staging dir profile on the source volume:
     `ayon+settings://core/tools/publish/custom_staging_dir_profiles`.
 
+    A read-only source file is always copied on Windows: a hard link
+    shares the read-only flag of the source there, so the cleanup after
+    the publish could not remove it.
+
     The first file of a representation finds the method that works, the
     other files (frames of a sequence) start from it and are transferred
     in a thread pool, like the core 'FileTransaction'.
@@ -45,22 +51,65 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
     families = ["csv_ingest"]
 
     def process(self, instance):
+        repres = [
+            repre
+            for repre in instance.data.get("representations", [])
+            if "review" in (repre.get("tags") or [])
+        ]
+        # fail before anything is linked, so nothing stays behind
+        missing = [
+            path
+            for repre in repres
+            for path in self._get_source_paths(repre)
+            if not os.path.isfile(path)
+        ]
+        if missing:
+            listed = "\n".join(missing[:10])
+            if len(missing) > 10:
+                listed += f"\n... and {len(missing) - 10} more"
+            raise PublishError(
+                f"{len(missing)} source file(s) of the review are missing.",
+                title="Missing source files",
+                description=(
+                    "These source files are not found any more, they were"
+                    f" moved or renamed after the CSV was read:\n\n{listed}"
+                ),
+            )
+
         staging_dir = self.staging_dir(instance)
         copied = []
-        for repre in instance.data.get("representations", []):
-            if "review" not in (repre.get("tags") or []):
-                continue
+        for repre in repres:
             copied.extend(self._move_to_staging_dir(repre, staging_dir))
             # links and copies only: safe to remove after the publish
             add_repre_files_for_cleanup(instance, repre)
 
-        if copied:
+        read_only = [path for path in copied if self._is_read_only(path)]
+        if read_only:
             self.log.warning(
-                f"{len(copied)} source file(s) were copied to the staging"
-                f" dir '{staging_dir}' because it is on another volume."
-                " Set a custom staging dir profile on the source volume"
-                " to link them instead."
+                f"{len(read_only)} read-only source file(s) were copied to"
+                f" the staging dir '{staging_dir}': a link to them could not"
+                " be removed after the publish on Windows."
             )
+        if len(copied) > len(read_only):
+            self.log.warning(
+                f"{len(copied) - len(read_only)} source file(s) were copied"
+                f" to the staging dir '{staging_dir}' because it is on another"
+                " volume. Set a custom staging dir profile on the source"
+                " volume to link them instead."
+            )
+
+    @staticmethod
+    def _get_source_paths(repre):
+        files = repre["files"]
+        if isinstance(files, str):
+            files = [files]
+        return [os.path.join(repre["stagingDir"], name) for name in files]
+
+    @staticmethod
+    def _is_read_only(path):
+        # read-only only matters on Windows, where 'os.access' checks the
+        # read-only flag of the file
+        return IS_WINDOWS and not os.access(path, os.W_OK)
 
     def _move_to_staging_dir(self, repre, staging_dir):
         """Point the representation to linked files in the staging dir.
@@ -130,8 +179,10 @@ class ExtractCSVIngestStagingDir(publish.Extractor):
             os.remove(dst_path)
 
         links = TRANSFER_METHODS[TRANSFER_METHODS.index(method) : -1]
+        if self._is_read_only(src_path):
+            links = ()
         for candidate in links:
-            if candidate == "symlink" and platform.system() == "Windows":
+            if candidate == "symlink" and IS_WINDOWS:
                 continue
             try:
                 if candidate == "hardlink":
