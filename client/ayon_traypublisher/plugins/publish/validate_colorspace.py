@@ -27,7 +27,6 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
     def process(self, instance):
 
         config_colorspaces = {}  # cache of colorspaces per config path
-        config_views = self._config_views_cache
         for repre in instance.data.get("representations", {}):
 
             colorspace_data = repre.get("colorspaceData", {})
@@ -67,7 +66,7 @@ class ValidateColorspace(pyblish.api.InstancePlugin,
 
             if display and view:
                 self._validate_display_view(
-                    repre["name"], config_path, display, view, config_views
+                    repre["name"], config_path, display, view
                 )
             elif colorspace:
                 self._validate_colorspace(
